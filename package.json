@@ -1,5 +1,5 @@
 {
-  "name": "@foxify/arm",
+  "name": "@foxify/odin",
   "version": "0.0.0",
   "description": "Active Record Model",
   "author": "Ardalan Amini <ardalanamini22@gmail.com>",
@@ -7,10 +7,10 @@
     "Ardalan Amini <ardalanamini22@gmail.com>"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/foxifyjs/arm#readme",
+  "homepage": "https://github.com/foxifyjs/odin#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/foxifyjs/arm.git"
+    "url": "git+https://github.com/foxifyjs/odin.git"
   },
   "engines": {
     "node": ">=8"
