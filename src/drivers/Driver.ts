@@ -92,6 +92,9 @@ abstract class Driver<T = any> {
   abstract insertGetId(item: T): Promise<Driver.Id>;
   abstract insertGetId(item: T, callback: Driver.Callback<Driver.Id>): void;
 
+  abstract create(item: T): Promise<T>;
+  abstract create(item: T, callback: Driver.Callback<T>): void;
+
   /********************************** Updates *********************************/
 
   abstract update(update: T): Promise<number>;

@@ -41,6 +41,9 @@ interface Driver<T = any> {
   insertGetId(item: T): Promise<mongodb.ObjectId>;
   insertGetId(item: T, callback: mongodb.MongoCallback<mongodb.ObjectId>): void;
 
+  create(item: T): Promise<T>;
+  create(item: T, callback: mongodb.MongoCallback<T>): void;
+
   update(update: T): Promise<number>;
   update(update: T, callback: mongodb.MongoCallback<number>): void;
 
@@ -112,6 +115,9 @@ class Driver<T = any> extends Base<T> {
   }
 
   table(table: string) {
+    if (!(this._query as any).collection)
+      throw new Error("Can't change table name in the middle of query");
+
     this._query = ((this._query as any) as mongodb.Db).collection(table);
 
     return this;
@@ -402,6 +408,13 @@ class Driver<T = any> extends Base<T> {
       return this._query.insertOne(item, (err, res) => callback(err, res.insertedId));
 
     return (await this._query.insertOne(item)).insertedId;
+  }
+
+  async create(item: T, callback?: mongodb.MongoCallback<T>) {
+    if (callback)
+      return this._query.insertOne(item, (err, res) => callback(err, res.ops.first()));
+
+    return (await this._query.insertOne(item)).ops.first();
   }
 
   /********************************** Updates *********************************/

@@ -18,6 +18,18 @@ export function mixins(...baseCtors: any[]) {
   };
 }
 
+export function define(obj: object, mothod: "get" | "set", name: string, func: (value?: any) => any) {
+  Object.defineProperty(
+    obj,
+    name,
+    {
+      configurable: true,
+      enumerable: true,
+      [mothod]: func,
+    },
+  );
+}
+
 export const getGetterName = (key: string) => `get${key.camelCase().capitalize()}Attribute`;
 
 export const getSetterName = (key: string) => `set${key.camelCase().capitalize()}Attribute`;

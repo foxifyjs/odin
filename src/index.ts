@@ -2,6 +2,7 @@ import "prototyped.js";
 import * as DB from "./DB";
 import * as Types from "./types";
 import * as utils from "./utils";
+import { Base as Driver } from "./drivers";
 import QueryBuilder from "./base/QueryBuilder";
 import connections, { connect, getConnection } from "./connections";
 
@@ -23,7 +24,7 @@ module ModelConstructor {
   }
 
   export interface Document {
-    id?: string | number;
+    id?: Driver.Id;
 
     [key: string]: any;
   }

@@ -1,31 +1,201 @@
 import * as async from "async";
 import { Base as Driver } from "../drivers";
 import { getConnection } from "../connections";
+import { Model } from "../index";
 import * as DB from "../DB";
 import Query from "./Query";
 
 interface QueryBuilder<T = any> {
-  find(id: Driver.Id): Promise<T>;
-  find(id: Driver.Id, callback: Driver.Callback<T>): void;
+  where(field: string, value: any): Query<T>;
+  where(field: string, operator: Driver.Operator, value: any): Query<T>;
 
-  all(): Promise<T[]>;
-  all(callback: Driver.Callback<T[]>): void;
+  whereIn(field: string, values: any[]): Query<T>;
+
+  whereNotIn(field: string, values: any[]): Query<T>;
+
+  whereBetween(field: string, start: any, end: any): Query<T>;
+
+  whereNotBetween(field: string, start: any, end: any): Query<T>;
+
+  whereNull(field: string): Query<T>;
+
+  whereNotNull(field: string): Query<T>;
+
+  /******************** Ordering, Grouping, Limit & Offset ********************/
+
+  orderBy(field: string, order?: Driver.Order): Query<T>;
+
+  skip(offset: number): Query<T>;
+
+  offset(offset: number): Query<T>;
+
+  limit(limit: number): Query<T>;
+
+  take(limit: number): Query<T>;
+
+  /*********************************** Read ***********************************/
+
+  exists(): Promise<boolean>;
+  exists(callback: Driver.Callback<boolean>): void;
+
+  count(): Promise<number>;
+  count(callback: Driver.Callback<number>): void;
+
+  all(): Promise<Array<Model<T>>>;
+  all(callback: Driver.Callback<Array<Model<T>>>): void;
+
+  find(ids: Driver.Id | Driver.Id[]): Promise<Model<T>>;
+  find(ids: Driver.Id | Driver.Id[], callback: Driver.Callback<Model<T>>): void;
+
+  findBy(field: string, values: any | any[]): Promise<Model<T>>;
+  findBy(field: string, values: any | any[], callback: Driver.Callback<Model<T>>): void;
+
+  value(field: string): Promise<any>;
+  value(field: string, callback: Driver.Callback<any>): void;
+
+  pluck(field: string): Promise<any>;
+  pluck(field: string, callback: Driver.Callback<any>): void;
+
+  max(field: string): Promise<any>;
+  max(field: string, callback: Driver.Callback<any>): void;
+
+  min(field: string): Promise<any>;
+  min(field: string, callback: Driver.Callback<any>): void;
+
+  /********************************** Inserts *********************************/
+
+  insert(items: T[]): Promise<number>;
+  insert(items: T[], callback: Driver.Callback<number>): void;
+
+  create(item: T): Promise<Model<T>>;
+  create(item: T, callback: Driver.Callback<Model<T>>): void;
+
+  /********************************** Updates *********************************/
+
+  /********************************** Deletes *********************************/
+
+  destroy(ids: Driver.Id | Driver.Id[]): Promise<number>;
+  destroy(ids: Driver.Id | Driver.Id[], callback: Driver.Callback<number>): void;
 }
 
 class QueryBuilder {
   static connection: string;
   static _table: string;
 
-  static query(): DB {
+  static query() {
     return new Query(this as any, getConnection(this.connection)).table(this._table);
   }
 
-  static find(id: Driver.Id, callback?: Driver.Callback<any>) {
-    return this.query().where("id", id).first(callback);
+  /******************************* Where Clauses ******************************/
+
+  static where(field: string, operator: Driver.Operator | any, value?: any) {
+    return this.query().where(field, operator, value);
   }
 
-  static async all(callback?: Driver.Callback<any>) {
+  static whereIn(field: string, values: any[]) {
+    return this.query().whereIn(field, values);
+  }
+
+  static whereNotIn(field: string, values: any[]) {
+    return this.query().whereNotIn(field, values);
+  }
+
+  static whereBetween(field: string, start: any, end: any) {
+    return this.query().whereBetween(field, start, end);
+  }
+
+  static whereNotBetween(field: string, start: any, end: any) {
+    return this.query().whereNotBetween(field, start, end);
+  }
+
+  static whereNull(field: string) {
+    return this.query().whereNull(field);
+  }
+
+  static whereNotNull(field: string) {
+    return this.query().whereNotNull(field);
+  }
+
+  /******************** Ordering, Grouping, Limit & Offset ********************/
+
+  static orderBy(field: string, order?: Driver.Order) {
+    return this.query().orderBy(field, order);
+  }
+
+  static skip(offset: number) {
+    return this.query().skip(offset);
+  }
+
+  static offset(offset: number) {
+    return this.skip(offset);
+  }
+
+  static limit(limit: number) {
+    return this.query().limit(limit);
+  }
+
+  static take(limit: number) {
+    return this.limit(limit);
+  }
+
+  /*********************************** Read ***********************************/
+
+  static exists(callback?: Driver.Callback<boolean>) {
+    return this.query().exists(callback);
+  }
+
+  static count(callback?: Driver.Callback<number>) {
+    return this.query().count(callback);
+  }
+
+  static all(callback?: Driver.Callback<any>) {
     return this.query().get(callback);
+  }
+
+  static find(ids: Driver.Id | Driver.Id[], callback?: Driver.Callback<any>) {
+    return this.findBy("id", ids, callback);
+  }
+
+  static findBy(field: string, value: any | any[], callback?: Driver.Callback<any>) {
+    if (Array.isArray(value)) return this.query().whereIn(field, value).first(callback);
+
+    return this.query().where(field, value).first(callback);
+  }
+
+  static value(field: string, callback?: Driver.Callback<any>) {
+    return this.query().value(field, callback);
+  }
+
+  static pluck(field: string, callback?: Driver.Callback<any>) {
+    return this.value(field, callback);
+  }
+
+  static max(field: string, callback?: Driver.Callback<any>) {
+    return this.query().max(field, callback);
+  }
+
+  static min(field: string, callback?: Driver.Callback<any>) {
+    return this.query().min(field, callback);
+  }
+
+  /********************************** Inserts *********************************/
+
+  static insert(items: any[], callback?: Driver.Callback<number>) {
+    return this.query().insert(items, callback);
+  }
+
+  static create(item: any, callback?: Driver.Callback<any>) {
+    return this.query().create(item, callback);
+  }
+
+  /********************************** Updates *********************************/
+
+  /********************************** Deletes *********************************/
+
+  static destroy(ids: Driver.Id | Driver.Id[]) {
+    if (Array.isArray(ids)) return this.query().whereIn("id", ids).delete();
+
+    return this.query().where("id", ids).delete();
   }
 }
 

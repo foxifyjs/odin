@@ -4,11 +4,39 @@ import { Base as Driver, MongoDB } from "./drivers";
 module DB { }
 
 interface DB<T = any> {
+  /******************************* Where Clauses ******************************/
+
   where(field: string, value: any): this;
   where(field: string, operator: Driver.Operator, value: any): this;
 
   orWhere(field: string, value: any): this;
   orWhere(field: string, operator: Driver.Operator, value: any): this;
+
+  whereIn(field: string, values: any[]): this;
+
+  whereNotIn(field: string, values: any[]): this;
+
+  whereBetween(field: string, start: any, end: any): this;
+
+  whereNotBetween(field: string, start: any, end: any): this;
+
+  whereNull(field: string): this;
+
+  whereNotNull(field: string): this;
+
+  /******************** Ordering, Grouping, Limit & Offset ********************/
+
+  orderBy(field: string, order?: Driver.Order): this;
+
+  skip(offset: number): this;
+
+  offset(offset: number): this;
+
+  limit(limit: number): this;
+
+  take(limit: number): this;
+
+  /*********************************** Read ***********************************/
 
   exists(): Promise<boolean>;
   exists(callback: Driver.Callback<boolean>): void;
@@ -27,14 +55,16 @@ interface DB<T = any> {
   value(field: string): Promise<any>;
   value(field: string, callback: Driver.Callback<any>): void;
 
+  pluck(field: string): Promise<any>;
+  pluck(field: string, callback: Driver.Callback<any>): void;
+
   max(field: string): Promise<any>;
   max(field: string, callback: Driver.Callback<any>): void;
 
   min(field: string): Promise<any>;
   min(field: string, callback: Driver.Callback<any>): void;
 
-  pluck(field: string): Promise<any>;
-  pluck(field: string, callback: Driver.Callback<any>): void;
+  /********************************** Inserts *********************************/
 
   insert(item: T | T[]): Promise<number>;
   insert(item: T | T[], callback: Driver.Callback<number>): void;
@@ -42,12 +72,16 @@ interface DB<T = any> {
   insertGetId(item: T): Promise<Driver.Id>;
   insertGetId(item: T, callback: Driver.Callback<Driver.Id>): void;
 
+  /********************************** Updates *********************************/
+
   update(update: T): Promise<number>;
   update(update: T, callback: Driver.Callback<number>): void;
 
   increment(field: string, count?: number): Promise<number>;
   increment(field: string, callback: Driver.Callback<number>): void;
   increment(field: string, count: number, callback: Driver.Callback<number>): void;
+
+  /********************************** Deletes *********************************/
 
   delete(): Promise<number>;
   delete(callback: Driver.Callback<number>): void;
@@ -194,6 +228,10 @@ class DB<T = any> {
 
   insertGetId(item: T, callback?: Driver.Callback<Driver.Id>) {
     return this._query.insertGetId.call(this._query, ...arguments);
+  }
+
+  create(item: T, callback?: Driver.Callback<T>) {
+    return this._query.create.call(this._query, ...arguments);
   }
 
   /********************************** Updates *********************************/
