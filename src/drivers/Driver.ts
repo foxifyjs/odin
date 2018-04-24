@@ -80,9 +80,8 @@ abstract class Driver<T = any> {
   abstract min(field: string): Promise<any>;
   abstract min(field: string, callback: Driver.Callback<any>): void;
 
-  // TODO avg
-  // abstract avg(field: string): Promise<any>;
-  // abstract avg(field: string, callback: Driver.Callback<any>): void;
+  abstract avg(field: string): Promise<any>;
+  abstract avg(field: string, callback: Driver.Callback<any>): void;
 
   /********************************** Inserts *********************************/
 

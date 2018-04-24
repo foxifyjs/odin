@@ -35,6 +35,9 @@ interface Driver<T = any> {
   min(field: string): Promise<any>;
   min(field: string, callback: mongodb.MongoCallback<any>): void;
 
+  avg(field: string): Promise<any>;
+  avg(field: string, callback: mongodb.MongoCallback<any>): void;
+
   insert(item: T | T[]): Promise<number>;
   insert(item: T | T[], callback: mongodb.MongoCallback<number>): void;
 
@@ -270,6 +273,21 @@ class Driver<T = any> extends Base<T> {
 
   /*********************************** Read ***********************************/
 
+  private _aggregate(pipeline: object[], options?: mongodb.CollectionAggregationOptions) {
+    const _options = this._options;
+    const _pipeline: object[] = [
+      { $match: this._filter },
+    ];
+
+    if (_options.sort) _pipeline.push({ $sort: _options.sort });
+    if (_options.skip) _pipeline.push({ $skip: _options.skip });
+    if (_options.limit) _pipeline.push({ $skip: _options.limit });
+
+    _pipeline.push(...pipeline);
+
+    return this._query.aggregate(_pipeline, options);
+  }
+
   async exists(callback?: mongodb.MongoCallback<boolean>) {
     if (callback) return this.count((err, res) => callback(err, res !== 0));
 
@@ -385,6 +403,21 @@ class Driver<T = any> extends Base<T> {
       return this.first([field], (err, res) => callback(err, keys.reduce((prev: any, key) => prev[key], res)));
 
     return keys.reduce((prev: any, key) => prev[key], (await this.first([field])));
+  }
+
+  async avg(field: string, callback?: mongodb.MongoCallback<any>) {
+    const query = this._aggregate([
+      { $group: { _id: null, avg: { $avg: `$${field}` } } },
+    ]);
+
+    if (callback)
+      return query.toArray((err, res) => {
+        if (err) return callback(err, res);
+
+        callback(err, res.first().avg);
+      });
+
+    return (await query.toArray()).first().avg;
   }
 
   /********************************** Inserts *********************************/

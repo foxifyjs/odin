@@ -64,6 +64,9 @@ interface DB<T = any> {
   min(field: string): Promise<any>;
   min(field: string, callback: Driver.Callback<any>): void;
 
+  avg(field: string): Promise<any>;
+  avg(field: string, callback: Driver.Callback<any>): void;
+
   /********************************** Inserts *********************************/
 
   insert(item: T | T[]): Promise<number>;
@@ -71,6 +74,9 @@ interface DB<T = any> {
 
   insertGetId(item: T): Promise<Driver.Id>;
   insertGetId(item: T, callback: Driver.Callback<Driver.Id>): void;
+
+  create(item: T): Promise<T>;
+  create(item: T, callback: Driver.Callback<T>): void;
 
   /********************************** Updates *********************************/
 
@@ -80,6 +86,10 @@ interface DB<T = any> {
   increment(field: string, count?: number): Promise<number>;
   increment(field: string, callback: Driver.Callback<number>): void;
   increment(field: string, count: number, callback: Driver.Callback<number>): void;
+
+  decrement(field: string, count?: number): Promise<number>;
+  decrement(field: string, callback: Driver.Callback<number>): void;
+  decrement(field: string, count: number, callback: Driver.Callback<number>): void;
 
   /********************************** Deletes *********************************/
 
@@ -213,11 +223,15 @@ class DB<T = any> {
   }
 
   max(field: string, callback?: Driver.Callback<any>) {
-    return this._query.max.call(this, ...arguments);
+    return this._query.max.call(this._query, ...arguments);
   }
 
   min(field: string, callback?: Driver.Callback<any>) {
-    return this._query.min.call(this, ...arguments);
+    return this._query.min.call(this._query, ...arguments);
+  }
+
+  avg(field: string, callback?: Driver.Callback<any>) {
+    return this._query.avg.call(this._query, ...arguments);
   }
 
   /********************************** Inserts *********************************/
