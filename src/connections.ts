@@ -1,7 +1,8 @@
 import * as mongodb from "mongodb";
 import * as drivers from "./drivers";
+import * as utils from "./utils";
 
-const CONNECTIONS_GLOBAL = Symbol("__FOXIFY_ARM__");
+const CONNECTIONS_GLOBAL = Symbol("__FOXIFY_ODIN__");
 
 if (!(global as any)[CONNECTIONS_GLOBAL]) (global as any)[CONNECTIONS_GLOBAL] = {};
 
@@ -39,7 +40,7 @@ export namespace connect {
 export const getConnection = (name: string): Connection => (global as any)[CONNECTIONS_GLOBAL][name];
 
 export default (connections: connect.Connections) => {
-  connections.$map((connection: connect.Connection, name) => {
+  utils.object.map(connections, (connection: connect.Connection, name) => {
     if (!getConnection(name as string)) setConnection(name as string, connect(connection));
   });
 };

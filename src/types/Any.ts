@@ -1,11 +1,11 @@
 import * as async from "async";
 // import GraphQL from "../graphql/Type";
-import { mixins } from "../utils";
+import * as utils from "../utils";
 
 // interface TypeAny extends GraphQL { }
 interface TypeAny { }
 
-// @mixins(GraphQL)
+// @utils.mixins(GraphQL)
 // class TypeAny implements GraphQL {
 class TypeAny {
   protected _type = "Any";
@@ -18,7 +18,7 @@ class TypeAny {
   protected _default: () => any = () => undefined;
 
   protected _base(v: any): string | null {
-    if (!Function.isInstance(v)) return null;
+    if (!utils.function.isInstance(v)) return null;
 
     return "Invalid type";
   }
@@ -42,7 +42,7 @@ class TypeAny {
   }
 
   default(v: any) {
-    if (Function.isInstance(v)) {
+    if (utils.function.isInstance(v)) {
       this._default = v;
 
       return this;
@@ -86,7 +86,7 @@ class TypeAny {
             (err, result) => {
               if (err) throw err;
 
-              if (result) errors = <string[]>result.compact();
+              if (result) errors = utils.array.compact(result as string[]);
             },
           );
       },

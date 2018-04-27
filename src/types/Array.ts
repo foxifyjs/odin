@@ -1,4 +1,5 @@
 import TypeAny from "./Any";
+import { array, number } from "../utils";
 
 interface TypeArray {
   ofType: TypeAny;
@@ -8,7 +9,7 @@ class TypeArray extends TypeAny {
   protected _type = "Array";
 
   protected _base(v: any): string | null {
-    if (Array.isInstance(v)) return null;
+    if (array.isInstance(v)) return null;
 
     return "Must be an array";
   }
@@ -19,12 +20,14 @@ class TypeArray extends TypeAny {
 
     this.ofType = type;
 
-    return this._test((v: any[]) => v.map((item) => type.validate(item).errors).compact().deepFlatten().first())
+    return this._test(
+      (v: any[]) => array.first(array.deepFlatten(array.compact(v.map((item) => type.validate(item).errors)))),
+    )
       ._cast((v: any[]) => v.map((item) => type.validate(item).value));
   }
 
   min(n: number) {
-    if (!Number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!number.isInstance(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 
@@ -32,7 +35,7 @@ class TypeArray extends TypeAny {
   }
 
   max(n: number) {
-    if (!Number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!number.isInstance(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 
@@ -40,7 +43,7 @@ class TypeArray extends TypeAny {
   }
 
   length(n: number) {
-    if (!Number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!number.isInstance(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 

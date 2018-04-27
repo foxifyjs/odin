@@ -1,9 +1,8 @@
-import "prototyped.js";
 import * as DB from "./DB";
 import * as Types from "./types";
 import * as utils from "./utils";
 import { Base as Driver } from "./drivers";
-import QueryBuilder from "./base/QueryBuilder";
+import QueryBuilder, { QueryInstance } from "./base/QueryBuilder";
 import connections, { connect, getConnection } from "./connections";
 
 module ModelConstructor {
@@ -44,12 +43,12 @@ interface ModelConstructor<T = any> extends QueryBuilder {
   new <T>(document?: ModelConstructor.Document): Model<T>;
 }
 
-// export interface Model<T = any> {
-//   constructor: typeof Model;
-// }
+export interface Model<T = any> extends QueryInstance<T> {
+  // constructor: typeof Model;
+}
 
 @utils.mixins(QueryBuilder)
-export class Model<T = any> {
+export class Model<T = any> implements QueryInstance<T> {
   static DB = DB;
   static Types = Types;
   static connections = connections;
@@ -80,6 +79,8 @@ export class Model<T = any> {
       updated_at: this.Types.Date,
     };
   }
+
+  private _isNew: boolean = false;
 
   attributes: ModelConstructor.Document;
 

@@ -1,5 +1,6 @@
 import { getConnection, Connection } from "./connections";
 import { Base as Driver, MongoDB } from "./drivers";
+import { function as func } from "./utils";
 
 module DB { }
 
@@ -11,6 +12,10 @@ interface DB<T = any> {
 
   orWhere(field: string, value: any): this;
   orWhere(field: string, operator: Driver.Operator, value: any): this;
+
+  whereLike(field: string, value: any): this;
+
+  whereNotLike(field: string, value: any): this;
 
   whereIn(field: string, values: any[]): this;
 
@@ -75,9 +80,6 @@ interface DB<T = any> {
   insertGetId(item: T): Promise<Driver.Id>;
   insertGetId(item: T, callback: Driver.Callback<Driver.Id>): void;
 
-  create(item: T): Promise<T>;
-  create(item: T, callback: Driver.Callback<T>): void;
-
   /********************************** Updates *********************************/
 
   update(update: T): Promise<number>;
@@ -128,6 +130,18 @@ class DB<T = any> {
 
   orWhere(field: string, operator: Driver.Operator | any, value?: any) {
     this._query = this._query.orWhere.call(this._query, ...arguments);
+
+    return this;
+  }
+
+  whereLike(field: string, value: any) {
+    this._query = this._query.whereLike.call(this._query, ...arguments);
+
+    return this;
+  }
+
+  whereNotLike(field: string, value: any) {
+    this._query = this._query.whereNotLike.call(this._query, ...arguments);
 
     return this;
   }
@@ -244,10 +258,6 @@ class DB<T = any> {
     return this._query.insertGetId.call(this._query, ...arguments);
   }
 
-  create(item: T, callback?: Driver.Callback<T>) {
-    return this._query.create.call(this._query, ...arguments);
-  }
-
   /********************************** Updates *********************************/
 
   update(update: T, callback?: Driver.Callback<number>) {
@@ -260,7 +270,7 @@ class DB<T = any> {
 
   decrement(field: string, count?: number | Driver.Callback<number>, callback?: Driver.Callback<number>) {
     if (count === undefined) count = 1;
-    else if (Function.isInstance(count)) {
+    else if (func.isInstance(count)) {
       callback = count;
       count = 1;
     }

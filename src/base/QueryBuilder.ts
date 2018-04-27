@@ -1,7 +1,7 @@
 import * as async from "async";
 import { Base as Driver } from "../drivers";
 import { getConnection } from "../connections";
-import { Model } from "../index";
+import ModelConstructor, { Model } from "../index";
 import * as DB from "../DB";
 import Query from "./Query";
 
@@ -72,15 +72,27 @@ interface QueryBuilder<T = any> {
 
   /********************************** Updates *********************************/
 
+  save(): Promise<Model<T>>;
+  save(callback: Driver.Callback<Model<T>>): void;
+
   /********************************** Deletes *********************************/
 
   destroy(ids: Driver.Id | Driver.Id[]): Promise<number>;
   destroy(ids: Driver.Id | Driver.Id[], callback: Driver.Callback<number>): void;
 }
 
+export interface QueryInstance<T = any> {
+    save(): Promise<Model<T>>;
+    save(callback: Driver.Callback<Model<T>>): void;
+}
+
 class QueryBuilder {
   static connection: string;
   static _table: string;
+
+  private _isNew!: boolean;
+
+  attributes!: ModelConstructor.Document;
 
   static query() {
     return new Query(this as any, getConnection(this.connection)).table(this._table);
@@ -90,6 +102,14 @@ class QueryBuilder {
 
   static where(field: string, operator: Driver.Operator | any, value?: any) {
     return this.query().where(field, operator, value);
+  }
+
+  static whereLike(field: string, values: any[]) {
+    return this.query().whereLike(field, values);
+  }
+
+  static whereNotLike(field: string, values: any[]) {
+    return this.query().whereNotLike(field, values);
   }
 
   static whereIn(field: string, values: any[]) {
@@ -184,11 +204,36 @@ class QueryBuilder {
     return this.query().insert(items, callback);
   }
 
-  static create(item: any, callback?: Driver.Callback<any>) {
-    return this.query().create(item, callback);
+  static async create(item: any, callback?: Driver.Callback<any>) {
+    if (callback)
+      return this.query().insertGetId(item, (err, res) => {
+        if (err) return callback(err, res);
+
+        this.find(res, callback);
+      });
+
+    return await this.find(await this.query().insertGetId(item));
   }
 
   /********************************** Updates *********************************/
+
+  async save(callback?: Driver.Callback<any>) {
+    if (this._isNew)
+      return (this.constructor as typeof QueryBuilder).create(this.attributes, callback);
+
+    const query = (this.constructor as typeof QueryBuilder).where("id", this.attributes.id);
+
+    if (callback)
+      return query.update(this.attributes, (err, res) => {
+          if (err) return callback(err, res);
+
+          (this.constructor as typeof QueryBuilder).find(this.attributes.id as Driver.Id, callback);
+        });
+
+    await query.update(this.attributes);
+
+    return await (this.constructor as typeof QueryBuilder).find(this.attributes.id as Driver.Id);
+  }
 
   /********************************** Deletes *********************************/
 

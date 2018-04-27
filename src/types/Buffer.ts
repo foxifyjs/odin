@@ -1,4 +1,5 @@
 import TypeAny from "./Any";
+import * as utils from "../utils";
 
 class TypeBuffer extends TypeAny {
   protected _type = "Buffer";
@@ -14,7 +15,7 @@ class TypeBuffer extends TypeAny {
   // }
 
   min(n: number) {
-    if (!Number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!utils.number.isInstance(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 
@@ -22,7 +23,7 @@ class TypeBuffer extends TypeAny {
   }
 
   max(n: number) {
-    if (!Number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!utils.number.isInstance(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 
@@ -30,7 +31,7 @@ class TypeBuffer extends TypeAny {
   }
 
   length(n: number) {
-    if (!Number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!utils.number.isInstance(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 

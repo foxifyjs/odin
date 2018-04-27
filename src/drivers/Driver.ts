@@ -4,7 +4,7 @@ import * as connections from "../connections";
 module Driver {
   export type Callback<T = any> = (error: Error, result: T) => void;
 
-  export type Operator = "<" | "<=" | "=" | "<>" | ">=" | ">" | "like";
+  export type Operator = "<" | "<=" | "=" | "<>" | ">=" | ">";
 
   export type Order = "asc" | "desc";
 
@@ -32,6 +32,10 @@ abstract class Driver<T = any> {
   abstract orWhere(field: string, value: any): this;
   abstract orWhere(field: string, operator: Driver.Operator, value: any): this;
 
+  abstract whereLike(field: string, value: any): this;
+
+  abstract whereNotLike(field: string, value: any): this;
+
   abstract whereIn(field: string, values: any[]): this;
 
   abstract whereNotIn(field: string, values: any[]): this;
@@ -47,6 +51,7 @@ abstract class Driver<T = any> {
   /******************** Ordering, Grouping, Limit & Offset ********************/
 
   // TODO groupBy
+  // @see https://stackoverflow.com/questions/21023005/mongodb-aggregation-group-by-several-fields
   // abstract groupBy(field: string): this;
 
   abstract orderBy(field: string, order?: Driver.Order): this;
@@ -90,9 +95,6 @@ abstract class Driver<T = any> {
 
   abstract insertGetId(item: T): Promise<Driver.Id>;
   abstract insertGetId(item: T, callback: Driver.Callback<Driver.Id>): void;
-
-  abstract create(item: T): Promise<T>;
-  abstract create(item: T, callback: Driver.Callback<T>): void;
 
   /********************************** Updates *********************************/
 

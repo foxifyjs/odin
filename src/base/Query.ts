@@ -14,9 +14,6 @@ interface Query<T = any> extends DB<T> {
 
   insert(items: T[]): Promise<number>;
   insert(items: T[], callback: Driver.Callback<number>): void;
-
-  create(item: T): Promise<Model<T>>;
-  create(item: T, callback: Driver.Callback<Model<T>>): void;
 }
 
 class Query<T = any> extends DB<T> {
@@ -71,14 +68,6 @@ class Query<T = any> extends DB<T> {
       throw new Error(`Expected 'items' to be an array, '${typeof items}' given`);
 
     return super.insert(items, callback);
-  }
-
-  // @ts-ignore:next-line
-  async create(item: T, callback?: Driver.Callback<Model<T>>) {
-    if (callback)
-      return super.create(item, (err, res) => callback(err, new this._model(res) as any));
-
-    return new this._model(await super.create(item));
   }
 }
 

@@ -2,6 +2,7 @@ import * as mongodb from "mongodb";
 import * as deasync from "deasync";
 import Base from "../Driver";
 import { connect } from "../../connections";
+import * as utils from "../../utils";
 
 module Driver {
   export interface Filters<T = any> {
@@ -12,6 +13,12 @@ module Driver {
 }
 
 interface Driver<T = any> {
+  /******************************* Where Clauses ******************************/
+
+  /******************** Ordering, Grouping, Limit & Offset ********************/
+
+  /*********************************** Read ***********************************/
+
   exists(): Promise<boolean>;
   exists(callback: mongodb.MongoCallback<boolean>): void;
 
@@ -38,14 +45,15 @@ interface Driver<T = any> {
   avg(field: string): Promise<any>;
   avg(field: string, callback: mongodb.MongoCallback<any>): void;
 
+  /********************************** Inserts *********************************/
+
   insert(item: T | T[]): Promise<number>;
   insert(item: T | T[], callback: mongodb.MongoCallback<number>): void;
 
   insertGetId(item: T): Promise<mongodb.ObjectId>;
   insertGetId(item: T, callback: mongodb.MongoCallback<mongodb.ObjectId>): void;
 
-  create(item: T): Promise<T>;
-  create(item: T, callback: mongodb.MongoCallback<T>): void;
+  /********************************** Updates *********************************/
 
   update(update: T): Promise<number>;
   update(update: T, callback: mongodb.MongoCallback<number>): void;
@@ -53,6 +61,8 @@ interface Driver<T = any> {
   increment(field: string, count?: number): Promise<number>;
   increment(field: string, callback: mongodb.MongoCallback<number>): void;
   increment(field: string, count: number, callback: mongodb.MongoCallback<number>): void;
+
+  /********************************** Deletes *********************************/
 
   delete(): Promise<number>;
   delete(callback: mongodb.MongoCallback<number>): void;
@@ -169,7 +179,6 @@ class Driver<T = any> extends Base<T> {
       "<>": "ne",
       ">=": "gte",
       ">": "gt",
-      "like": "regex",
     };
 
     if (value === undefined) {
@@ -182,8 +191,6 @@ class Driver<T = any> extends Base<T> {
       value = new mongodb.ObjectId(value);
     }
 
-    if (operator === "like") value = new RegExp(value, "i");
-
     return this._where(field, _operators[operator], value);
   }
 
@@ -195,7 +202,6 @@ class Driver<T = any> extends Base<T> {
       "<>": "ne",
       ">=": "gte",
       ">": "gt",
-      "like": "regex",
     };
 
     if (value === undefined) {
@@ -211,6 +217,22 @@ class Driver<T = any> extends Base<T> {
     if (operator === "like") value = new RegExp(value, "i");
 
     return this._or_where(field, _operators[operator], value);
+  }
+
+  whereLike(field: string, value: any) {
+    if (field === "id") field = "_id";
+
+    if (!(value instanceof RegExp)) value = new RegExp(value, "i");
+
+    return this._where(field, "regex", value);
+  }
+
+  whereNotLike(field: string, value: any) {
+    if (field === "id") field = "_id";
+
+    if (!(value instanceof RegExp)) value = new RegExp(value, "i");
+
+    return this._where(field, "not", value);
   }
 
   whereIn(field: string, values: any[]) {
@@ -301,7 +323,7 @@ class Driver<T = any> extends Base<T> {
   }
 
   async get(fields?: string[] | mongodb.MongoCallback<T[]>, callback?: mongodb.MongoCallback<T[]>) {
-    if (Function.isInstance(fields)) {
+    if (utils.function.isInstance(fields)) {
       callback = fields;
       fields = undefined;
     }
@@ -332,7 +354,7 @@ class Driver<T = any> extends Base<T> {
   }
 
   async first(fields?: string[] | mongodb.MongoCallback<T>, callback?: mongodb.MongoCallback<T>) {
-    if (Function.isInstance(fields)) {
+    if (utils.function.isInstance(fields)) {
       callback = fields;
       fields = undefined;
     }
@@ -414,10 +436,10 @@ class Driver<T = any> extends Base<T> {
       return query.toArray((err, res) => {
         if (err) return callback(err, res);
 
-        callback(err, res.first().avg);
+        callback(err, utils.array.first(res).avg);
       });
 
-    return (await query.toArray()).first().avg;
+    return utils.array.first((await query.toArray())).avg;
   }
 
   /********************************** Inserts *********************************/
@@ -441,13 +463,6 @@ class Driver<T = any> extends Base<T> {
       return this._query.insertOne(item, (err, res) => callback(err, res.insertedId));
 
     return (await this._query.insertOne(item)).insertedId;
-  }
-
-  async create(item: T, callback?: mongodb.MongoCallback<T>) {
-    if (callback)
-      return this._query.insertOne(item, (err, res) => callback(err, res.ops.first()));
-
-    return (await this._query.insertOne(item)).ops.first();
   }
 
   /********************************** Updates *********************************/
@@ -479,7 +494,7 @@ class Driver<T = any> extends Base<T> {
     callback?: mongodb.MongoCallback<number>,
   ) {
     if (count === undefined) count = 1;
-    else if (Function.isInstance(count)) {
+    else if (utils.function.isInstance(count)) {
       callback = count;
       count = 1;
     }

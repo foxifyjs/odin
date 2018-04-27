@@ -1,5 +1,6 @@
 import TypeAny from "./Any";
 import * as Verifications from "verifications";
+import * as utils from "../utils";
 
 // tslint:disable-next-line:max-line-length
 const ipv4Regex = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
@@ -10,7 +11,7 @@ class TypeString extends TypeAny {
   protected _type = "String";
 
   protected _base(v: any) {
-    if (String.isInstance(v)) return null;
+    if (utils.string.isInstance(v)) return null;
 
     return "Must be a string";
   }
@@ -47,7 +48,7 @@ class TypeString extends TypeAny {
   }
 
   min(n: number) {
-    if (!Number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!utils.number.isInstance(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 
@@ -55,7 +56,7 @@ class TypeString extends TypeAny {
   }
 
   max(n: number) {
-    if (!Number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!utils.number.isInstance(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 
@@ -63,7 +64,7 @@ class TypeString extends TypeAny {
   }
 
   length(n: number) {
-    if (!Number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!utils.number.isInstance(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 
@@ -79,7 +80,7 @@ class TypeString extends TypeAny {
   /********** CASTS **********/
 
   truncate(length: number) {
-    return this._cast((v: string) => v.truncate(length));
+    return this._cast((v: string) => utils.string.truncate(v, length));
   }
 
   replace(pattern: string | RegExp, replacement: string) {
