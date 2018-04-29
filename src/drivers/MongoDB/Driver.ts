@@ -98,11 +98,13 @@ class Driver<T = any> extends Base<T> {
 
   protected _query!: mongodb.Collection;
 
+  protected _getting = false;
+
   private _filters: Driver.Filters = {
     $and: [],
   };
 
-  private _options: mongodb.FindOneOptions = {};
+  private _pipeline: object[] = [];
 
   private get _filter() {
     const filter = {
@@ -114,7 +116,7 @@ class Driver<T = any> extends Base<T> {
     return filter;
   }
 
-  private _prepare(document: any): T {
+  private _prepare(document: any): any {
     if (document && document._id) {
       document = {
         id: document._id,
@@ -139,7 +141,10 @@ class Driver<T = any> extends Base<T> {
   /******************************* Where Clauses ******************************/
 
   private _push_filter(operator: "and" | "or", value: any) {
+    this._getting = true;
+
     const filters = { ...this._filters };
+
     if (operator === "and" && filters.$or) {
       filters.$and = [this._filters];
       delete filters.$or;
@@ -274,40 +279,35 @@ class Driver<T = any> extends Base<T> {
   /******************** Ordering, Grouping, Limit & Offset ********************/
 
   orderBy(field: string, order?: Base.Order) {
-    this._options.sort = {
-      [field]: order === "desc" ? -1 : 1,
-    };
+    this._getting = true;
+
+    this._pipeline.push({ $sort: { [field]: order === "desc" ? -1 : 1 } });
 
     return this;
   }
 
   skip(offset: number) {
-    this._options.skip = offset;
+    this._getting = true;
+
+    this._pipeline.push({ $skip: offset });
 
     return this;
   }
 
   limit(limit: number) {
-    this._options.limit = limit;
+    this._getting = true;
+
+    this._pipeline.push({ $limit: limit });
 
     return this;
   }
 
   /*********************************** Read ***********************************/
 
-  private _aggregate(pipeline: object[], options?: mongodb.CollectionAggregationOptions) {
-    const _options = this._options;
-    const _pipeline: object[] = [
-      { $match: this._filter },
-    ];
-
-    if (_options.sort) _pipeline.push({ $sort: _options.sort });
-    if (_options.skip) _pipeline.push({ $skip: _options.skip });
-    if (_options.limit) _pipeline.push({ $skip: _options.limit });
-
-    _pipeline.push(...pipeline);
-
-    return this._query.aggregate(_pipeline, options);
+  private _aggregate(options?: mongodb.CollectionAggregationOptions) {
+    // FIXME the mongodb typing has a bug i think
+    return (this._query.aggregate([{ $match: this._filter }, ...this._pipeline], options) as any)
+      .map(this._prepare) as mongodb.AggregationCursor;
   }
 
   async exists(callback?: mongodb.MongoCallback<boolean>) {
@@ -316,41 +316,30 @@ class Driver<T = any> extends Base<T> {
     return (await this.count()) !== 0;
   }
 
-  async count(callback?: mongodb.MongoCallback<number>) {
-    if (callback) return this._query.count(this._filter, callback);
-
-    return await this._query.count(this._filter);
+  count(callback?: mongodb.MongoCallback<number>): Promise<number> | void {
+    return this._query.count(this._filter, callback as any);
   }
 
-  async get(fields?: string[] | mongodb.MongoCallback<T[]>, callback?: mongodb.MongoCallback<T[]>) {
+  get(
+    fields?: string[] | mongodb.MongoCallback<T[]>,
+    callback?: mongodb.MongoCallback<T[]>,
+  ): Promise<T[]> | void {
     if (utils.function.isInstance(fields)) {
       callback = fields;
       fields = undefined;
     }
 
-    const _fields: { [field: string]: 1 | 0 } = {};
-
-    if (fields) {
-      _fields._id = 0;
-
-      const length = fields.length;
-      let i = 0;
-
-      for (; i < length; i++)
-        _fields[fields[i] === "id" ? "_id" : fields[i]] = 1;
-    }
-
-    const query = this._query.find(
-      this._filter,
-      {
-        ...this._options,
-        fields: _fields,
+    if (fields) this._pipeline.push({
+      $project: {
+        _id: 0,
+        ...fields.reduce((prev, cur) => ({
+          ...prev,
+          [cur === "id" ? "_id" : cur]: 1,
+        }), {}),
       },
-    ).map(this._prepare);
+    });
 
-    if (callback) return query.toArray(callback);
-
-    return await query.toArray();
+    return this._aggregate().toArray(callback as any);
   }
 
   async first(fields?: string[] | mongodb.MongoCallback<T>, callback?: mongodb.MongoCallback<T>) {
@@ -359,78 +348,72 @@ class Driver<T = any> extends Base<T> {
       fields = undefined;
     }
 
-    const _fields: { [field: string]: 1 | 0 } = {};
+    if (fields) this._pipeline.push({
+      $project: {
+        _id: 0,
+        ...fields.reduce((prev, cur) => ({
+          ...prev,
+          [cur === "id" ? "_id" : cur]: 1,
+        }), {}),
+      },
+    });
 
-    if (fields) {
-      _fields._id = 0;
+    this.limit(1);
 
-      const length = fields.length;
-      let i = 0;
+    // @ts-ignore:next-line
+    if (callback) return this._aggregate().toArray((err, res) => err ? callback(err, res) : callback(err, res[0]));
 
-      for (; i < length; i++)
-        _fields[fields[i] === "id" ? "_id" : fields[i]] = 1;
-    }
-
-    const options = {
-      ...this._options,
-      fields: _fields,
-    };
-
-    if (callback)
-      return this._query.findOne(
-        this._filter,
-        options,
-        (err, res) => (callback as mongodb.MongoCallback<T>)(err, this._prepare(res)),
-      );
-
-    return this._prepare(await this._query.findOne(this._filter, options));
+    return (await this._aggregate().toArray())[0];
   }
 
-  async value(field: string, callback?: mongodb.MongoCallback<any>) {
-    const keys = field.split(".");
-
-    const query = this._query.find(
-      this._filter,
-      {
-        ...this._options,
-        fields: {
-          _id: 0,
-          [field === "id" ? "_id" : field]: 1,
-        },
+  value(field: string, callback?: mongodb.MongoCallback<any>) {
+    this._pipeline.push({
+      $project: {
+        _id: 0,
+        [field === "id" ? "_id" : field]: 1,
       },
-    ).map(this._prepare).map((item: any) => keys.reduce((prev, key) => prev[key], item));
+    });
 
-    if (callback) return query.toArray(callback);
-
-    return await query.toArray();
+    // FIXME the mongodb typing has a bug i think
+    return (this._aggregate() as any)
+      .map((item: any) => field.split(".").reduce((prev, key) => prev[key], item))
+      .toArray(callback);
   }
 
   async max(field: string, callback?: mongodb.MongoCallback<any>) {
-    const keys = field.split(".");
+    this._pipeline.push({ $group: { _id: null, max: { $max: `$${field}` } } });
 
-    this.orderBy(field, "desc");
+    const query = this._aggregate();
 
     if (callback)
-      return this.first([field], (err, res) => callback(err, keys.reduce((prev: any, key) => prev[key], res)));
+      return query.toArray((err, res) => {
+        if (err) return callback(err, res);
 
-    return keys.reduce((prev: any, key) => prev[key], (await this.first([field])));
+        callback(err, utils.array.first(res).max);
+      });
+
+    return utils.array.first((await query.toArray())).max;
   }
 
   async min(field: string, callback?: mongodb.MongoCallback<any>) {
-    const keys = field.split(".");
+    this._pipeline.push({ $group: { _id: null, min: { $min: `$${field}` } } });
 
-    this.orderBy(field, "asc");
+    const query = this._aggregate();
 
     if (callback)
-      return this.first([field], (err, res) => callback(err, keys.reduce((prev: any, key) => prev[key], res)));
+      return query.toArray((err, res) => {
+        if (err) return callback(err, res);
 
-    return keys.reduce((prev: any, key) => prev[key], (await this.first([field])));
+        callback(err, utils.array.first(res).min);
+      });
+
+    return utils.array.first((await query.toArray())).min;
   }
 
   async avg(field: string, callback?: mongodb.MongoCallback<any>) {
-    const query = this._aggregate([
-      { $group: { _id: null, avg: { $avg: `$${field}` } } },
-    ]);
+    this._pipeline.push({ $group: { _id: null, avg: { $avg: `$${field}` } } });
+
+    const query = this._aggregate();
 
     if (callback)
       return query.toArray((err, res) => {
@@ -445,6 +428,8 @@ class Driver<T = any> extends Base<T> {
   /********************************** Inserts *********************************/
 
   async insert(item: T | T[], callback?: mongodb.MongoCallback<number>) {
+    if (this._getting) throw new Error("Unexpected call to insert after querying");
+
     if (Array.isArray(item)) {
       if (callback)
         return this._query.insertMany(item, (err, res) => callback(err, res.insertedCount));
@@ -459,6 +444,8 @@ class Driver<T = any> extends Base<T> {
   }
 
   async insertGetId(item: T, callback?: mongodb.MongoCallback<mongodb.ObjectId>) {
+    if (this._getting) throw new Error("Unexpected call to insert after querying");
+
     if (callback)
       return this._query.insertOne(item, (err, res) => callback(err, res.insertedId));
 
