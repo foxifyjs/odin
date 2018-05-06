@@ -80,7 +80,7 @@ class Driver<T = any> extends Base<T> {
         }@`;
 
     uri += `${
-      connection.host || "localhost"
+      connection.host || "127.0.0.1"
       }:${
       connection.port || "27017"
       }/${

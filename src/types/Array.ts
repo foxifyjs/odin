@@ -9,7 +9,7 @@ class TypeArray extends TypeAny {
   protected _type = "Array";
 
   protected _base(v: any): string | null {
-    if (array.isInstance(v)) return null;
+    if (Array.isArray(v)) return null;
 
     return "Must be an array";
   }

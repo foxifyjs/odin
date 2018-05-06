@@ -11,9 +11,9 @@ import TypeString from "./String";
 declare module Type {}
 
 class Type {
-  static get Any() {
-    return new TypeAny();
-  }
+  // static get Any() {
+  //   return new TypeAny();
+  // }
 
   static get Array() {
     return new TypeArray();

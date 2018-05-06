@@ -31,7 +31,7 @@ module ModelConstructor {
 
 interface ModelConstructor<T = any> extends QueryBuilder {
   readonly prototype: Model;
-  constructor: typeof Model;
+  // constructor: typeof Model;
 
   Types: typeof Types;
   connections: typeof connections;
@@ -85,6 +85,8 @@ export class Model<T = any> implements QueryInstance<T> {
   attributes: ModelConstructor.Document;
 
   constructor(document: ModelConstructor.Document = {}) {
+    if (document.id) this._isNew = true;
+
     this.attributes = document;
   }
 }
