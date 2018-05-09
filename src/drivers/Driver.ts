@@ -8,7 +8,7 @@ module Driver {
 
   export type Order = "asc" | "desc";
 
-  export type Id = string | number | mongodb.ObjectId;
+  export type Id = number | mongodb.ObjectId;
 }
 
 abstract class Driver<T = any> {
@@ -21,6 +21,10 @@ abstract class Driver<T = any> {
   }
 
   abstract table(table: string): this;
+
+  /*********************************** Joins **********************************/
+
+  abstract join(table: string, localKey?: string, foreignKey?: string, as?: string): this;
 
   /******************************* Where Clauses ******************************/
 

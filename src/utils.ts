@@ -36,4 +36,10 @@ export const getGetterName = (key: string) => `get${exports.string.capitalize(ex
 
 export const getSetterName = (key: string) => `set${exports.string.capitalize(exports.string.camelCase(key))}Attribute`;
 
-export const makeTableName = (name: string) => `${exports.string.snakeCase(name)}s`;
+export const makeTableName = (name: string) => {
+  const key = exports.string.snakeCase(name).split("_");
+
+  key.push(exports.string.pluralize(key.pop() as string));
+
+  return key.join("_");
+};

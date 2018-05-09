@@ -1,10 +1,14 @@
-import { getConnection, Connection } from "./connections";
-import { Base as Driver, MongoDB } from "./drivers";
+import { Connection, getConnection } from "./connections";
+import { Base as Driver } from "./drivers";
 import { function as func } from "./utils";
 
 module DB { }
 
 interface DB<T = any> {
+  /*********************************** Joins **********************************/
+
+  join(table: string, localKey?: string, foreignKey?: string, as?: string): this;
+
   /******************************* Where Clauses ******************************/
 
   where(field: string, value: any): this;
@@ -116,6 +120,14 @@ class DB<T = any> {
 
   table(table: string) {
     this._query = this._query.table.call(this._query, ...arguments);
+
+    return this;
+  }
+
+  /*********************************** Joins **********************************/
+
+  join(table: string, localKey?: string, foreignKey?: string, as?: string) {
+    this._query = this._query.join.call(this._query, ...arguments);
 
     return this;
   }

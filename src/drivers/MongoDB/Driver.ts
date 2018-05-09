@@ -1,8 +1,8 @@
-import * as mongodb from "mongodb";
 import * as deasync from "deasync";
-import Base from "../Driver";
+import * as mongodb from "mongodb";
 import { connect } from "../../connections";
 import * as utils from "../../utils";
+import Base from "../Driver";
 
 module Driver {
   export interface Filters<T = any> {
@@ -13,6 +13,8 @@ module Driver {
 }
 
 interface Driver<T = any> {
+  /*********************************** Joins **********************************/
+
   /******************************* Where Clauses ******************************/
 
   /******************** Ordering, Grouping, Limit & Offset ********************/
@@ -134,6 +136,37 @@ class Driver<T = any> extends Base<T> {
       throw new Error("Can't change table name in the middle of query");
 
     this._query = ((this._query as any) as mongodb.Db).collection(table);
+
+    return this;
+  }
+
+  /*********************************** Joins **********************************/
+
+  join(
+    table: string,
+    localKey?: string,
+    foreignKey: string = "id",
+    as: string = table,
+  ) {
+    this._getting = true;
+
+    if (!localKey) {
+      const key = table.split("_");
+
+      key.push(`${utils.string.singularize(key.pop() as string)}_id`);
+
+      localKey = key.join("_");
+    }
+
+    this._pipeline.push({
+      $lookup:
+        {
+          from: table,
+          localField: localKey === "id" ? "_id" : localKey,
+          foreignField: foreignKey === "id" ? "_id" : foreignKey,
+          as,
+        },
+    });
 
     return this;
   }
@@ -330,13 +363,10 @@ class Driver<T = any> extends Base<T> {
     }
 
     if (fields) this._pipeline.push({
-      $project: {
-        _id: 0,
-        ...fields.reduce((prev, cur) => ({
-          ...prev,
-          [cur === "id" ? "_id" : cur]: 1,
-        }), {}),
-      },
+      $project: fields.reduce((prev, cur) => ({
+        ...prev,
+        [cur === "id" ? "_id" : cur]: 1,
+      }), { _id: 0 }),
     });
 
     return this._aggregate().toArray(callback as any);
@@ -349,13 +379,10 @@ class Driver<T = any> extends Base<T> {
     }
 
     if (fields) this._pipeline.push({
-      $project: {
-        _id: 0,
-        ...fields.reduce((prev, cur) => ({
-          ...prev,
-          [cur === "id" ? "_id" : cur]: 1,
-        }), {}),
-      },
+      $project: fields.reduce((prev, cur) => ({
+        ...prev,
+        [cur === "id" ? "_id" : cur]: 1,
+      }), { _id: 0 }),
     });
 
     this.limit(1);
