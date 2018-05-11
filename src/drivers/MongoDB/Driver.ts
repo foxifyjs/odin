@@ -116,15 +116,63 @@ class Driver<T = any> extends Base<T> {
     return filter;
   }
 
-  private _prepare(document: any): any {
-    if (document && document._id) {
+  private _prepareToRead = (document: any): any => {
+    if (
+      !document ||
+      !utils.object.isInstance(document) ||
+      utils.date.isInstance(document)
+    ) return document;
+
+    if (Array.isArray(document)) return document.map(this._prepareToRead);
+
+    if ((document as any)._id) {
       document = {
-        id: document._id,
+        id: (document as any)._id,
         ...document,
       };
 
       delete document._id;
     }
+
+    // return document;
+    return utils.object.map(
+      document,
+      (value, key) => /(_id$|^id$)/.test(key as string) ?
+        value :
+        this._prepareToRead(value),
+    );
+  }
+
+  private _prepareToStore = (document: any): any => {
+    if (
+      !document ||
+      !utils.object.isInstance(document) ||
+      utils.date.isInstance(document)
+    ) return document;
+
+    if (Array.isArray(document)) return document.map(this._prepareToStore);
+
+    if ((document as any).id) {
+      document = {
+        _id: (document as any).id,
+        ...document,
+      };
+
+      delete document.id;
+    }
+
+    const ObjectId = mongodb.ObjectId;
+
+    document = utils.object.map(
+      document,
+      (value, key) => /_id$/.test(key as string) ?
+        (
+          ObjectId.isValid(value) ?
+            new ObjectId(value) :
+            this._prepareToStore(value)
+        ) :
+        this._prepareToStore(value),
+    );
 
     return document;
   }
@@ -320,7 +368,7 @@ class Driver<T = any> extends Base<T> {
   private _aggregate(options?: mongodb.CollectionAggregationOptions) {
     // FIXME the mongodb typing has a bug i think
     return (this._query.aggregate([{ $match: this._filter }, ...this._pipeline], options) as any)
-      .map(this._prepare) as mongodb.AggregationCursor;
+      .map(this._prepareToRead) as mongodb.AggregationCursor;
   }
 
   async exists(callback?: mongodb.MongoCallback<boolean>) {
@@ -358,14 +406,14 @@ class Driver<T = any> extends Base<T> {
       fields = undefined;
     }
 
+    this.limit(1);
+
     if (fields) this._pipeline.push({
       $project: fields.reduce((prev, cur) => ({
         ...prev,
         [cur === "id" ? "_id" : cur]: 1,
       }), { _id: 0 }),
     });
-
-    this.limit(1);
 
     // @ts-ignore:next-line
     if (callback) return this._aggregate().toArray((err, res) => err ? callback(err, res) : callback(err, res[0]));
@@ -435,6 +483,8 @@ class Driver<T = any> extends Base<T> {
   /********************************** Inserts *********************************/
 
   async insert(item: T | T[], callback?: mongodb.MongoCallback<number>) {
+    item = this._prepareToStore(item);
+
     if (Array.isArray(item)) {
       if (callback)
         return this._query.insertMany(item, (err, res) => callback(err, res.insertedCount));
@@ -449,6 +499,8 @@ class Driver<T = any> extends Base<T> {
   }
 
   async insertGetId(item: T, callback?: mongodb.MongoCallback<mongodb.ObjectId>) {
+    item = this._prepareToStore(item);
+
     if (callback)
       return this._query.insertOne(item, (err, res) => callback(err, res.insertedId));
 
@@ -469,7 +521,7 @@ class Driver<T = any> extends Base<T> {
 
   async update(update: T, callback?: mongodb.MongoCallback<number>) {
     const _update = {
-      $set: update,
+      $set: this._prepareToStore(update),
     };
 
     if (callback)

@@ -3,7 +3,7 @@ import * as DB from "../../../DB";
 
 class HasMany<T = any> extends Base {
     load(query: DB<T>, as: string) {
-        return query.join(this._model.toString(), this._localKey, this._foreignKey, as);
+        return query.join(this.relation.toString(), this.localKey, this.foreignKey, as);
     }
 }
 

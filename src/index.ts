@@ -105,7 +105,6 @@ export class Model<T = any> implements QueryInstance<T>, Relational {
     if (!document.id) this._isNew = true;
 
     this._setAttributes(document);
-    this._setRelations();
   }
 
   private _setAttributes(document: ModelConstructor.Document) {
@@ -139,26 +138,6 @@ export class Model<T = any> implements QueryInstance<T>, Relational {
       if (!regex) return;
 
       utils.define(this, "get", utils.string.snakeCase(regex[1]), (this as any)[key]);
-    });
-  }
-
-  private _setRelations() {
-    Object.getOwnPropertyNames(this.constructor.prototype).forEach((key) => {
-      if (key === "constructor") return;
-
-      if (/^[gs]et([A-Z].*)Attribute$/.test(key)) return;
-
-      const proto = (this.constructor.prototype as any)[key];
-
-      if (!utils.function.isInstance(proto)) return;
-
-      try {
-        if (!(proto() instanceof Relation)) return;
-
-        // TODO set Eager Loader
-      } catch {
-        return;
-      }
     });
   }
 

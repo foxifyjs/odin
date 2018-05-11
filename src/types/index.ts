@@ -1,30 +1,20 @@
-import TypeAny from "./Any";
 import TypeArray from "./Array";
 import TypeBoolean from "./Boolean";
-import TypeBuffer from "./Buffer";
 import TypeDate from "./Date";
 import TypeNumber from "./Number";
 import TypeObject from "./Object";
 import TypeObjectId from "./ObjectId";
 import TypeString from "./String";
 
-declare module Type {}
+declare module Type { }
 
 class Type {
-  // static get Any() {
-  //   return new TypeAny();
-  // }
-
   static get Array() {
     return new TypeArray();
   }
 
   static get Boolean() {
     return new TypeBoolean();
-  }
-
-  static get Buffer() {
-    return new TypeBuffer();
   }
 
   static get Date() {
