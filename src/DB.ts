@@ -106,12 +106,14 @@ interface DB<T = any> {
 class DB<T = any> {
   private _query: Driver<T>;
 
-  constructor(connection: Connection) {
-    this._query = connection();
+  private _getting = false;
+
+  constructor(connection: string) {
+    this._query = getConnection(connection)();
   }
 
   static connection(connection: string) {
-    return new this(getConnection(connection));
+    return new this(connection);
   }
 
   static table(table: string) {
@@ -127,6 +129,8 @@ class DB<T = any> {
   /*********************************** Joins **********************************/
 
   join(table: string, localKey?: string, foreignKey?: string, as?: string) {
+    this._getting = true;
+
     this._query = this._query.join.call(this._query, ...arguments);
 
     return this;
@@ -135,60 +139,80 @@ class DB<T = any> {
   /******************************* Where Clauses ******************************/
 
   where(field: string, operator: Driver.Operator | any, value?: any) {
+    this._getting = true;
+
     this._query = this._query.where.call(this._query, ...arguments);
 
     return this;
   }
 
   orWhere(field: string, operator: Driver.Operator | any, value?: any) {
+    this._getting = true;
+
     this._query = this._query.orWhere.call(this._query, ...arguments);
 
     return this;
   }
 
   whereLike(field: string, value: any) {
+    this._getting = true;
+
     this._query = this._query.whereLike.call(this._query, ...arguments);
 
     return this;
   }
 
   whereNotLike(field: string, value: any) {
+    this._getting = true;
+
     this._query = this._query.whereNotLike.call(this._query, ...arguments);
 
     return this;
   }
 
   whereIn(field: string, values: any[]) {
+    this._getting = true;
+
     this._query = this._query.whereIn.call(this._query, ...arguments);
 
     return this;
   }
 
   whereNotIn(field: string, values: any[]) {
+    this._getting = true;
+
     this._query = this._query.whereNotIn.call(this._query, ...arguments);
 
     return this;
   }
 
   whereBetween(field: string, start: any, end: any) {
+    this._getting = true;
+
     this._query = this._query.whereBetween.call(this._query, ...arguments);
 
     return this;
   }
 
   whereNotBetween(field: string, start: any, end: any) {
+    this._getting = true;
+
     this._query = this._query.whereNotBetween.call(this._query, ...arguments);
 
     return this;
   }
 
   whereNull(field: string) {
+    this._getting = true;
+
     this._query = this._query.whereNull.call(this._query, ...arguments);
 
     return this;
   }
 
   whereNotNull(field: string) {
+    this._getting = true;
+
     this._query = this._query.whereNotNull.call(this._query, ...arguments);
 
     return this;
@@ -197,12 +221,16 @@ class DB<T = any> {
   /******************** Ordering, Grouping, Limit & Offset ********************/
 
   orderBy(field: string, order?: Driver.Order) {
+    this._getting = true;
+
     this._query = this._query.orderBy.call(this._query, ...arguments);
 
     return this;
   }
 
   skip(offset: number) {
+    this._getting = true;
+
     this._query = this._query.skip.call(this._query, ...arguments);
 
     return this;
@@ -213,6 +241,8 @@ class DB<T = any> {
   }
 
   limit(limit: number) {
+    this._getting = true;
+
     this._query = this._query.limit.call(this._query, ...arguments);
 
     return this;
@@ -263,10 +293,14 @@ class DB<T = any> {
   /********************************** Inserts *********************************/
 
   insert(item: T | T[], callback?: Driver.Callback<number>) {
+    if (this._getting) throw new Error("Unexpected call to 'insert' after querying");
+
     return this._query.insert.call(this._query, ...arguments);
   }
 
   insertGetId(item: T, callback?: Driver.Callback<Driver.Id>) {
+    if (this._getting) throw new Error("Unexpected call to 'insertGetId' after querying");
+
     return this._query.insertGetId.call(this._query, ...arguments);
   }
 

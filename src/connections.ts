@@ -10,14 +10,14 @@ const setConnection = (name: string, connection: Connection) => (global as any)[
 
 const connect = (connection: connect.Connection) => {
   switch (connection.driver) {
-    case "mongodb":
+    case "MongoDB":
       return drivers.MongoDB.Driver.connect(connection);
     default:
       throw new Error("Unknown database driver");
   }
 };
 
-export type Driver = "mongodb";
+export type Driver = "MongoDB";
 export type Query = mongodb.Db;
 
 export type Connection = <T = any>() => drivers.Base<T>;

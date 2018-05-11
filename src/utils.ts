@@ -43,3 +43,21 @@ export const makeTableName = (name: string) => {
 
   return key.join("_");
 };
+
+export const makeTableId = (name: string) => {
+  const key = name.split("_");
+
+  key.push(`${exports.string.singularize(key.pop() as string)}_id`);
+
+  return key.join("_");
+};
+
+export const setObjectValue = (obj: { [key: string]: any }, path: string, value: any) => {
+  const keys = path.split(".");
+  const length = keys.length - 1;
+  let i = 0;
+
+  for (; i < length; i++) obj = obj[keys[i]];
+
+  obj[keys[i]] = value;
+};

@@ -1,9 +1,9 @@
-import * as async from "async";
-import { Base as Driver } from "../drivers";
 import { getConnection } from "../connections";
+import { Base as Driver } from "../drivers";
+import Relation from "../drivers/Relation/Base";
 import ModelConstructor, { Model } from "../index";
-import * as DB from "../DB";
 import Query from "./Query";
+import * as utils from "../utils";
 
 interface QueryBuilder<T = any> {
   where(field: string, value: any): Query<T>;
@@ -82,8 +82,8 @@ interface QueryBuilder<T = any> {
 }
 
 export interface QueryInstance<T = any> {
-    save(): Promise<Model<T>>;
-    save(callback: Driver.Callback<Model<T>>): void;
+  save(): Promise<Model<T>>;
+  save(callback: Driver.Callback<Model<T>>): void;
 }
 
 class QueryBuilder {
@@ -94,8 +94,38 @@ class QueryBuilder {
 
   attributes!: ModelConstructor.Document;
 
-  static query() {
-    return new Query(this as any, getConnection(this.connection)).table(this._table);
+  static query(relations?: Array<{ query: Relation, name: string }>) {
+    return new Query(this as any, relations).table(this._table);
+  }
+
+  /****************************** With Relations ******************************/
+
+  static with(...relations: string[]) {
+    if (relations.length === 0)
+      throw new TypeError("Expected at least one 'relation', got none");
+
+    return this.query(relations.map((name) => {
+      let query = (this.prototype as any)[name] as any;
+
+      if (!utils.function.isInstance(query))
+        throw new Error(`Relation '${name}' does not exist on '${this.name}' Model`);
+
+      query = query();
+
+      if (!(query instanceof Relation))
+        throw new Error(`'${name}' is not a relation`);
+
+      return {
+        query,
+        name,
+      };
+    }));
+  }
+
+  /*********************************** Joins **********************************/
+
+  static join(table: string, localKey?: string, foreignKey?: string, as?: string) {
+    return this.query().join(table, localKey, foreignKey, as);
   }
 
   /******************************* Where Clauses ******************************/
@@ -225,10 +255,10 @@ class QueryBuilder {
 
     if (callback)
       return query.update(this.attributes, (err, res) => {
-          if (err) return callback(err, res);
+        if (err) return callback(err, res);
 
-          (this.constructor as typeof QueryBuilder).find(this.attributes.id as Driver.Id, callback);
-        });
+        (this.constructor as typeof QueryBuilder).find(this.attributes.id as Driver.Id, callback);
+      });
 
     await query.update(this.attributes);
 

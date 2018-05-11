@@ -1,7 +1,7 @@
 import * as async from "async";
 import * as DB from "../DB";
-import { Connection } from "../connections";
 import { Base as Driver } from "../drivers";
+import Relation from "../drivers/Relation/Base";
 import ModelConstructor, { Model } from "../index";
 
 // @ts-ignore:next-line
@@ -19,10 +19,12 @@ interface Query<T = any> extends DB<T> {
 class Query<T = any> extends DB<T> {
   protected _model: ModelConstructor;
 
-  constructor(model: ModelConstructor, connection: Connection) {
-    super(connection);
+  constructor(model: ModelConstructor, relations: Array<{ query: Relation, name: string }> = []) {
+    super(model.connection);
 
     this._model = model;
+
+    relations.map((relation) => relation.query.load(this, relation.name));
   }
 
   // @ts-ignore:next-line

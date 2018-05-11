@@ -94,21 +94,19 @@ class Driver<T = any> extends Base<T> {
     return () => new this(server.db(connection.database));
   }
 
-  get driver(): "mongodb" {
-    return "mongodb";
+  get driver(): "MongoDB" {
+    return "MongoDB";
   }
 
   protected _query!: mongodb.Collection;
 
-  protected _getting = false;
-
-  private _filters: Driver.Filters = {
+  protected _filters: Driver.Filters = {
     $and: [],
   };
 
   private _pipeline: object[] = [];
 
-  private get _filter() {
+  protected get _filter() {
     const filter = {
       ...this._filters,
     };
@@ -144,20 +142,10 @@ class Driver<T = any> extends Base<T> {
 
   join(
     table: string,
-    localKey?: string,
+    localKey: string = utils.makeTableId(table),
     foreignKey: string = "id",
     as: string = table,
   ) {
-    this._getting = true;
-
-    if (!localKey) {
-      const key = table.split("_");
-
-      key.push(`${utils.string.singularize(key.pop() as string)}_id`);
-
-      localKey = key.join("_");
-    }
-
     this._pipeline.push({
       $lookup:
         {
@@ -174,8 +162,6 @@ class Driver<T = any> extends Base<T> {
   /******************************* Where Clauses ******************************/
 
   private _push_filter(operator: "and" | "or", value: any) {
-    this._getting = true;
-
     const filters = { ...this._filters };
 
     if (operator === "and" && filters.$or) {
@@ -312,24 +298,18 @@ class Driver<T = any> extends Base<T> {
   /******************** Ordering, Grouping, Limit & Offset ********************/
 
   orderBy(field: string, order?: Base.Order) {
-    this._getting = true;
-
     this._pipeline.push({ $sort: { [field]: order === "desc" ? -1 : 1 } });
 
     return this;
   }
 
   skip(offset: number) {
-    this._getting = true;
-
     this._pipeline.push({ $skip: offset });
 
     return this;
   }
 
   limit(limit: number) {
-    this._getting = true;
-
     this._pipeline.push({ $limit: limit });
 
     return this;
@@ -455,8 +435,6 @@ class Driver<T = any> extends Base<T> {
   /********************************** Inserts *********************************/
 
   async insert(item: T | T[], callback?: mongodb.MongoCallback<number>) {
-    if (this._getting) throw new Error("Unexpected call to insert after querying");
-
     if (Array.isArray(item)) {
       if (callback)
         return this._query.insertMany(item, (err, res) => callback(err, res.insertedCount));
@@ -471,8 +449,6 @@ class Driver<T = any> extends Base<T> {
   }
 
   async insertGetId(item: T, callback?: mongodb.MongoCallback<mongodb.ObjectId>) {
-    if (this._getting) throw new Error("Unexpected call to insert after querying");
-
     if (callback)
       return this._query.insertOne(item, (err, res) => callback(err, res.insertedId));
 

@@ -9,6 +9,8 @@ module Driver {
   export type Order = "asc" | "desc";
 
   export type Id = number | mongodb.ObjectId;
+
+  export type WhereQuery<T = any> = (query: Driver<T>) => Driver<T>;
 }
 
 abstract class Driver<T = any> {
@@ -28,11 +30,11 @@ abstract class Driver<T = any> {
 
   /******************************* Where Clauses ******************************/
 
-  // TODO where query
-
+  // abstract where(query: Driver.WhereQuery): this;
   abstract where(field: string, value: any): this;
   abstract where(field: string, operator: Driver.Operator, value: any): this;
 
+  // abstract orWhere(query: Driver.WhereQuery): this;
   abstract orWhere(field: string, value: any): this;
   abstract orWhere(field: string, operator: Driver.Operator, value: any): this;
 
