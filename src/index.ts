@@ -1,7 +1,7 @@
 import * as DB from "./DB";
 import QueryBuilder, { QueryInstance } from "./base/QueryBuilder";
 import Relational from "./base/Relational";
-import connections, { connect, getConnection } from "./connections";
+import connections, { connect, getConnection, Driver as TDriver } from "./connections";
 import { Base as Driver } from "./drivers";
 import Relation from "./drivers/Relation/Base";
 import * as Types from "./types";
@@ -37,14 +37,17 @@ interface ModelConstructor<T = any> extends QueryBuilder {
 
   constructor: typeof Model;
 
-  new <T>(document?: ModelConstructor.Document): Model<T>;
-
   Types: typeof Types;
   connections: typeof connections;
 
   connection: ModelConstructor.Connection;
   table?: string;
   timestamps?: boolean;
+
+  readonly driver: TDriver;
+  readonly filename: string;
+
+  new <T>(document?: ModelConstructor.Document): Model<T>;
 }
 
 export interface Model<T = any> extends QueryInstance<T>, Relational {
@@ -71,10 +74,6 @@ export class Model<T = any> implements QueryInstance<T>, Relational {
   static UPDATED_AT = "updated_at";
   static DELETED_AT = "deleted_at";
 
-  static toString() {
-    return this._table;
-  }
-
   private static get _table() {
     return this.table || utils.makeTableName(this.name);
   }
@@ -95,6 +94,18 @@ export class Model<T = any> implements QueryInstance<T>, Relational {
       schema[this.DELETED_AT] = this.Types.Date;
 
     return schema;
+  }
+
+  static  get filename() {
+    return __filename.replace(new RegExp(`(^${utils.root.path}|\.js$)`, "g"), "");
+  }
+
+  static get driver() {
+    return getConnection(this.connection).driver;
+  }
+
+  static toString() {
+    return this._table;
   }
 
   private _isNew: boolean = false;

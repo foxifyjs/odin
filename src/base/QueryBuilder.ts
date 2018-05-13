@@ -1,9 +1,8 @@
-import { getConnection } from "../connections";
 import { Base as Driver } from "../drivers";
 import Relation from "../drivers/Relation/Base";
 import ModelConstructor, { Model } from "../index";
-import Query from "./Query";
 import * as utils from "../utils";
+import Query from "./Query";
 
 interface QueryBuilder<T = any> {
   where(field: string, value: any): Query<T>;
@@ -200,6 +199,10 @@ class QueryBuilder {
 
   static all(callback?: Driver.Callback<any>) {
     return this.query().get(callback);
+  }
+
+  static first(callback?: Driver.Callback<any>) {
+    return this.query().first(callback);
   }
 
   static find(ids: Driver.Id | Driver.Id[], callback?: Driver.Callback<any>) {

@@ -20,7 +20,7 @@ const connect = (connection: connect.Connection) => {
 export type Driver = "MongoDB";
 export type Query = mongodb.Db;
 
-export type Connection = <T = any>() => drivers.Base<T>;
+export type Connection = <T = any, D extends drivers.Base<T> = drivers.Base<T>>() => D;
 
 export namespace connect {
   export interface Connection {
@@ -37,10 +37,12 @@ export namespace connect {
   }
 }
 
-export const getConnection = (name: string): Connection => (global as any)[CONNECTIONS_GLOBAL][name];
+export const getConnection = <T = any, D extends drivers.Base<T> = drivers.Base<T>>(name: string): D =>
+  (global as any)[CONNECTIONS_GLOBAL][name]();
 
 export default (connections: connect.Connections) => {
   utils.object.map(connections, (connection: connect.Connection, name) => {
-    if (!getConnection(name as string)) setConnection(name as string, connect(connection));
+    if (!(global as any)[CONNECTIONS_GLOBAL][name])
+      setConnection(name as string, connect(connection) as any);
   });
 };

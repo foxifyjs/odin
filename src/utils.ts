@@ -1,4 +1,10 @@
+import * as rootPath from "app-root-path";
+
 export * from "prototyped.js/es6/methods";
+
+export const root = {
+  path: rootPath.path,
+};
 
 export function mixins(...baseCtors: any[]) {
   return (derivedCtor: any) => {

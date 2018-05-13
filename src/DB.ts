@@ -103,13 +103,13 @@ interface DB<T = any> {
   delete(callback: Driver.Callback<number>): void;
 }
 
-class DB<T = any> {
-  private _query: Driver<T>;
+class DB<T = any, D extends Driver<T> = any> {
+  private _query: D;
 
   private _getting = false;
 
   constructor(connection: string) {
-    this._query = getConnection(connection)();
+    this._query = getConnection(connection);
   }
 
   static connection(connection: string) {
@@ -117,11 +117,27 @@ class DB<T = any> {
   }
 
   static table(table: string) {
-    return this.connection("default").table(table);
+    let connection = "default";
+
+    const keys = table.split(".");
+    if (keys.length === 2) {
+      connection = keys[0];
+      table = keys[1];
+    }
+
+    return this.connection(connection).table(table);
   }
 
   table(table: string) {
     this._query = this._query.table.call(this._query, ...arguments);
+
+    return this;
+  }
+
+  /********************************** Driver **********************************/
+
+  driver(fn: (query: D) => D) {
+    this._query = fn(this._query);
 
     return this;
   }

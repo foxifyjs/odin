@@ -71,7 +71,7 @@ interface Driver<T = any> {
 }
 
 class Driver<T = any> extends Base<T> {
-  static connect(connection: connect.Connection): <T = any>() => Driver<T> {
+  static connect(connection: connect.Connection) {
     let uri = "mongodb://";
 
     if (connection.user && connection.password)
@@ -186,6 +186,14 @@ class Driver<T = any> extends Base<T> {
     return this;
   }
 
+  /*********************************** Extra **********************************/
+
+  pipeline(...objs: object[]) {
+    this._pipeline.push(...objs);
+
+    return this;
+  }
+
   /*********************************** Joins **********************************/
 
   join(
@@ -194,7 +202,7 @@ class Driver<T = any> extends Base<T> {
     foreignKey: string = "id",
     as: string = table,
   ) {
-    this._pipeline.push({
+    return this.pipeline({
       $lookup:
         {
           from: table,
@@ -203,8 +211,6 @@ class Driver<T = any> extends Base<T> {
           as,
         },
     });
-
-    return this;
   }
 
   /******************************* Where Clauses ******************************/
@@ -346,21 +352,15 @@ class Driver<T = any> extends Base<T> {
   /******************** Ordering, Grouping, Limit & Offset ********************/
 
   orderBy(field: string, order?: Base.Order) {
-    this._pipeline.push({ $sort: { [field]: order === "desc" ? -1 : 1 } });
-
-    return this;
+    return this.pipeline({ $sort: { [field]: order === "desc" ? -1 : 1 } });
   }
 
   skip(offset: number) {
-    this._pipeline.push({ $skip: offset });
-
-    return this;
+    return this.pipeline({ $skip: offset });
   }
 
   limit(limit: number) {
-    this._pipeline.push({ $limit: limit });
-
-    return this;
+    return this.pipeline({ $limit: limit });
   }
 
   /*********************************** Read ***********************************/
@@ -390,7 +390,7 @@ class Driver<T = any> extends Base<T> {
       fields = undefined;
     }
 
-    if (fields) this._pipeline.push({
+    if (fields) this.pipeline({
       $project: fields.reduce((prev, cur) => ({
         ...prev,
         [cur === "id" ? "_id" : cur]: 1,
@@ -408,7 +408,7 @@ class Driver<T = any> extends Base<T> {
 
     this.limit(1);
 
-    if (fields) this._pipeline.push({
+    if (fields) this.pipeline({
       $project: fields.reduce((prev, cur) => ({
         ...prev,
         [cur === "id" ? "_id" : cur]: 1,
@@ -422,62 +422,57 @@ class Driver<T = any> extends Base<T> {
   }
 
   value(field: string, callback?: mongodb.MongoCallback<any>) {
-    this._pipeline.push({
+    // FIXME the mongodb typing has a bug i think
+    return (this.pipeline({
       $project: {
         _id: 0,
         [field === "id" ? "_id" : field]: 1,
       },
-    });
-
-    // FIXME the mongodb typing has a bug i think
-    return (this._aggregate() as any)
+    })._aggregate() as any)
       .map((item: any) => field.split(".").reduce((prev, key) => prev[key], item))
       .toArray(callback);
   }
 
   async max(field: string, callback?: mongodb.MongoCallback<any>) {
-    this._pipeline.push({ $group: { _id: null, max: { $max: `$${field}` } } });
-
-    const query = this._aggregate();
+    const query = this.pipeline({ $group: { _id: null, max: { $max: `$${field}` } } })
+      ._aggregate();
 
     if (callback)
       return query.toArray((err, res) => {
         if (err) return callback(err, res);
 
-        callback(err, utils.array.first(res).max);
+        callback(err, res[0].max);
       });
 
-    return utils.array.first((await query.toArray())).max;
+    return (await query.toArray())[0].max;
   }
 
   async min(field: string, callback?: mongodb.MongoCallback<any>) {
-    this._pipeline.push({ $group: { _id: null, min: { $min: `$${field}` } } });
-
-    const query = this._aggregate();
+    const query = this.pipeline({ $group: { _id: null, min: { $min: `$${field}` } } })
+      ._aggregate();
 
     if (callback)
       return query.toArray((err, res) => {
         if (err) return callback(err, res);
 
-        callback(err, utils.array.first(res).min);
+        callback(err, res[0].min);
       });
 
-    return utils.array.first((await query.toArray())).min;
+    return (await query.toArray())[0].min;
   }
 
   async avg(field: string, callback?: mongodb.MongoCallback<any>) {
-    this._pipeline.push({ $group: { _id: null, avg: { $avg: `$${field}` } } });
-
-    const query = this._aggregate();
+    const query = this.pipeline({ $group: { _id: null, avg: { $avg: `$${field}` } } })
+      ._aggregate();
 
     if (callback)
       return query.toArray((err, res) => {
         if (err) return callback(err, res);
 
-        callback(err, utils.array.first(res).avg);
+        callback(err, res[0].avg);
       });
 
-    return utils.array.first((await query.toArray())).avg;
+    return (await query.toArray())[0].avg;
   }
 
   /********************************** Inserts *********************************/

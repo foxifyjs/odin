@@ -15,8 +15,8 @@ abstract class Relation {
     constructor(
         model: Model,
         relation: Model,
-        localKey: string = utils.makeTableId(relation.toString()),
-        foreignKey: string = "id",
+        localKey: string,
+        foreignKey: string,
     ) {
         this._model = model;
         this._relation = relation;
@@ -25,7 +25,7 @@ abstract class Relation {
     }
 
     protected get _query(): Driver {
-        return getConnection(this.relation.connection)();
+        return getConnection(this.relation.connection);
     }
 
     get model() {

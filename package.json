@@ -25,6 +25,7 @@
   },
   "keywords": [],
   "devDependencies": {
+    "@types/app-root-path": "^1.2.4",
     "@types/async": "^2.0.49",
     "@types/deasync": "^0.1.0",
     "@types/node": "^10.0.8",
@@ -36,6 +37,7 @@
   },
   "dependencies": {
     "@types/mongodb": "^3.0.18",
+    "app-root-path": "^2.0.1",
     "async": "^2.6.0",
     "deasync": "^0.1.13",
     "mongodb": "^3.0.8",
