@@ -47,6 +47,8 @@ interface ModelConstructor<T = any> extends QueryBuilder {
   readonly driver: TDriver;
   readonly filename: string;
 
+  validate<T = object>(document: T, updating?: boolean): T;
+
   new <T>(document?: ModelConstructor.Document): Model<T>;
 }
 
@@ -96,7 +98,7 @@ export class Model<T = any> implements QueryInstance<T>, Relational {
     return schema;
   }
 
-  static  get filename() {
+  static get filename() {
     return __filename.replace(new RegExp(`(^${utils.root.path}|\.js$)`, "g"), "");
   }
 
@@ -108,52 +110,8 @@ export class Model<T = any> implements QueryInstance<T>, Relational {
     return this._table;
   }
 
-  private _isNew: boolean = false;
-
-  attributes: ModelConstructor.Document = {};
-
-  constructor(document: ModelConstructor.Document = {}) {
-    if (!document.id) this._isNew = true;
-
-    this._setAttributes(document);
-  }
-
-  private _setAttributes(document: ModelConstructor.Document) {
-    const schema = this.constructor._schema;
-    const getters: string[] = [];
-    const setters: string[] = [];
-
-    for (const attr in schema) {
-      const getterName = utils.getGetterName(attr);
-      const getter = (this as any)[getterName] || ((origin: any) => origin);
-      utils.define(this, "get", attr, () => getter(this.attributes[attr]));
-      getters.push(getterName);
-
-      const setterName = utils.getSetterName(attr);
-      const setter = (this as any)[setterName] || ((origin: any) => origin);
-      utils.define(this, "set", attr, (value) => this.attributes[attr] = setter(value));
-      setters.push(setterName);
-    }
-
-    utils.object.map(document, (value, key) => {
-      if (setters.indexOf(key as string) === -1) this.attributes[key] = value;
-      else (this as any)[key] = value;
-    });
-
-    // virtual attributes
-    Object.getOwnPropertyNames(this.constructor.prototype).forEach((key) => {
-      if (getters.indexOf(key) !== -1) return;
-
-      const regex = /^get([A-Z].*)Attribute$/.exec(key);
-
-      if (!regex) return;
-
-      utils.define(this, "get", utils.string.snakeCase(regex[1]), (this as any)[key]);
-    });
-  }
-
-  private static _validate(document: Partial<ModelConstructor.Schema>, updating: boolean = false) {
-    const validator = (schema: ModelConstructor.Schema, doc: object) => {
+  static validate<T = object>(document: T, updating: boolean = false) {
+    const validator = (schema: ModelConstructor.Schema, doc: T) => {
       const value: { [key: string]: any } = {};
       let errors: { [key: string]: any } | null = {};
 
@@ -204,6 +162,50 @@ export class Model<T = any> implements QueryInstance<T>, Relational {
     if (validation.errors) throw validation.errors;
 
     return validation.value;
+  }
+
+  private _isNew: boolean = false;
+
+  attributes: ModelConstructor.Document = {};
+
+  constructor(document: ModelConstructor.Document = {}) {
+    if (!document.id) this._isNew = true;
+
+    this._setAttributes(document);
+  }
+
+  private _setAttributes(document: ModelConstructor.Document) {
+    const schema = this.constructor._schema;
+    const getters: string[] = [];
+    const setters: string[] = [];
+
+    for (const attr in schema) {
+      const getterName = utils.getGetterName(attr);
+      const getter = (this as any)[getterName] || ((origin: any) => origin);
+      utils.define(this, "get", attr, () => getter(this.attributes[attr]));
+      getters.push(getterName);
+
+      const setterName = utils.getSetterName(attr);
+      const setter = (this as any)[setterName] || ((origin: any) => origin);
+      utils.define(this, "set", attr, (value) => this.attributes[attr] = setter(value));
+      setters.push(setterName);
+    }
+
+    utils.object.map(document, (value, key) => {
+      if (setters.indexOf(key as string) === -1) this.attributes[key] = value;
+      else (this as any)[key] = value;
+    });
+
+    // virtual attributes
+    Object.getOwnPropertyNames(this.constructor.prototype).forEach((key) => {
+      if (getters.indexOf(key) !== -1) return;
+
+      const regex = /^get([A-Z].*)Attribute$/.exec(key);
+
+      if (!regex) return;
+
+      utils.define(this, "get", utils.string.snakeCase(regex[1]), (this as any)[key]);
+    });
   }
 
   getAttribute(attribute: string) {

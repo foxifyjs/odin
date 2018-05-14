@@ -4,7 +4,11 @@ import { function as func } from "./utils";
 
 module DB { }
 
-interface DB<T = any> {
+interface DB<T = any, D extends Driver<T> = any> {
+  /********************************** Driver **********************************/
+
+  driver(fn: (query: D) => D): this;
+
   /*********************************** Joins **********************************/
 
   join(table: string, localKey?: string, foreignKey?: string, as?: string): this;
