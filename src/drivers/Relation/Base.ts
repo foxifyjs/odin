@@ -7,10 +7,10 @@ import Driver from "../Driver";
 interface Relation { }
 
 abstract class Relation {
-    private _model: Model;
-    private _relation: Model;
-    private _localKey: string;
-    private _foreignKey: string;
+    private readonly _model: Model;
+    private readonly _relation: Model;
+    private readonly _localKey: string;
+    private readonly _foreignKey: string;
 
     constructor(
         model: Model,

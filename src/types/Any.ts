@@ -1,13 +1,11 @@
 import * as async from "async";
-// import GraphQL from "../graphql/Type";
+import GraphQL from "../GraphQL/Type";
 import * as utils from "../utils";
 
-// interface TypeAny extends GraphQL { }
-interface TypeAny { }
+interface TypeAny extends GraphQL { }
 
-// @utils.mixins(GraphQL)
-// class TypeAny implements GraphQL {
-class TypeAny {
+@utils.mixins(GraphQL)
+class TypeAny implements GraphQL {
   protected _type = "Any";
 
   protected _casts: Array<(v: any) => any> = [];

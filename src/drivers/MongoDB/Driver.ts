@@ -138,7 +138,7 @@ class Driver<T = any> extends Base<T> {
     return utils.object.map(
       document,
       (value, key) => /(_id$|^id$)/.test(key as string) ?
-        value :
+        value.toString() :
         this._prepareToRead(value),
     );
   }
@@ -165,7 +165,7 @@ class Driver<T = any> extends Base<T> {
 
     document = utils.object.map(
       document,
-      (value, key) => /_id$/.test(key as string) ?
+      (value, key) => /(_id$|^id$)/.test(key as string) ?
         (
           ObjectId.isValid(value) ?
             new ObjectId(value) :

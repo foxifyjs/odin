@@ -61,7 +61,7 @@
         - [ ] Update operation
         - [ ] Delete operation
 - [x] `schema` validation
-- [ ] `graphql` support
+- [x] `graphql` support
 
 
 ## Support

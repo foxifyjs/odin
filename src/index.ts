@@ -6,6 +6,8 @@ import { Base as Driver } from "./drivers";
 import Relation from "./drivers/Relation/Base";
 import * as Types from "./types";
 import TypeAny from "./types/Any";
+import GraphQLInstance, { GraphQLConstructor } from "./GraphQL/Model";
+import GraphQL from "./GraphQL";
 import * as utils from "./utils";
 
 module ModelConstructor {
@@ -32,7 +34,7 @@ module ModelConstructor {
   }
 }
 
-interface ModelConstructor<T = any> extends QueryBuilder {
+interface ModelConstructor<T = any> extends QueryBuilder, GraphQLConstructor {
   readonly prototype: Model;
 
   constructor: typeof Model;
@@ -56,9 +58,10 @@ export interface Model<T = any> extends QueryInstance<T>, Relational {
   constructor: typeof Model;
 }
 
-@utils.mixins(QueryBuilder, Relational)
-export class Model<T = any> implements QueryInstance<T>, Relational {
+@utils.mixins(QueryBuilder, Relational, GraphQLInstance)
+export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInstance {
   static DB = DB;
+  static GraphQL = GraphQL;
   static Types = Types;
   static connections = connections;
 
@@ -216,13 +219,16 @@ export class Model<T = any> implements QueryInstance<T>, Relational {
     utils.setObjectValue(this.attributes, attribute, value);
   }
 
-  inspect() {
+  toJson() {
     return utils.object.map(this.attributes, (value, attr) => {
       const getter = (this as any)[utils.getGetterName(attr as string)];
 
-      if (!getter) return value;
-      else return getter(value);
+      return (getter ? getter(value) : value);
     });
+  }
+
+  inspect() {
+    return this.toJson();
   }
 }
 
