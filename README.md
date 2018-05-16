@@ -49,19 +49,19 @@
 
 ## TODO
 
-- [ ] `graphql` support
-- [ ] `schema` validation
 - [ ] Drivers
     - [x] `MongoDB`
     - [ ] `MySql`
 - [ ] Relations
+    - [x] `hasMany`
+    - [x] `hasOne`
     - [ ] CRUD operations
         - [ ] Create operation
         - [x] Read operation
         - [ ] Update operation
         - [ ] Delete operation
-    - [x] `hasOne`
-    - [x] `hasMany`
+- [x] `schema` validation
+- [x] `graphql` support
 
 
 ## Support

@@ -28,7 +28,9 @@
     "@types/app-root-path": "^1.2.4",
     "@types/async": "^2.0.49",
     "@types/deasync": "^0.1.0",
+    "@types/graphql": "^0.13.1",
     "@types/node": "^10.0.8",
+    "dotenv": "^5.0.1",
     "fs-readdir-recursive": "^1.1.0",
     "rimraf": "^2.6.2",
     "tslint": "^5.10.0",
@@ -40,6 +42,7 @@
     "app-root-path": "^2.0.1",
     "async": "^2.6.0",
     "deasync": "^0.1.13",
+    "graphql": "^0.13.2",
     "mongodb": "^3.0.8",
     "prototyped.js": "^0.6.0",
     "verifications": "^0.3.0"

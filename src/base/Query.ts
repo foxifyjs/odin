@@ -17,7 +17,7 @@ interface Query<T = any> extends DB<T> {
 }
 
 class Query<T = any> extends DB<T> {
-  protected _model: ModelConstructor;
+  protected readonly _model: ModelConstructor;
 
   constructor(model: ModelConstructor, relations: Array<{ query: Relation, name: string }> = []) {
     super(model.connection);
@@ -66,10 +66,70 @@ class Query<T = any> extends DB<T> {
   }
 
   insert(items: T[], callback?: Driver.Callback<number>) {
-    if (!Array.isArray(items))
-      throw new Error(`Expected 'items' to be an array, '${typeof items}' given`);
+    const error = !Array.isArray(items) &&
+      new Error(`Expected 'items' to be an array, '${typeof items}' given`);
 
-    return super.insert(items, callback);
+    const iterator = (item: T, cb: any) => {
+      try {
+        cb(undefined, this._model.validate(item));
+      } catch (err) {
+        cb(err);
+      }
+    };
+
+    if (callback) {
+      if (error) return callback(error, undefined as any);
+
+      return async.map(
+        // @ts-ignore:next-line
+        items,
+        iterator,
+        (err: any, res: T[]) => {
+          if (err) return callback(err, undefined as any);
+
+          super.insert(res, callback);
+        },
+      );
+    }
+
+    if (error) throw error;
+
+    async.map(
+      // @ts-ignore:next-line
+      items,
+      iterator,
+      (err: any, res: T[]) => {
+        if (err) throw err;
+
+        items = res;
+      },
+    );
+
+    return super.insert(items);
+  }
+
+  insertGetId(item: T, callback?: Driver.Callback<Driver.Id>) {
+    try {
+      item = this._model.validate<T>(item);
+    } catch (err) {
+      if (callback) return callback(err, undefined as any);
+
+      throw err;
+    }
+
+    return super.insertGetId(item, callback);
+  }
+
+  update(update: T, callback?: Driver.Callback<number>) {
+    try {
+      update = this._model.validate<T>(update, true);
+    } catch (err) {
+      if (callback) return callback(err, undefined as any);
+
+      throw err;
+    }
+
+    return super.update(update, callback);
   }
 }
 

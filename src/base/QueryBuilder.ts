@@ -251,21 +251,23 @@ class QueryBuilder {
   /********************************** Updates *********************************/
 
   async save(callback?: Driver.Callback<any>) {
-    if (this._isNew)
-      return (this.constructor as typeof QueryBuilder).create(this.attributes, callback);
+    const queryBuilder = this.constructor as typeof QueryBuilder;
 
-    const query = (this.constructor as typeof QueryBuilder).where("id", this.attributes.id);
+    if (this._isNew)
+      return queryBuilder.create(this.attributes, callback);
+
+    const query = queryBuilder.where("id", this.attributes.id);
 
     if (callback)
       return query.update(this.attributes, (err, res) => {
         if (err) return callback(err, res);
 
-        (this.constructor as typeof QueryBuilder).find(this.attributes.id as Driver.Id, callback);
+        queryBuilder.find(this.attributes.id as Driver.Id, callback);
       });
 
     await query.update(this.attributes);
 
-    return await (this.constructor as typeof QueryBuilder).find(this.attributes.id as Driver.Id);
+    return await queryBuilder.find(this.attributes.id as Driver.Id);
   }
 
   /********************************** Deletes *********************************/
