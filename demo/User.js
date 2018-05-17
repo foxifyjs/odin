@@ -16,7 +16,7 @@ User.schema = {
 };
 
 User.prototype.bills = function () {
-    return User.prototype.hasMany(require("./Bill"));
+    return this.hasMany(require("./Bill"));
 }
 
 module.exports = User;

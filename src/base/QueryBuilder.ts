@@ -5,6 +5,16 @@ import * as utils from "../utils";
 import Query from "./Query";
 
 interface QueryBuilder<T = any> {
+  /****************************** With Relations ******************************/
+
+  with(...relations: string[]): Query<T>;
+
+  /*********************************** Joins **********************************/
+
+  join(table: string, localKey?: string, foreignKey?: string, as?: string): Query<T>;
+
+  /******************************* Where Clauses ******************************/
+
   where(field: string, value: any): Query<T>;
   where(field: string, operator: Driver.Operator, value: any): Query<T>;
 
@@ -42,6 +52,9 @@ interface QueryBuilder<T = any> {
 
   all(): Promise<Array<Model<T>>>;
   all(callback: Driver.Callback<Array<Model<T>>>): void;
+
+  first(): Promise<Model<T>>;
+  first(callback: Driver.Callback<Model<T>>): void;
 
   find(ids: Driver.Id | Driver.Id[]): Promise<Model<T>>;
   find(ids: Driver.Id | Driver.Id[], callback: Driver.Callback<Model<T>>): void;
@@ -93,7 +106,7 @@ class QueryBuilder {
 
   attributes!: ModelConstructor.Document;
 
-  static query(relations?: Array<{ query: Relation, name: string }>) {
+  static query(relations?: Relation[]) {
     return new Query(this as any, relations).table(this._table);
   }
 
@@ -109,15 +122,12 @@ class QueryBuilder {
       if (!utils.function.isInstance(query))
         throw new Error(`Relation '${name}' does not exist on '${this.name}' Model`);
 
-      query = query();
+      query = query.apply(this.prototype);
 
       if (!(query instanceof Relation))
         throw new Error(`'${name}' is not a relation`);
 
-      return {
-        query,
-        name,
-      };
+      return query;
     }));
   }
 

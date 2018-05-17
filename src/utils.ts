@@ -1,4 +1,5 @@
 import * as rootPath from "app-root-path";
+import * as callerId from "caller-id";
 
 export * from "prototyped.js/es6/methods";
 
@@ -67,3 +68,5 @@ export const setObjectValue = (obj: { [key: string]: any }, path: string, value:
 
   obj[keys[i]] = value;
 };
+
+export const getCallerFunctionName = (func: (...args: any[]) => any) => callerId.getData(func).methodName;

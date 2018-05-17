@@ -58,8 +58,8 @@
     - [ ] CRUD operations
         - [ ] Create operation
         - [x] Read operation
-        - [ ] Update operation
-        - [ ] Delete operation
+        - [x] Update operation
+        - [x] Delete operation
 - [x] `schema` validation
 - [x] `graphql` support
 

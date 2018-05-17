@@ -7,7 +7,7 @@ const {
 class Bill extends Model {}
 
 Bill.prototype.user = function () {
-    return Bill.prototype.hasOne(require("./User"));
+    return this.hasOne(require("./User"));
 }
 
 module.exports = Bill;

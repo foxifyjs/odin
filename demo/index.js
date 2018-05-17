@@ -21,14 +21,17 @@ const test = async () => {
 
     const start = new Date().getTime();
 
-    const result = await Bill.with("user").first();
+    // const result = await Bill.with("user").first();
+    /* or: */
+    let result = await Bill.first();
+    result = await result.user().first();
 
     const end = new Date().getTime();
 
     console.log(
-        "\n\n--------------------------------------------------\n",
+        "\n--------------------------------------------------\n",
         result,
-        "\n--------------------------------------------------\n\n"
+        "\n--------------------------------------------------\n"
     );
 
     console.log(`Finished in ${end - start}ms`);
