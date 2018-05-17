@@ -23,7 +23,17 @@
     "lint": "tslint -p tsconfig.json -c tslint.json --exclude '**/*.d.ts'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "database",
+    "active",
+    "record",
+    "typescript",
+    "mongodb",
+    "relation",
+    "graphql",
+    "schema",
+    "validation"
+  ],
   "devDependencies": {
     "@types/app-root-path": "^1.2.4",
     "@types/async": "^2.0.49",
