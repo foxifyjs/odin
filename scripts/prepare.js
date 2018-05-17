@@ -28,10 +28,11 @@ tsc.on('close', (code) => {
     let content = fs.readFileSync(filePath, 'utf8')
 
     content = UglifyEs.minify(content, {
-      toplevel: true,
+      toplevel: false,
+      ecma: 6,
     })
 
-    if (content.error) throw new Error(content.error)
+    if (content.error) throw content.error
 
     fs.writeFileSync(filePath, content.code, 'utf8')
   })
