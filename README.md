@@ -71,8 +71,13 @@ npm i -s @foxify/odin
 
 - [ ] Drivers
     - [x] `MongoDB`
-    - [ ] `MySql`
-- [ ] Relations
+    - [ ] `MySQL`
+    - [ ] `MariaDB`
+    - [ ] `PostgreSQL`
+    - [ ] `SQLite`
+    - [ ] `Redis`
+    - [ ] `Memory`
+- [ ] Relationships
     - [x] `hasMany`
     - [x] `hasOne`
     - [ ] CRUD operations
@@ -80,8 +85,10 @@ npm i -s @foxify/odin
         - [x] Read operation
         - [x] Update operation
         - [x] Delete operation
-- [x] `schema` validation
-- [x] `graphql` support
+- [x] `Schema` validation
+- [x] `GraphQL` support
+- [ ] Migrations
+- [ ] Seeding
 
 
 ## Support
