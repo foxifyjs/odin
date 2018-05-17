@@ -1,6 +1,6 @@
 {
   "name": "@foxify/odin",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.1",
   "description": "Active Record Model",
   "author": "Ardalan Amini <ardalanamini22@gmail.com>",
   "contributors": [
@@ -43,7 +43,6 @@
     "@types/deasync": "^0.1.0",
     "@types/graphql": "^0.13.1",
     "@types/node": "^10.1.0",
-    "caller-id": "^0.1.0",
     "dotenv": "^5.0.1",
     "fs-readdir-recursive": "^1.1.0",
     "rimraf": "^2.6.2",
@@ -55,6 +54,7 @@
     "@types/mongodb": "^3.0.18",
     "app-root-path": "^2.0.1",
     "async": "^2.6.0",
+    "caller-id": "^0.1.0",
     "deasync": "^0.1.13",
     "graphql": "^0.13.2",
     "mongodb": "^3.0.8",
