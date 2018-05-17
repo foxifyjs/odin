@@ -4,6 +4,10 @@ import { connect } from "../../connections";
 import * as utils from "../../utils";
 import Base from "../Driver";
 
+const { ObjectId } = mongodb;
+
+const isID = (id: string) => /(_id$|^id$)/.test(id);
+
 module Driver {
   export interface Filters<T = any> {
     $and?: Array<mongodb.FilterQuery<T>>;
@@ -134,10 +138,9 @@ class Driver<T = any> extends Base<T> {
       delete document._id;
     }
 
-    // return document;
     return utils.object.map(
       document,
-      (value, key) => /(_id$|^id$)/.test(key as string) ?
+      (value, key) => isID(key as string) ?
         value.toString() :
         this._prepareToRead(value),
     );
@@ -161,11 +164,9 @@ class Driver<T = any> extends Base<T> {
       delete document.id;
     }
 
-    const ObjectId = mongodb.ObjectId;
-
-    document = utils.object.map(
+    return utils.object.map(
       document,
-      (value, key) => /(_id$|^id$)/.test(key as string) ?
+      (value, key) => isID(key as string) ?
         (
           ObjectId.isValid(value) ?
             new ObjectId(value) :
@@ -173,8 +174,6 @@ class Driver<T = any> extends Base<T> {
         ) :
         this._prepareToStore(value),
     );
-
-    return document;
   }
 
   table(table: string) {
@@ -234,6 +233,13 @@ class Driver<T = any> extends Base<T> {
   }
 
   private _where(field: string, operator: string, value: any) {
+    if (isID(field)) {
+      if (field === "id") field = "_id";
+
+      if (utils.string.isInstance(value)) value = new ObjectId(value);
+      else if (Array.isArray(value)) value = value.map((v) => new ObjectId(v));
+    }
+
     return this._push_filter("and", {
       [field]: {
         [`$${operator}`]: value,
@@ -242,6 +248,13 @@ class Driver<T = any> extends Base<T> {
   }
 
   private _or_where(field: string, operator: string, value: any) {
+    if (isID(field)) {
+      if (field === "id") field = "_id";
+
+      if (utils.string.isInstance(value)) value = new ObjectId(value);
+      else if (Array.isArray(value)) value = value.map((v) => new ObjectId(v));
+    }
+
     return this._push_filter("or", {
       [field]: {
         [`$${operator}`]: value,
@@ -264,11 +277,6 @@ class Driver<T = any> extends Base<T> {
       operator = "=";
     }
 
-    if (field === "id") {
-      field = "_id";
-      value = new mongodb.ObjectId(value);
-    }
-
     return this._where(field, _operators[operator], value);
   }
 
@@ -287,47 +295,26 @@ class Driver<T = any> extends Base<T> {
       operator = "=";
     }
 
-    if (field === "id") {
-      field = "_id";
-      value = new mongodb.ObjectId(value);
-    }
-
-    if (operator === "like") value = new RegExp(value, "i");
-
     return this._or_where(field, _operators[operator], value);
   }
 
   whereLike(field: string, value: any) {
-    if (field === "id") field = "_id";
-
     if (!(value instanceof RegExp)) value = new RegExp(value, "i");
 
     return this._where(field, "regex", value);
   }
 
   whereNotLike(field: string, value: any) {
-    if (field === "id") field = "_id";
-
     if (!(value instanceof RegExp)) value = new RegExp(value, "i");
 
     return this._where(field, "not", value);
   }
 
   whereIn(field: string, values: any[]) {
-    if (field === "id") {
-      field = "_id";
-      values = values.map((value) => new mongodb.ObjectId(value));
-    }
-
     return this._where(field, "in", values);
   }
 
   whereNotIn(field: string, values: any[]) {
-    if (field === "id") {
-      field = "_id";
-      values = values.map((value) => new mongodb.ObjectId(value));
-    }
-
     return this._where(field, "nin", values);
   }
 
