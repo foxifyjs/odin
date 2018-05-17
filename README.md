@@ -47,6 +47,26 @@
 </div>
 
 
+## Installation
+
+Before installing, [download and install Node.js](https://nodejs.org/en/download).
+Node.js 8 or higher is required.
+
+```bash
+npm i -s @foxify/odin
+```
+
+
+## Features
+
+- Cross DB
+- Written in `ES6`
+- `TypeScript` ready
+- `Active Record` pattern
+- `Schema` validation
+- `GraphQL Schema` generator (based on model schema)
+
+
 ## TODO
 
 - [ ] Drivers
