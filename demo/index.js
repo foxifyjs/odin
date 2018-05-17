@@ -1,11 +1,16 @@
-const path = require("path")
 const env = require("dotenv").load({
-    path: path.resolve(__dirname, ".env")
+    path: require("path").resolve(__dirname, ".env")
 }).parsed;
 
 const Model = require("../dist/index");
 const User = require("./User");
 const Bill = require("./Bill");
+
+const time = () => new Date().getTime();
+
+console.log(`Connecting...`);
+
+const start = time();
 
 Model.connections({
     default: {
@@ -16,22 +21,41 @@ Model.connections({
     }
 })
 
+const end = time();
+
+console.log(
+    `Connected in ${end - start}ms\n`,
+    "\n**************************************************\n",
+);
+
 const test = async () => {
-    console.log("Starting...");
+    const tester = async () => {
+        return await User.with("bills").first();
+    }
 
-    const start = new Date().getTime();
+    console.log("Starting first...\n");
 
-    const result = await Bill.with("user").first();
+    let start = time();
 
-    const end = new Date().getTime();
+    await tester();
+
+    console.log(`Finished first in ${time() - start}ms\n`);
+
+    console.log("Starting second...");
+
+    start = time();
+
+    const result = await tester();
+
+    const end = time();
 
     console.log(
-        "\n\n--------------------------------------------------\n",
+        "\n--------------------------------------------------\n",
         result,
-        "\n--------------------------------------------------\n\n"
+        "\n--------------------------------------------------\n"
     );
 
-    console.log(`Finished in ${end - start}ms`);
+    console.log(`Finished second in ${end - start}ms`);
 
     process.exit(0);
 };

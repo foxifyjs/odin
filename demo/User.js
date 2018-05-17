@@ -4,7 +4,11 @@ const {
     Types
 } = Model;
 
-class User extends Model {}
+class User extends Model {
+    bills() {
+        return this.hasMany(require("./Bill"));
+    }
+}
 
 User.schema = {
     name: {
@@ -14,9 +18,5 @@ User.schema = {
     username: Types.String.token.required,
     email: Types.String.email.required,
 };
-
-User.prototype.bills = function () {
-    return User.prototype.hasMany(require("./Bill"));
-}
 
 module.exports = User;

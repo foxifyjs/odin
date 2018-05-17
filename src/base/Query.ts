@@ -19,12 +19,12 @@ interface Query<T = any> extends DB<T> {
 class Query<T = any> extends DB<T> {
   protected readonly _model: ModelConstructor;
 
-  constructor(model: ModelConstructor, relations: Array<{ query: Relation, name: string }> = []) {
+  constructor(model: ModelConstructor, relations: Relation[] = []) {
     super(model.connection);
 
     this._model = model;
 
-    relations.map((relation) => relation.query.load(this, relation.name));
+    relations.map((relation) => relation.load(this));
   }
 
   // @ts-ignore:next-line
@@ -60,9 +60,11 @@ class Query<T = any> extends DB<T> {
   // @ts-ignore:next-line
   async first(callback?: Driver.Callback<Model<T>>) {
     if (callback)
-      return super.first((err, res) => callback(err, new this._model(res) as any));
+      return super.first((err, res) => callback(err, res && new this._model(res) as any));
 
-    return new this._model(await super.first());
+    const item = await super.first();
+
+    return item && new this._model(item);
   }
 
   insert(items: T[], callback?: Driver.Callback<number>) {
