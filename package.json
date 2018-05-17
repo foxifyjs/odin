@@ -1,6 +1,6 @@
 {
   "name": "@foxify/odin",
-  "version": "0.0.0",
+  "version": "0.1.0-beta.1",
   "description": "Active Record Model",
   "author": "Ardalan Amini <ardalanamini22@gmail.com>",
   "contributors": [
