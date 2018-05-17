@@ -47,12 +47,37 @@
 </div>
 
 
+## Installation
+
+Before installing, [download and install Node.js](https://nodejs.org/en/download).
+Node.js 8 or higher is required.
+
+```bash
+npm i -s @foxify/odin
+```
+
+
+## Features
+
+- Cross DB
+- Written in `ES6`
+- `TypeScript` ready
+- `Active Record` pattern
+- `Schema` validation
+- `GraphQL Schema` generator (based on model schema)
+
+
 ## TODO
 
 - [ ] Drivers
     - [x] `MongoDB`
-    - [ ] `MySql`
-- [ ] Relations
+    - [ ] `MySQL`
+    - [ ] `MariaDB`
+    - [ ] `PostgreSQL`
+    - [ ] `SQLite`
+    - [ ] `Redis`
+    - [ ] `Memory`
+- [ ] Relationships
     - [x] `hasMany`
     - [x] `hasOne`
     - [ ] CRUD operations
@@ -60,8 +85,10 @@
         - [x] Read operation
         - [x] Update operation
         - [x] Delete operation
-- [x] `schema` validation
-- [x] `graphql` support
+- [x] `Schema` validation
+- [x] `GraphQL` support
+- [ ] Migrations
+- [ ] Seeding
 
 
 ## Support
