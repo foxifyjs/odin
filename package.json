@@ -1,6 +1,6 @@
 {
   "name": "@foxify/odin",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "Active Record Model",
   "author": "Ardalan Amini <ardalanamini22@gmail.com>",
   "contributors": [
@@ -23,6 +23,9 @@
     "lint": "tslint -p tsconfig.json -c tslint.json --exclude '**/*.d.ts'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "files": [
+    "dist"
+  ],
   "keywords": [
     "database",
     "active",
