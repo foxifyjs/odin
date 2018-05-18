@@ -75,27 +75,32 @@ interface Driver<T = any> {
 }
 
 class Driver<T = any> extends Base<T> {
-  static connect(connection: connect.Connection) {
+  static connect(con: connect.Connection) {
+    if (con.connection)
+      return () => new this(
+        (con.connection as mongodb.MongoClient).db(con.database),
+      );
+
     let uri = "mongodb://";
 
-    if (connection.user && connection.password)
+    if (con.user && con.password)
       uri += `${
-        connection.user
+        con.user
         }:${
-        connection.password
+        con.password
         }@`;
 
     uri += `${
-      connection.host || "127.0.0.1"
+      con.host || "127.0.0.1"
       }:${
-      connection.port || "27017"
+      con.port || "27017"
       }/${
-      connection.database
+      con.database
       }`;
 
     const server = <mongodb.MongoClient>deasync(mongodb.MongoClient.connect)(uri);
 
-    return () => new this(server.db(connection.database));
+    return () => new this(server.db(con.database));
   }
 
   get driver(): "MongoDB" {

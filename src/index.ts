@@ -39,6 +39,8 @@ interface ModelConstructor<T = any> extends QueryBuilder, GraphQLConstructor {
 
   constructor: typeof Model;
 
+  DB: typeof DB;
+  GraphQL: typeof GraphQL;
   Types: typeof Types;
   connections: typeof connections;
 
@@ -102,7 +104,7 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
   }
 
   static get filename() {
-    return __filename.replace(new RegExp(`(^${utils.root.path}|\.js$)`, "g"), "");
+    return __filename.replace(new RegExp(`(^${utils.root.path}|\.[tj]s$)`, "g"), "");
   }
 
   static get driver() {
