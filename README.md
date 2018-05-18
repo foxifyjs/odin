@@ -14,7 +14,7 @@
 		<img src='https://coveralls.io/repos/github/foxifyjs/odin/badge.svg?branch=master' alt='Coverage Status'>
 	</a>
 	<a href="http://packagequality.com/#?package=@foxify/odin" target="_blank">
-		<img src="http://npm.packagequality.com/shield/@foxify/odin.svg" alt="package quality">
+		<img src="http://npm.packagequality.com/shield/%40foxify%2Fodin.svg" alt="package quality">
 	</a>
 	<a href="https://www.npmjs.com/package/@foxify/odin" target="_blank">
 		<img src="https://img.shields.io/npm/dt/@foxify/odin.svg" alt="npm downloads">
@@ -89,10 +89,12 @@ npm i -s @foxify/odin
     - [ ] `hasManyThrough`
     - [ ] `hasOneThrough`
     - [ ] `Polymorphic`
-		- [ ] `morphMany`
-		- [ ] `morphOne`
+		- [x] `morphMany`
+		- [x] `morphOne`
+		- [ ] `morphTo`
 		- [ ] `morphManyThrough`
 		- [ ] `morphOneThrough`
+		- [ ] `morphToThrough`
     - [x] CRUD operations
         - [x] Create operation
         - [x] Read operation

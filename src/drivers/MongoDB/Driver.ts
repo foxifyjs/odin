@@ -8,6 +8,15 @@ const { ObjectId } = mongodb;
 
 const isID = (id: string) => /(_id$|^id$)/.test(id);
 
+const OPERATORS: { [operator: string]: string } = {
+  "<": "lt",
+  "<=": "lte",
+  "=": "eq",
+  "<>": "ne",
+  ">=": "gte",
+  ">": "gt",
+};
+
 module Driver {
   export interface Filters<T = any> {
     $and?: Array<mongodb.FilterQuery<T>>;
@@ -276,39 +285,21 @@ class Driver<T = any> extends Base<T> {
   }
 
   where(field: string, operator: Base.Operator | any, value?: any) {
-    const _operators: { [operator: string]: string } = {
-      "<": "lt",
-      "<=": "lte",
-      "=": "eq",
-      "<>": "ne",
-      ">=": "gte",
-      ">": "gt",
-    };
-
     if (value === undefined) {
       value = operator;
       operator = "=";
     }
 
-    return this._where(field, _operators[operator], value);
+    return this._where(field, OPERATORS[operator], value);
   }
 
   orWhere(field: string, operator: Base.Operator | any, value?: any) {
-    const _operators: { [operator: string]: string } = {
-      "<": "lt",
-      "<=": "lte",
-      "=": "eq",
-      "<>": "ne",
-      ">=": "gte",
-      ">": "gt",
-    };
-
     if (value === undefined) {
       value = operator;
       operator = "=";
     }
 
-    return this._or_where(field, _operators[operator], value);
+    return this._or_where(field, OPERATORS[operator], value);
   }
 
   whereLike(field: string, value: any) {

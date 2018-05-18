@@ -140,7 +140,7 @@ abstract class Relation<T = any> {
         this._as = utils.getCallerFunctionName(caller);
     }
 
-    private _query(relations?: string[]): Query {
+    protected _query(relations?: string[]): Query {
         let query: ModelConstructor | Query = this.relation;
 
         if (relations) query = query.with(...relations);

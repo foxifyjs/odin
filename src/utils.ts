@@ -51,13 +51,17 @@ export const makeTableName = (name: string) => {
   return key.join("_");
 };
 
-export const makeTableId = (name: string) => {
+export const makeTableType = (name: string) => {
   const key = name.split("_");
 
-  key.push(`${exports.string.singularize(key.pop() as string)}_id`);
+  key.push(exports.string.singularize(key.pop() as string));
 
   return key.join("_");
 };
+
+export const makeTableId = (name: string) => `${makeTableType(name)}_id`;
+
+export const makeMorphType = (name: string) => `${makeTableType(name)}able`;
 
 export const setObjectValue = (obj: { [key: string]: any }, path: string, value: any) => {
   const keys = path.split(".");

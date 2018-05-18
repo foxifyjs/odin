@@ -7,6 +7,10 @@ interface Relational {
     hasMany(relation: ModelConstructor, localKey?: string, foreignKey?: string): Relation;
 
     hasOne(relation: ModelConstructor, localKey?: string, foreignKey?: string): Relation;
+
+    morphMany(relation: ModelConstructor, localKey?: string, type?: string): Relation;
+
+    morphOne(relation: ModelConstructor, localKey?: string, type?: string): Relation;
 }
 
 class Relational {
@@ -24,6 +28,22 @@ class Relational {
         const HasOne: any = drivers[model.constructor.driver].Relation.HasOne;
 
         return new HasOne(model, relation, localKey, foreignKey, this.hasOne);
+    }
+
+    morphMany(relation: ModelConstructor, localKey?: string, type?: string): Relation {
+        const model = (this as any) as Model;
+
+        const MorphMany: any = drivers[model.constructor.driver].Relation.MorphMany;
+
+        return new MorphMany(model, relation, localKey, undefined, type, this.morphMany);
+    }
+
+    morphOne(relation: ModelConstructor, localKey?: string, type?: string): Relation {
+        const model = (this as any) as Model;
+
+        const MorphOne: any = drivers[model.constructor.driver].Relation.MorphOne;
+
+        return new MorphOne(model, relation, localKey, undefined, type, this.morphOne);
     }
 }
 
