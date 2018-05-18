@@ -25,11 +25,12 @@ export type Connection = <T = any, D extends drivers.Base<T> = drivers.Base<T>>(
 export namespace connect {
   export interface Connection {
     driver: Driver;
-    host?: string;
-    port?: string;
     database: string;
+    connection?: mongodb.MongoClient;
     user?: string;
     password?: string;
+    host?: string;
+    port?: string;
   }
 
   export interface Connections {

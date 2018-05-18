@@ -7,6 +7,12 @@
 	<a href="https://www.typescriptlang.org" target="_blank">
 		<img src="https://img.shields.io/npm/types/@foxify/odin.svg" alt="typescript version">
 	</a>
+	<a href="https://travis-ci.com/foxifyjs/odin" target="_blank">
+		<img src="https://api.travis-ci.com/foxifyjs/odin.svg?branch=master" alt="build status">
+	</a>
+	<a href='https://coveralls.io/github/foxifyjs/odin?branch=master'  target="_blank">
+		<img src='https://coveralls.io/repos/github/foxifyjs/odin/badge.svg?branch=master' alt='Coverage Status'>
+	</a>
 	<a href="http://packagequality.com/#?package=@foxify/odin" target="_blank">
 		<img src="http://npm.packagequality.com/shield/@foxify/odin.svg" alt="package quality">
 	</a>
@@ -80,8 +86,15 @@ npm i -s @foxify/odin
 - [ ] Relationships
     - [x] `hasMany`
     - [x] `hasOne`
-    - [ ] CRUD operations
-        - [ ] Create operation
+    - [ ] `hasManyThrough`
+    - [ ] `hasOneThrough`
+    - [ ] `Polymorphic`
+		- [ ] `morphMany`
+		- [ ] `morphOne`
+		- [ ] `morphManyThrough`
+		- [ ] `morphOneThrough`
+    - [x] CRUD operations
+        - [x] Create operation
         - [x] Read operation
         - [x] Update operation
         - [x] Delete operation

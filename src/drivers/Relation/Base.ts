@@ -3,17 +3,16 @@ import Query from "../../base/Query";
 import ModelConstructor, { Model } from "../../index";
 import * as utils from "../../utils";
 import Driver from "../Driver";
+import * as async from "async";
 
 interface Relation<T = any> {
-    query(): Query<T>;
-
     /****************************** With Relations ******************************/
 
     with(...relations: string[]): Query<T>;
 
     /*********************************** Joins **********************************/
 
-    join(table: string, localKey?: string, foreignKey?: string, as?: string): Query<T>;
+    join(table: string | ModelConstructor, localKey?: string, foreignKey?: string, as?: string): Query<T>;
 
     /******************************* Where Clauses ******************************/
 
@@ -72,14 +71,14 @@ interface Relation<T = any> {
 
     /********************************** Inserts *********************************/
 
-    // insert(items: T[]): Promise<number>;
-    // insert(items: T[], callback: Driver.Callback<number>): void;
+    insert(items: T[]): Promise<number>;
+    insert(items: T[], callback: Driver.Callback<number>): void;
 
-    // create(item: T): Promise<Model<T>>;
-    // create(item: T, callback: Driver.Callback<Model<T>>): void;
+    create(item: T): Promise<Model<T>>;
+    create(item: T, callback: Driver.Callback<Model<T>>): void;
 
-    // save(): Promise<Model<T>>;
-    // save(callback: Driver.Callback<Model<T>>): void;
+    save(model: Model<T>): Promise<Model<T>>;
+    save(model: Model<T>, callback: Driver.Callback<Model<T>>): void;
 
     /********************************** Updates *********************************/
 
@@ -100,7 +99,7 @@ interface Relation<T = any> {
     delete(callback: Driver.Callback<number>): void;
 }
 
-abstract class Relation<T> {
+abstract class Relation<T = any> {
     private readonly _model: Model;
     private readonly _relation: ModelConstructor;
     private readonly _localKey: string;
@@ -141,9 +140,7 @@ abstract class Relation<T> {
         this._as = utils.getCallerFunctionName(caller);
     }
 
-    abstract load(query: DB): any;
-
-    query(relations?: string[]): Query {
+    private _query(relations?: string[]): Query {
         let query: ModelConstructor | Query = this.relation;
 
         if (relations) query = query.with(...relations);
@@ -154,56 +151,58 @@ abstract class Relation<T> {
         );
     }
 
+    abstract load(query: Query<T>): any;
+
     /****************************** With Relations ******************************/
 
     with(...relations: string[]) {
-        return this.query(relations);
+        return this._query(relations);
     }
 
     /*********************************** Joins **********************************/
 
-    join(table: string, localKey?: string, foreignKey?: string, as?: string) {
-        return this.query().join(table, localKey, foreignKey, as);
+    join(table: string | ModelConstructor, localKey?: string, foreignKey?: string, as?: string) {
+        return this._query().join(table, localKey, foreignKey, as);
     }
 
     /******************************* Where Clauses ******************************/
 
     where(field: string, operator: Driver.Operator | any, value?: any) {
-        return this.query().where(field, operator, value);
+        return this._query().where(field, operator, value);
     }
 
     whereIn(field: string, values: any[]) {
-        return this.query().whereIn(field, values);
+        return this._query().whereIn(field, values);
     }
 
     whereNotIn(field: string, values: any[]) {
-        return this.query().whereNotIn(field, values);
+        return this._query().whereNotIn(field, values);
     }
 
     whereBetween(field: string, start: any, end: any) {
-        return this.query().whereBetween(field, start, end);
+        return this._query().whereBetween(field, start, end);
     }
 
     whereNotBetween(field: string, start: any, end: any) {
-        return this.query().whereNotBetween(field, start, end);
+        return this._query().whereNotBetween(field, start, end);
     }
 
     whereNull(field: string) {
-        return this.query().whereNull(field);
+        return this._query().whereNull(field);
     }
 
     whereNotNull(field: string) {
-        return this.query().whereNotNull(field);
+        return this._query().whereNotNull(field);
     }
 
     /******************** Ordering, Grouping, Limit & Offset ********************/
 
     orderBy(field: string, order?: Driver.Order) {
-        return this.query().orderBy(field, order);
+        return this._query().orderBy(field, order);
     }
 
     skip(offset: number) {
-        return this.query().skip(offset);
+        return this._query().skip(offset);
     }
 
     offset(offset: number) {
@@ -211,7 +210,7 @@ abstract class Relation<T> {
     }
 
     limit(limit: number) {
-        return this.query().limit(limit);
+        return this._query().limit(limit);
     }
 
     take(limit: number) {
@@ -221,23 +220,23 @@ abstract class Relation<T> {
     /*********************************** Read ***********************************/
 
     exists(callback?: Driver.Callback<boolean>) {
-        return this.query().exists(callback);
+        return this._query().exists(callback);
     }
 
     count(callback?: Driver.Callback<number>) {
-        return this.query().count(callback);
+        return this._query().count(callback);
     }
 
     get(callback?: Driver.Callback<any>) {
-        return this.query().get(callback);
+        return this._query().get(callback);
     }
 
     first(callback?: Driver.Callback<any>) {
-        return this.query().first(callback);
+        return this._query().first(callback);
     }
 
     value(field: string, callback?: Driver.Callback<any>) {
-        return this.query().value(field, callback);
+        return this._query().value(field, callback);
     }
 
     pluck(field: string, callback?: Driver.Callback<any>) {
@@ -245,42 +244,92 @@ abstract class Relation<T> {
     }
 
     max(field: string, callback?: Driver.Callback<any>) {
-        return this.query().max(field, callback);
+        return this._query().max(field, callback);
     }
 
     min(field: string, callback?: Driver.Callback<any>) {
-        return this.query().min(field, callback);
+        return this._query().min(field, callback);
     }
 
     /********************************** Inserts *********************************/
 
-    // insert(items: T[]): Promise<number>;
-    // insert(items: T[], callback: Driver.Callback<number>): void;
+    async insert(items: T[], callback?: Driver.Callback<number>) {
+        const foreignKey = this.foreignKey;
+        const localAttribute = this.model.getAttribute(this.localKey);
 
-    // create(item: T): Promise<Model<T>>;
-    // create(item: T, callback: Driver.Callback<Model<T>>): void;
+        if (callback)
+            return async.map(
+                items,
+                (item, cb1: (...args: any[]) => any) => ({
+                    ...(item as any),
+                    [foreignKey]: localAttribute,
+                }),
+                (err, newItems) => {
+                    if (err) callback(err, undefined as any);
 
-    // save(): Promise<Model<T>>;
-    // save(callback: Driver.Callback<Model<T>>): void;
+                    this._query().insert(newItems as T[], callback);
+                },
+            );
+
+        async.map(
+            items,
+            (item, cb1: (...args: any[]) => any) => ({
+                ...(item as any),
+                [foreignKey]: localAttribute,
+            }),
+            (err, newItems) => {
+                if (err) throw err;
+
+                items = newItems as T[];
+            },
+        );
+
+        return await this._query().insert(items);
+    }
+
+    async create(item: T, callback?: Driver.Callback<Model<T>>) {
+        item = {
+            ...(item as any),
+            [this.foreignKey]: this.model.getAttribute(this.localKey),
+        };
+
+        if (callback)
+            return this._query().insertGetId(item, (err, res) => {
+                if (err) return callback(err, res as any);
+
+                this.where("id", res).first(callback);
+            });
+
+        return await this.where("id", await this._query().insertGetId(item)).first();
+    }
+
+    save(model: Model<T>, callback?: Driver.Callback<Model<T>>) {
+        model.setAttribute(
+            this.foreignKey,
+            this.model.getAttribute(this.localKey),
+        );
+
+        return model.save(callback as any) as Promise<Model<T>> | void;
+    }
 
     /********************************** Updates *********************************/
 
     update(update: T, callback?: Driver.Callback<number>) {
-        return this.query().update(update, callback);
+        return this._query().update(update, callback);
     }
 
     increment(field: string, count?: number | Driver.Callback<number>, callback?: Driver.Callback<number>) {
-        return this.query().increment(field, count, callback);
+        return this._query().increment(field, count, callback);
     }
 
     decrement(field: string, count?: number | Driver.Callback<number>, callback?: Driver.Callback<number>) {
-        return this.query().decrement(field, count, callback);
+        return this._query().decrement(field, count, callback);
     }
 
     /********************************** Deletes *********************************/
 
     delete(callback?: Driver.Callback<number>) {
-        return this.query().delete(callback);
+        return this._query().delete(callback);
     }
 }
 
