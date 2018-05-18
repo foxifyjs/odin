@@ -11,6 +11,8 @@ module Driver {
   export type Id = number | mongodb.ObjectId;
 
   export type WhereQuery<T = any> = (query: Driver<T>) => Driver<T>;
+
+  export type Mapper<T = any> = (item: T, index: number, items: T[]) => any;
 }
 
 abstract class Driver<T = any> {
@@ -54,7 +56,9 @@ abstract class Driver<T = any> {
 
   abstract whereNotNull(field: string): this;
 
-  /******************** Ordering, Grouping, Limit & Offset ********************/
+  /*************** Mapping, Ordering, Grouping, Limit & Offset ****************/
+
+  abstract map(fn: Driver.Mapper<T>): this;
 
   // TODO groupBy
   // @see https://stackoverflow.com/questions/21023005/mongodb-aggregation-group-by-several-fields

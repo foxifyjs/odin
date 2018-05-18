@@ -37,7 +37,9 @@ interface DB<T = any, D extends Driver<T> = any> {
 
   whereNotNull(field: string): this;
 
-  /******************** Ordering, Grouping, Limit & Offset ********************/
+  /*************** Mapping, Ordering, Grouping, Limit & Offset ****************/
+
+  map(fn: Driver.Mapper<T>): this;
 
   orderBy(field: string, order?: Driver.Order): this;
 
@@ -238,7 +240,15 @@ class DB<T = any, D extends Driver<T> = any> {
     return this;
   }
 
-  /******************** Ordering, Grouping, Limit & Offset ********************/
+  /*************** Mapping, Ordering, Grouping, Limit & Offset ****************/
+
+  map(fn: Driver.Mapper<T>) {
+    this._getting = true;
+
+    this._query = this._query.map.call(this._query, ...arguments);
+
+    return this;
+  }
 
   orderBy(field: string, order?: Driver.Order) {
     this._getting = true;

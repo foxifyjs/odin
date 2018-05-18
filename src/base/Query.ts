@@ -3,9 +3,12 @@ import * as DB from "../DB";
 import { Base as Driver } from "../drivers";
 import Relation from "../drivers/Relation/Base";
 import ModelConstructor, { Model } from "../index";
+import * as utils from "../utils";
 
 // @ts-ignore:next-line
 interface Query<T = any> extends DB<T> {
+  join(table: string | ModelConstructor, localKey?: string, foreignKey?: string, as?: string): this;
+
   get(): Promise<Array<Model<T>>>;
   get(callback: Driver.Callback<Array<Model<T>>>): void;
 
@@ -25,6 +28,23 @@ class Query<T = any> extends DB<T> {
     this._model = model;
 
     relations.map((relation) => relation.load(this));
+  }
+
+  join(table: string | ModelConstructor, localKey?: string, foreignKey?: string, as?: string) {
+    if (!utils.string.isInstance(table)) {
+      const model = table;
+      table = model.toString();
+
+      if (!as) as = table;
+
+      this.map((item: any) => {
+        item[<string>as] = item[<string>as].map((i: any) => new model(i));
+
+        return item;
+      });
+    }
+
+    return super.join(table, localKey, foreignKey, as);
   }
 
   // @ts-ignore:next-line

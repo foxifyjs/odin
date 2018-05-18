@@ -21,14 +21,21 @@
     "build": "tsc",
     "prepare": "npm run lint && node scripts/prepare.js",
     "lint": "tslint -p tsconfig.json -c tslint.json --exclude '**/*.d.ts'",
-    "test": "jest"
+    "test": "jest",
+    "coveralls": "npm test -- --coverage && cat ./coverage/lcov.info | coveralls"
   },
   "files": [
     "dist"
   ],
   "keywords": [
-    "database", "active", "record", "typescript",
-    "mongodb", "relation", "graphql", "schema",
+    "database",
+    "active",
+    "record",
+    "typescript",
+    "mongodb",
+    "relation",
+    "graphql",
+    "schema",
     "validation"
   ],
   "dependencies": {
@@ -49,6 +56,7 @@
     "@types/deasync": "^0.1.0",
     "@types/graphql": "^0.13.1",
     "@types/jest": "^22.2.3",
+    "coveralls": "^3.0.1",
     "dotenv": "^5.0.1",
     "fs-readdir-recursive": "^1.1.0",
     "jest": "^22.4.3",
@@ -63,7 +71,9 @@
     "globalTeardown": "<rootDir>/test/teardown.js",
     "testEnvironment": "<rootDir>/test/environment.js",
     "moduleFileExtensions": [
-      "ts", "js", "node"
+      "ts",
+      "js",
+      "node"
     ],
     "transform": {
       "^.+\\.ts$": "<rootDir>/scripts/preprocessor.js"

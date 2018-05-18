@@ -1,6 +1,6 @@
 import * as deasync from "deasync";
 import * as mongodb from "mongodb";
-import { connect } from "../../connections";
+import { connect, Query } from "../../connections";
 import * as utils from "../../utils";
 import Base from "../Driver";
 
@@ -16,12 +16,12 @@ module Driver {
   }
 }
 
-interface Driver<T = any> {
+interface Driver<T = any> extends Base<T> {
   /*********************************** Joins **********************************/
 
   /******************************* Where Clauses ******************************/
 
-  /******************** Ordering, Grouping, Limit & Offset ********************/
+  /*************** Mapping, Ordering, Grouping, Limit & Offset ****************/
 
   /*********************************** Read ***********************************/
 
@@ -115,6 +115,8 @@ class Driver<T = any> extends Base<T> {
 
   private _pipeline: object[] = [];
 
+  private _mappers: Array<Base.Mapper<T>> = [];
+
   protected get _filter() {
     const filter = {
       ...this._filters,
@@ -123,6 +125,12 @@ class Driver<T = any> extends Base<T> {
     if (filter.$and && filter.$and.length === 0) delete filter.$and;
 
     return filter;
+  }
+
+  constructor(query: Query) {
+    super(query);
+
+    this.map(this._prepareToRead);
   }
 
   private _prepareToRead = (document: any): any => {
@@ -341,7 +349,13 @@ class Driver<T = any> extends Base<T> {
     return this._where(field, "ne", null);
   }
 
-  /******************** Ordering, Grouping, Limit & Offset ********************/
+  /*************** Mapping, Ordering, Grouping, Limit & Offset ****************/
+
+  map(fn: Base.Mapper<T>) {
+    this._mappers.push(fn);
+
+    return this;
+  }
 
   orderBy(field: string, order?: Base.Order) {
     return this.pipeline({ $sort: { [field]: order === "desc" ? -1 : 1 } });
@@ -359,8 +373,17 @@ class Driver<T = any> extends Base<T> {
 
   private _aggregate(options?: mongodb.CollectionAggregationOptions) {
     // FIXME the mongodb typing has a bug i think
-    return (this._query.aggregate([{ $match: this._filter }, ...this._pipeline], options) as any)
-      .map(this._prepareToRead) as mongodb.AggregationCursor;
+    let query: any = this._query.aggregate(
+      [
+        { $match: this._filter },
+        ...this._pipeline,
+      ],
+      options,
+    );
+
+    this._mappers.map((mapper) => query = query.map(mapper));
+
+    return query as mongodb.AggregationCursor;
   }
 
   async exists(callback?: mongodb.MongoCallback<boolean>) {
@@ -389,7 +412,8 @@ class Driver<T = any> extends Base<T> {
       }), { _id: 0 }),
     });
 
-    return this._aggregate().toArray(callback as any);
+    return this._aggregate()
+      .toArray(callback as any);
   }
 
   async first(fields?: string[] | mongodb.MongoCallback<T>, callback?: mongodb.MongoCallback<T>) {
@@ -414,15 +438,16 @@ class Driver<T = any> extends Base<T> {
   }
 
   value(field: string, callback?: mongodb.MongoCallback<any>) {
-    // FIXME the mongodb typing has a bug i think
-    return (this.pipeline({
+    const keys = field.split(".");
+
+    return this.pipeline({
       $project: {
         _id: 0,
         [field === "id" ? "_id" : field]: 1,
       },
-    })._aggregate() as any)
-      .map((item: any) => field.split(".").reduce((prev, key) => prev[key], item))
-      .toArray(callback);
+    }).map((item: any) => keys.reduce((prev, key) => prev[key], item))
+      ._aggregate()
+      .toArray(callback as any) as any;
   }
 
   async max(field: string, callback?: mongodb.MongoCallback<any>) {
