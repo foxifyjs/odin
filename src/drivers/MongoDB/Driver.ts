@@ -8,6 +8,16 @@ const { ObjectId } = mongodb;
 
 const isID = (id: string) => /(_id$|^id$)/.test(id);
 
+const prepareKey = (id: string) => id === "id" ? "_id" : id;
+
+const prepareValue = (field: string, value: any) => {
+  if (!isID(field)) return value;
+
+  if (Array.isArray(value)) return value.map((v) => new ObjectId(v));
+
+  return new ObjectId(value);
+};
+
 const OPERATORS: { [operator: string]: string } = {
   "<": "lt",
   "<=": "lte",
@@ -84,6 +94,8 @@ interface Driver<T = any> extends Base<T> {
 }
 
 class Driver<T = any> extends Base<T> {
+  protected _table!: string;
+
   static connect(con: connect.Connection) {
     if (con.connection)
       return () => new this(
@@ -204,6 +216,8 @@ class Driver<T = any> extends Base<T> {
 
     this._query = ((this._query as any) as mongodb.Db).collection(table);
 
+    this._table = table;
+
     return this;
   }
 
@@ -219,16 +233,79 @@ class Driver<T = any> extends Base<T> {
 
   join(
     table: string,
-    localKey: string = utils.makeTableId(table),
-    foreignKey: string = "id",
+    query: Base.JoinQuery<T> = (q) => q.on(utils.makeTableId(table), `${table}.id`),
     as: string = table,
   ) {
+    const LET: { [key: string]: any } = {};
+    const EXPR_MATCH: object[] = [];
+    const MATCH: object[] = [];
+
+    const QUERY = {
+      on: (field: any, operator: any, value?: any) => {
+        field = prepareKey(field);
+
+        if (value === undefined) {
+          value = operator;
+          operator = "=";
+        }
+
+        if (utils.string.isInstance(value)) {
+          const keys = value.split(".");
+
+          if (keys.length > 1 && keys[0] === this._table) {
+            keys.shift();
+
+            const key = prepareKey(keys.join("."));
+            const pivotKey = `pivot_${key}`;
+
+            LET[pivotKey] = `$${key}`;
+
+            EXPR_MATCH.push({
+              [`$${OPERATORS[operator]}`]: [`$${field}`, `$$${pivotKey}`],
+            });
+
+            return QUERY;
+          }
+        }
+
+        value = prepareValue(field, value);
+
+        MATCH.push({
+          [field]: {
+            [`$${OPERATORS[operator]}`]: value,
+          },
+        });
+
+        return QUERY;
+      },
+    };
+
+    query(QUERY);
+
+    console.log(LET, EXPR_MATCH);
+
+    const PIPELINE: object[] = [];
+
+    if (EXPR_MATCH.length > 0) PIPELINE.push({
+      $match: {
+        $expr: {
+          $and: EXPR_MATCH,
+        },
+      },
+    });
+
+    if (MATCH.length > 0) PIPELINE.push({
+      $match: {
+        $and: MATCH,
+      },
+    });
+
     return this.pipeline({
       $lookup:
         {
           from: table,
-          localField: localKey === "id" ? "_id" : localKey,
-          foreignField: foreignKey === "id" ? "_id" : foreignKey,
+          let: LET,
+          pipeline: PIPELINE,
           as,
         },
     });
@@ -255,12 +332,8 @@ class Driver<T = any> extends Base<T> {
   }
 
   private _where(field: string, operator: string, value: any) {
-    if (isID(field)) {
-      if (field === "id") field = "_id";
-
-      if (utils.string.isInstance(value)) value = new ObjectId(value);
-      else if (Array.isArray(value)) value = value.map((v) => new ObjectId(v));
-    }
+    field = prepareKey(field);
+    value = prepareValue(field, value);
 
     return this._push_filter("and", {
       [field]: {
@@ -270,12 +343,8 @@ class Driver<T = any> extends Base<T> {
   }
 
   private _or_where(field: string, operator: string, value: any) {
-    if (isID(field)) {
-      if (field === "id") field = "_id";
-
-      if (utils.string.isInstance(value)) value = new ObjectId(value);
-      else if (Array.isArray(value)) value = value.map((v) => new ObjectId(v));
-    }
+    field = prepareKey(field);
+    value = prepareValue(field, value);
 
     return this._push_filter("or", {
       [field]: {

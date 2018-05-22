@@ -5,6 +5,11 @@
   ],
   "jsRules": {},
   "rules": {
+    "indent": [
+      true,
+      "spaces",
+      2
+    ],
     "ordered-imports": false,
     "no-namespace": false,
     "no-internal-module": false,

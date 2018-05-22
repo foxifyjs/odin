@@ -11,7 +11,7 @@ interface DB<T = any, D extends Driver<T> = any> {
 
   /*********************************** Joins **********************************/
 
-  join(table: string, localKey?: string, foreignKey?: string, as?: string): this;
+  join(table: string, query?: Driver.JoinQuery<T>, as?: string): this;
 
   /******************************* Where Clauses ******************************/
 
@@ -150,7 +150,7 @@ class DB<T = any, D extends Driver<T> = any> {
 
   /*********************************** Joins **********************************/
 
-  join(table: string, localKey?: string, foreignKey?: string, as?: string) {
+  join(table: string, query?: Driver.JoinQuery<T>, as?: string) {
     this._getting = true;
 
     this._query = this._query.join.call(this._query, ...arguments);
