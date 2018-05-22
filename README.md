@@ -76,30 +76,30 @@ npm i -s @foxify/odin
 ## TODO
 
 - [ ] Drivers
-    - [x] `MongoDB`
-    - [ ] `MySQL`
-    - [ ] `MariaDB`
-    - [ ] `PostgreSQL`
-    - [ ] `SQLite`
-    - [ ] `Redis`
-    - [ ] `Memory`
+  - [x] `MongoDB`
+  - [ ] `MySQL`
+  - [ ] `MariaDB`
+  - [ ] `PostgreSQL`
+  - [ ] `SQLite`
+  - [ ] `Redis`
+  - [ ] `Memory`
 - [ ] Relationships
-    - [x] `hasMany`
-    - [x] `hasOne`
-    - [ ] `hasManyThrough`
-    - [ ] `hasOneThrough`
-    - [ ] `Polymorphic`
-		- [x] `morphMany`
-		- [x] `morphOne`
-		- [ ] `morphTo`
-		- [ ] `morphManyThrough`
-		- [ ] `morphOneThrough`
-		- [ ] `morphToThrough`
-    - [x] CRUD operations
-        - [x] Create operation
-        - [x] Read operation
-        - [x] Update operation
-        - [x] Delete operation
+  - [x] `hasMany`
+  - [x] `hasOne`
+  - [ ] `hasManyThrough`
+  - [ ] `hasOneThrough`
+  - [ ] `Polymorphic`
+    - [x] `morphMany`
+    - [x] `morphOne`
+    - [ ] `morphTo`
+    - [ ] `morphManyThrough`
+    - [ ] `morphOneThrough`
+    - [ ] `morphToThrough`
+  - [x] CRUD operations
+    - [x] Create operation
+    - [x] Read operation
+    - [x] Update operation
+    - [x] Delete operation
 - [x] `Schema` validation
 - [x] `GraphQL` support
 - [ ] Migrations
