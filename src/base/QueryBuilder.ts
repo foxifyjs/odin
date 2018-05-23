@@ -11,7 +11,7 @@ interface QueryBuilder<T = any> {
 
   /*********************************** Joins **********************************/
 
-  join(table: string, localKey?: string, foreignKey?: string, as?: string): Query<T>;
+  join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string): Query<T>;
 
   /******************************* Where Clauses ******************************/
 
@@ -133,8 +133,8 @@ class QueryBuilder {
 
   /*********************************** Joins **********************************/
 
-  static join(table: string, localKey?: string, foreignKey?: string, as?: string) {
-    return this.query().join(table, localKey, foreignKey, as);
+  static join(table: string | ModelConstructor, query?: Driver.JoinQuery, as?: string) {
+    return this.query().join(table, query, as);
   }
 
   /******************************* Where Clauses ******************************/

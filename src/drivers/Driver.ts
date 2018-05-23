@@ -10,6 +10,12 @@ module Driver {
 
   export type Id = number | mongodb.ObjectId;
 
+  export interface JoinQueryObject<T = any> {
+    on: (field: string, operator: Operator | any, value?: any) => JoinQueryObject<T>;
+  }
+
+  export type JoinQuery<T = any> = (query: JoinQueryObject<T>) => void;
+
   export type WhereQuery<T = any> = (query: Driver<T>) => Driver<T>;
 
   export type Mapper<T = any> = (item: T, index: number, items: T[]) => any;
@@ -28,7 +34,7 @@ abstract class Driver<T = any> {
 
   /*********************************** Joins **********************************/
 
-  abstract join(table: string, localKey?: string, foreignKey?: string, as?: string): this;
+  abstract join(table: string, query?: Driver.JoinQuery<T>, as?: string): this;
 
   /******************************* Where Clauses ******************************/
 

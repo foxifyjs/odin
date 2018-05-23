@@ -1,4 +1,4 @@
 module.exports = async () => {
-    await global.__MONGOD__.stop();
-    process.exit(0);
+  await global.__MONGOD__.stop();
+  process.exit(0);
 };

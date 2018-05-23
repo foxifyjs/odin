@@ -7,7 +7,7 @@ import * as utils from "../utils";
 
 // @ts-ignore:next-line
 interface Query<T = any> extends DB<T> {
-  join(table: string | ModelConstructor, localKey?: string, foreignKey?: string, as?: string): this;
+  join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string): this;
 
   get(): Promise<Array<Model<T>>>;
   get(callback: Driver.Callback<Array<Model<T>>>): void;
@@ -30,7 +30,7 @@ class Query<T = any> extends DB<T> {
     relations.map((relation) => relation.load(this));
   }
 
-  join(table: string | ModelConstructor, localKey?: string, foreignKey?: string, as?: string) {
+  join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string) {
     if (!utils.string.isInstance(table)) {
       const model = table;
       table = model.toString();
@@ -44,7 +44,7 @@ class Query<T = any> extends DB<T> {
       });
     }
 
-    return super.join(table, localKey, foreignKey, as);
+    return super.join(table, query, as);
   }
 
   // @ts-ignore:next-line
