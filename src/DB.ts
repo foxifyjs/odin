@@ -135,7 +135,7 @@ class DB<T = any, D extends Driver<T> = any> {
   }
 
   table(table: string) {
-    this._query = this._query.table.call(this._query, ...arguments);
+    this._query = this._query.table.call(this._query, table);
 
     return this;
   }
@@ -153,7 +153,7 @@ class DB<T = any, D extends Driver<T> = any> {
   join(table: string, query?: Driver.JoinQuery<T>, as?: string) {
     this._getting = true;
 
-    this._query = this._query.join.call(this._query, ...arguments);
+    this._query = this._query.join.call(this._query, table, query, as);
 
     return this;
   }

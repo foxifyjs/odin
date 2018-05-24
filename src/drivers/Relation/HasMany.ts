@@ -6,8 +6,8 @@ abstract class HasMany extends Relation {
   constructor(
     model: Model,
     relation: ModelConstructor,
-    localKey: string = "id",
-    foreignKey: string = utils.makeTableId(model.constructor.toString()),
+    localKey: string = utils.makeTableId(model.constructor.toString()),
+    foreignKey: string = "id",
     caller: (...args: any[]) => any,
   ) {
     super(model, relation, localKey, foreignKey, caller);

@@ -15,6 +15,8 @@ const prepareValue = (field: string, value: any) => {
 
   if (Array.isArray(value)) return value.map((v) => new ObjectId(v));
 
+  if (!ObjectId.isValid(value)) return value;
+
   return new ObjectId(value);
 };
 
@@ -249,23 +251,21 @@ class Driver<T = any> extends Base<T> {
           operator = "=";
         }
 
-        if (utils.string.isInstance(value)) {
-          const keys = value.split(".");
+        if (utils.string.isInstance(value) && new RegExp(`^${this._table}\..+`).test(value)) {
+          const keys = utils.array.tail(value.split("."));
 
-          if (keys.length > 1 && keys[0] === this._table) {
-            keys.shift();
+          keys.push(prepareKey(keys.pop()));
 
-            const key = prepareKey(keys.join("."));
-            const pivotKey = `pivot_${key}`;
+          const key = keys.join(".");
+          const pivotKey = `pivot_${key}`;
 
-            LET[pivotKey] = `$${key}`;
+          LET[pivotKey] = `$${key}`;
 
-            EXPR_MATCH.push({
-              [`$${OPERATORS[operator]}`]: [`$${field}`, `$$${pivotKey}`],
-            });
+          EXPR_MATCH.push({
+            [`$${OPERATORS[operator]}`]: [`$${field}`, `$$${pivotKey}`],
+          });
 
-            return QUERY;
-          }
+          return QUERY;
         }
 
         value = prepareValue(field, value);
@@ -281,8 +281,6 @@ class Driver<T = any> extends Base<T> {
     };
 
     query(QUERY);
-
-    console.log(LET, EXPR_MATCH);
 
     const PIPELINE: object[] = [];
 
