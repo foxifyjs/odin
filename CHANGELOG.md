@@ -1,7 +1,7 @@
 # Changelog
 
 
-## [v0.1.0-beta.3](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.3) *(2018-05-24)*
+## [v0.1.0-beta.4](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.4) *(2018-05-24)*
 
 **Implemented enhancements:**
 - Added `morphOne` relation

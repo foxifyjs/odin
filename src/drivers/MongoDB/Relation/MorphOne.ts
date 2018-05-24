@@ -8,7 +8,7 @@ class MorphOne<T = any> extends Base {
 
     return query.join(
       this.relation,
-      (q) => q.on(this.localKey, `${this.model.constructor.toString()}.${this.foreignKey}`)
+      (q) => q.on(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
         .on(`${this.type}_type`, this.model.constructor.filename),
       as,
     ).driver((q: Driver<T>) => q.pipeline({
