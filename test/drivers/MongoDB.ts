@@ -309,5 +309,38 @@ describe("Testing `MongoDB` driver", async () => {
     );
   });
 
-  // TODO: update, increment, delete
+  test("db.update", () => {
+    DB.table(TABLE).where("name", "foo").update({ num: 1000 }, (err, res) => {
+      expect(err).toBe(null);
+      expect(res).toBe(getItems.filter(({ name }) => name === "foo").length);
+
+      const newItems = getItems.map((item) => ({ ...item, num: item.name === "foo" ? 1000 : item.num }));
+      getItems.length = 0;
+      getItems.push(...newItems);
+
+      DB.table(TABLE).orderBy("num").get(["name", "style", "num"], (err, res) => {
+        expect(err).toBe(null);
+        expect(res).toEqual(getItems.sort((a, b) => a.num - b.num));
+      });
+    });
+  });
+
+  test("db.increment", () => {
+    DB.table(TABLE).where("name", "bar").increment("num", (err, res) => {
+      expect(err).toBe(null);
+
+      const newItems = getItems.map((item) => ({ ...item, num: item.name === "bar" ? item.num + 1 : item.num }));
+      getItems.length = 0;
+      getItems.push(...newItems);
+
+      expect(res).toBe(getItems.filter(({ name }) => name === "bar").length);
+    });
+  });
+
+  test("db.delete", () => {
+    DB.table(JOIN_TABLE).delete((err, res) => {
+      expect(err).toBe(null);
+      expect(res).toBe(JOIN_ITEMS.length);
+    });
+  });
 });

@@ -53,7 +53,7 @@ interface ModelConstructor<T = any> extends QueryBuilder, GraphQLConstructor {
 
   validate<T = object>(document: T, updating?: boolean): T;
 
-  new <T>(document?: ModelConstructor.Document): Model<T>;
+  new <T = any>(document?: ModelConstructor.Document): Model<T>;
 }
 
 export interface Model<T = any> extends QueryInstance<T>, Relational {

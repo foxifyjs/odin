@@ -19,7 +19,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "prepare": "npm run lint && node scripts/prepare.js",
+    "prepare": "npm run lint && npm test && node scripts/prepare.js",
     "lint": "tslint -p tsconfig.json -c tslint.json --exclude '**/*.d.ts'",
     "test": "jest --runInBand",
     "coveralls": "npm test -- --coverage && cat ./coverage/lcov.info | coveralls"
