@@ -107,7 +107,7 @@ class QueryBuilder {
   attributes!: ModelConstructor.Document;
 
   static query(relations?: Relation[]) {
-    return new Query(this as any, relations).table(this._table);
+    return new Query(this as any, this._table, relations);
   }
 
   /****************************** With Relations ******************************/

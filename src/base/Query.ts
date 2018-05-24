@@ -22,8 +22,10 @@ interface Query<T = any> extends DB<T> {
 class Query<T = any> extends DB<T> {
   protected readonly _model: ModelConstructor;
 
-  constructor(model: ModelConstructor, relations: Relation[] = []) {
+  constructor(model: ModelConstructor, table: string, relations: Relation[] = []) {
     super(model.connection);
+
+    this.table(table);
 
     this._model = model;
 
@@ -38,7 +40,7 @@ class Query<T = any> extends DB<T> {
       if (!as) as = table;
 
       this.map((item: any) => {
-        item[<string>as] = item[<string>as].map((i: any) => new model(i));
+        item[as as string] = item[as as string].map((i: any) => new model(i));
 
         return item;
       });

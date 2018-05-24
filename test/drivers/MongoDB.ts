@@ -21,7 +21,8 @@ beforeAll(() => {
   });
 });
 
-const TABLE = "odin";
+const TABLE = "users";
+const JOIN_TABLE = "bills";
 
 const test = (name: string, fn: jest.ProvidesCallback) => it(name, fn, 10 * 1000);
 
@@ -67,7 +68,7 @@ describe("Testing `MongoDB` driver", async () => {
   test("DB.insert many (async/await style)", async () => {
     const result = await DB.table(TABLE).insert(insertManyAsyncItems);
 
-    expect(result).toBe(2);
+    expect(result).toBe(insertManyAsyncItems.length);
   });
 
   const insertManyCallbackItems = [
@@ -273,5 +274,40 @@ describe("Testing `MongoDB` driver", async () => {
     });
   });
 
-  // TODO: join, update, increment, delete
+  const JOIN_ITEMS = [
+    {
+      for_name: "foo",
+      bill: 200,
+    },
+    {
+      for_name: "bar",
+      bill: 452,
+    },
+    {
+      for_name: "bar",
+      bill: 706,
+    },
+  ];
+
+  test("db.join", async () => {
+    const result1 = await DB.table(JOIN_TABLE).insert(JOIN_ITEMS);
+    expect(result1).toBe(JOIN_ITEMS.length);
+
+    const result = await DB.table(TABLE)
+      .orderBy("num")
+      .join(JOIN_TABLE, (q) => q.on("for_name", `${TABLE}.name`))
+      .get(["name", "num", "style", `${JOIN_TABLE}.for_name`, `${JOIN_TABLE}.bill`]);
+
+    expect(result).toEqual(
+      getItems.sort((a, b) => a.num - b.num)
+        .map((item) =>
+          ({
+            ...item,
+            [JOIN_TABLE]: JOIN_ITEMS.filter(({ for_name }) => item.name === for_name),
+          }),
+      ),
+    );
+  });
+
+  // TODO: update, increment, delete
 });

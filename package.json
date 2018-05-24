@@ -21,7 +21,7 @@
     "build": "tsc",
     "prepare": "npm run lint && node scripts/prepare.js",
     "lint": "tslint -p tsconfig.json -c tslint.json --exclude '**/*.d.ts'",
-    "test": "jest",
+    "test": "jest --runInBand",
     "coveralls": "npm test -- --coverage && cat ./coverage/lcov.info | coveralls"
   },
   "files": [
