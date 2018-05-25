@@ -213,10 +213,20 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
     });
   }
 
+  /**
+   * Gets the given attribute's value
+   * @param {string} attribute
+   * @returns {*}
+   */
   getAttribute(attribute: string) {
     return attribute.split(".").reduce((prev, curr) => prev[curr], this.attributes);
   }
 
+  /**
+   * Sets the given attribute's value
+   * @param {string} attribute
+   * @param {*} value
+   */
   setAttribute(attribute: string, value: any) {
     utils.setObjectValue(this.attributes, attribute, value);
   }
