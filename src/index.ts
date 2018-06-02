@@ -60,6 +60,8 @@ export interface Model<T = any> extends QueryInstance<T>, Relational {
   constructor: typeof Model;
 }
 
+export { DB, GraphQL, Types, connections };
+
 @utils.mixins(QueryBuilder, Relational, GraphQLInstance)
 export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInstance {
   static DB = DB;
@@ -228,10 +230,10 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
    * @param {*} value
    */
   setAttribute(attribute: string, value: any) {
-    utils.setObjectValue(this.attributes, attribute, value);
+    utils.object.set(this.attributes, attribute, value);
   }
 
-  toJson() {
+  toJSON() {
     return utils.object.map(this.attributes, (value, attr) => {
       const getter = (this as any)[utils.getGetterName(attr as string)];
 
@@ -240,7 +242,7 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
   }
 
   inspect() {
-    return this.toJson();
+    return this.toJSON();
   }
 }
 
@@ -249,7 +251,7 @@ const ModelConstructor: ModelConstructor = Model as any;
 export default ModelConstructor;
 
 /**
- * FIXME I know this seems ugly but in my defense,
+ * FIXME: I know this seems ugly but in my defense,
  * `Typescript` doesn't support static method inside interfaces at the moment
  */
 module.exports = exports.default;

@@ -5,7 +5,7 @@ class TypeNumber extends TypeAny {
   protected _type = "Number";
 
   protected _base(v: any) {
-    if (number.isInstance(v)) return null;
+    if (number.isNumber(v)) return null;
 
     return "Must be a number";
   }
@@ -23,26 +23,26 @@ class TypeNumber extends TypeAny {
   }
 
   min(n: number) {
-    if (!number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     return this._test((v: number) => v < n ? `Must be at least ${n}` : null);
   }
 
   max(n: number) {
-    if (!number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     return this._test((v: number) => v > n ? `Must be at most ${n}` : null);
   }
 
   precision(n: number) {
-    if (!number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     return this._test((v: number) => `${v}`.split(".")[1].length < n ?
       `Must be have at most ${n} decimal places` : null);
   }
 
   multiple(n: number) {
-    if (!number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 

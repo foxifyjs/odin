@@ -16,7 +16,7 @@ class TypeAny implements GraphQL {
   protected _default: () => any = () => undefined;
 
   protected _base(v: any): string | null {
-    if (!utils.function.isInstance(v)) return null;
+    if (!utils.function.isFunction(v)) return null;
 
     return "Invalid type";
   }
@@ -40,7 +40,7 @@ class TypeAny implements GraphQL {
   }
 
   default(v: any) {
-    if (utils.function.isInstance(v)) {
+    if (utils.function.isFunction(v)) {
       this._default = v;
 
       return this;

@@ -33,7 +33,7 @@ class Query<T = any> extends DB<T> {
   }
 
   join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string) {
-    if (!utils.string.isInstance(table)) {
+    if (!utils.string.isString(table)) {
       const model = table;
       table = model.toString();
 

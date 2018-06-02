@@ -5,7 +5,7 @@ class TypeDate extends TypeAny {
   protected _type = "Date";
 
   protected _base(v: any) {
-    if (utils.date.isInstance(v)) return null;
+    if (utils.date.isDate(v)) return null;
 
     return "Must be a date";
   }

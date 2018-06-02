@@ -27,7 +27,7 @@ class TypeArray extends TypeAny {
   }
 
   min(n: number) {
-    if (!number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 
@@ -35,7 +35,7 @@ class TypeArray extends TypeAny {
   }
 
   max(n: number) {
-    if (!number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 
@@ -43,7 +43,7 @@ class TypeArray extends TypeAny {
   }
 
   length(n: number) {
-    if (!number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 

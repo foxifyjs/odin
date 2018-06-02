@@ -119,7 +119,7 @@ class QueryBuilder {
     return this.query(relations.map((name) => {
       let query = (this.prototype as any)[name] as any;
 
-      if (!utils.function.isInstance(query))
+      if (!utils.function.isFunction(query))
         throw new Error(`Relation '${name}' does not exist on '${this.name}' Model`);
 
       query = query.apply(this.prototype);

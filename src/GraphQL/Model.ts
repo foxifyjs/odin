@@ -50,7 +50,7 @@ const _projection = (fieldASTs: any) => fieldASTs.selectionSet.selections.reduce
   return projections;
 }, {});
 
-const _prepare = (item: Model) => item.toJson();
+const _prepare = (item: Model) => item.toJSON();
 
 module GraphQL {
   export interface Schema {

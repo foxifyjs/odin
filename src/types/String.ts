@@ -11,7 +11,7 @@ class TypeString extends TypeAny {
   protected _type = "String";
 
   protected _base(v: any) {
-    if (utils.string.isInstance(v)) return null;
+    if (utils.string.isString(v)) return null;
 
     return "Must be a string";
   }
@@ -48,7 +48,7 @@ class TypeString extends TypeAny {
   }
 
   min(n: number) {
-    if (!utils.number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!utils.number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 
@@ -56,7 +56,7 @@ class TypeString extends TypeAny {
   }
 
   max(n: number) {
-    if (!utils.number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!utils.number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 
@@ -64,7 +64,7 @@ class TypeString extends TypeAny {
   }
 
   length(n: number) {
-    if (!utils.number.isInstance(n)) throw new TypeError("'n' must be a number");
+    if (!utils.number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
 

@@ -5,7 +5,7 @@ class TypeObject extends TypeAny {
   protected _type = "Object";
 
   protected _base(v: any) {
-    if (utils.object.isInstance(v)) return null;
+    if (utils.object.isObject(v)) return null;
 
     return "Must be a object";
   }

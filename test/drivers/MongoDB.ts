@@ -1,4 +1,5 @@
-import Odin from "../../src";
+import { DB, connections } from "../../src";
+import * as utils from "../../src/utils";
 
 declare global {
   namespace NodeJS {
@@ -9,338 +10,461 @@ declare global {
   }
 }
 
-const { DB, connections } = Odin;
+const TABLE = "users";
+const ITEMS = [
+  {
+    name: "foo",
+    style: "async",
+    num: 10,
+  },
+  {
+    name: "bar",
+    style: "callback",
+    num: 15,
+  },
+  {
+    name: "bar",
+    style: "async",
+    num: 12,
+  },
+  {
+    name: null,
+    style: "async",
+    num: 5,
+  },
+  {
+    name: null,
+    style: "callback",
+    num: 55,
+  },
+  {
+    name: "bar",
+    style: "callback",
+    num: 22,
+  },
+];
 
-beforeAll(() => {
-  Odin.connections({
+const JOIN_TABLE = "bills";
+const JOIN_ITEMS = [
+  {
+    for_name: "foo",
+    bill: 200,
+  },
+  {
+    for_name: "bar",
+    bill: 452,
+  },
+  {
+    for_name: "bar",
+    bill: 706,
+  },
+];
+
+beforeAll((done) => {
+  connections({
     default: {
       driver: "MongoDB",
       database: global.__MONGO_DB_NAME__,
       connection: global.__MONGO_CONNECTION__,
     },
   });
+
+  DB.table(TABLE).insert(ITEMS, (err) => {
+    if (err) throw err;
+
+    DB.table(TABLE).get((err, items) => {
+      if (err) throw err;
+
+      ITEMS.length = 0;
+
+      ITEMS.push(...items);
+
+      done();
+    });
+  });
 });
 
-const TABLE = "users";
-const JOIN_TABLE = "bills";
+afterEach((done) => {
+  DB.table(TABLE).delete((err, deleted) => {
+    if (err) throw err;
 
-const test = (name: string, fn: jest.ProvidesCallback) => it(name, fn, 10 * 1000);
+    DB.table(TABLE).insert(ITEMS, (err, inserted) => {
+      if (err) throw err;
 
-describe("Testing `MongoDB` driver", async () => {
-  const insertOneAsyncItem = {
-    name: "foo",
-    style: "async",
-    num: 10,
-  };
+      done();
+    });
+  });
+});
 
-  test("DB.insert one (async/await style)", async () => {
-    const result = await DB.table(TABLE).insert(insertOneAsyncItem);
+describe("`MongoDB` driver", () => {
+  test("db.insert one (async/await style)", async () => {
+    expect.assertions(1);
+
+    const result = await DB.table(TABLE).insert(utils.object.omit(ITEMS[0], ["id"]));
 
     expect(result).toBe(1);
   });
 
-  const insertOneCallbackItem = {
-    name: "bar",
-    style: "callback",
-    num: 15,
-  };
-
-  test("DB.insert one (callback style)", () => {
-    DB.table(TABLE).insert(insertOneCallbackItem, (err, res) => {
+  test("db.insert one (callback style)", (done) => {
+    DB.table(TABLE).insert(utils.object.omit(ITEMS[0], ["id"]), (err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(1);
+      expect(res).toBe(1);
+
+      done();
     });
   });
 
-  const insertManyAsyncItems = [
-    {
-      name: "bar",
-      style: "async",
-      num: 12,
-    },
-    {
-      name: null,
-      style: "async",
-      num: 5,
-    },
-  ];
+  test("db.insert many (async/await style)", async () => {
+    expect.assertions(1);
 
-  test("DB.insert many (async/await style)", async () => {
-    const result = await DB.table(TABLE).insert(insertManyAsyncItems);
+    const result = await DB.table(TABLE).insert(ITEMS.map((item: any) => utils.object.omit(item, ["id"])));
 
-    expect(result).toBe(insertManyAsyncItems.length);
+    expect(result).toBe(ITEMS.length);
   });
 
-  const insertManyCallbackItems = [
-    {
-      name: null,
-      style: "callback",
-      num: 55,
-    },
-    {
-      name: "bar",
-      style: "callback",
-      num: 22,
-    },
-  ];
-
-  test("DB.insert many (callback style)", () => {
-    DB.table(TABLE).insert(insertManyCallbackItems, (err, res) => {
+  test("db.insert many (callback style)", (done) => {
+    DB.table(TABLE).insert(ITEMS.map((item: any) => utils.object.omit(item, ["id"])), (err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(2);
+      expect(res).toBe(ITEMS.length);
+
+      done();
     });
   });
 
-  const getItems = [insertOneAsyncItem, insertOneCallbackItem, ...insertManyAsyncItems, ...insertManyCallbackItems];
+  test("db.value (async/await style)", async () => {
+    expect.assertions(1);
 
-  test("DB.value (async/await style)", async () => {
     const result = await DB.table(TABLE).value("name");
 
-    expect(result).toEqual(getItems.map(({ name }) => name));
+    expect(result).toEqual(ITEMS.map(({ name }) => name || undefined));
   });
 
-  test("DB.value (callback style)", () => {
+  test("db.value (callback style)", (done) => {
     DB.table(TABLE).value("name", (err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.map(({ name }) => name));
+      expect(res).toEqual(ITEMS.map(({ name }) => name || undefined));
+
+      done();
     });
   });
 
-  test("DB.get (async/await style)", async () => {
-    const result = await DB.table(TABLE).get(["name", "style", "num"]);
+  test("db.get (async/await style)", async () => {
+    expect.assertions(1);
 
-    expect(result).toEqual(getItems);
+    const result = await DB.table(TABLE).get();
+
+    expect(result).toEqual([...ITEMS]);
   });
 
-  test("DB.get (callback style)", () => {
-    DB.table(TABLE).get(["name", "style", "num"], (err, res) => {
+  test("db.get (callback style)", (done) => {
+    DB.table(TABLE).get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems);
+      expect(res).toEqual(ITEMS);
+
+      done();
     });
   });
 
-  test("DB.first (async/await style)", async () => {
-    const result = await DB.table(TABLE).first(["name", "style"]);
+  test("db.first (async/await style)", async () => {
+    expect.assertions(1);
 
-    expect(result).toEqual(getItems.map(({ name, style }) => ({ name, style }))[0]);
+    const result = await DB.table(TABLE).first();
+
+    expect(result).toEqual(ITEMS[0]);
   });
 
-  test("DB.first (callback style)", () => {
-    DB.table(TABLE).first(["name", "style"], (err, res) => {
+  test("db.first (callback style)", (done) => {
+    DB.table(TABLE).first((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.map(({ name, style }) => ({ name, style }))[0]);
+      expect(res).toEqual(ITEMS[0]);
+
+      done();
     });
   });
 
-  test("db.where", () => {
-    DB.table(TABLE).where("name", "foo").get(["name", "num", "style"], (err, res) => {
+  test("db.where", (done) => {
+    DB.table(TABLE).where("name", "foo").get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.filter(({ name }) => name === "foo"));
+      expect(res).toEqual(ITEMS.filter(({ name }) => name === "foo"));
+
+      done();
     });
   });
 
-  test("db.orWhere", () => {
-    DB.table(TABLE).where("name", "foo").orWhere("style", "async").get(["name", "num", "style"], (err, res) => {
+  test("db.orWhere", (done) => {
+    DB.table(TABLE).where("name", "foo").orWhere("style", "async").get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.filter(({ name, style }) => name === "foo" || style === "async"));
+      expect(res).toEqual(ITEMS.filter(({ name, style }) => name === "foo" || style === "async"));
+
+      done();
     });
   });
 
-  test("db.whereLike", () => {
-    DB.table(TABLE).whereLike("name", "foo").get(["name", "num", "style"], (err, res) => {
+  test("db.whereLike", (done) => {
+    DB.table(TABLE).whereLike("name", "foo").get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.filter(({ name }) => /foo/.test(name)));
+      expect(res).toEqual(ITEMS.filter(({ name }) => /foo/.test(name)));
+
+      done();
     });
   });
 
-  test("db.whereIn", () => {
-    DB.table(TABLE).whereIn("name", ["foo", "bar"]).get(["name", "num", "style"], (err, res) => {
+  test("db.whereIn", (done) => {
+    DB.table(TABLE).whereIn("name", ["foo", "bar"]).get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.filter(({ name }) => /^(foo|bar)$/.test(name)));
+      expect(res).toEqual(ITEMS.filter(({ name }) => /^(foo|bar)$/.test(name)));
+
+      done();
     });
   });
 
-  test("db.whereNotIn", () => {
-    DB.table(TABLE).whereNotIn("name", ["foo", "bar"]).get(["name", "num", "style"], (err, res) => {
+  test("db.whereNotIn", (done) => {
+    DB.table(TABLE).whereNotIn("name", ["foo", "bar"]).get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.filter(({ name }) => !/^(foo|bar)$/.test(name)));
+      expect(res).toEqual(ITEMS.filter(({ name }) => !/^(foo|bar)$/.test(name)));
+
+      done();
     });
   });
 
-  test("db.whereBetween", () => {
-    DB.table(TABLE).whereBetween("num", 10, 15).get(["name", "num", "style"], (err, res) => {
+  test("db.whereBetween", (done) => {
+    DB.table(TABLE).whereBetween("num", 10, 15).get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.filter(({ num }) => num >= 10 && num <= 15));
+      expect(res).toEqual(ITEMS.filter(({ num }) => num >= 10 && num <= 15));
+
+      done();
     });
   });
 
-  test("db.whereNotBetween", () => {
-    DB.table(TABLE).whereNotBetween("num", 10, 15).get(["name", "num", "style"], (err, res) => {
+  test("db.whereNotBetween", (done) => {
+    DB.table(TABLE).whereNotBetween("num", 10, 15).get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.filter(({ num }) => num < 10 || num > 15));
+      expect(res).toEqual(ITEMS.filter(({ num }) => num < 10 || num > 15));
+
+      done();
     });
   });
 
-  test("db.whereNull", () => {
-    DB.table(TABLE).whereNull("name").get(["name", "num", "style"], (err, res) => {
+  test("db.whereNull", (done) => {
+    DB.table(TABLE).whereNull("name").get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.filter(({ name }) => name === null));
+      expect(res).toEqual(ITEMS.filter(({ name }) => !name));
+
+      done();
     });
   });
 
-  test("db.whereNotNull", () => {
-    DB.table(TABLE).whereNotNull("name").get(["name", "num", "style"], (err, res) => {
+  test("db.whereNotNull", (done) => {
+    DB.table(TABLE).whereNotNull("name").get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.filter(({ name }) => name !== null));
+      expect(res).toEqual(ITEMS.filter(({ name }) => !!name));
+
+      done();
     });
   });
 
-  test("DB.count (async/await style)", async () => {
+  test("db.count (async/await style)", async () => {
+    expect.assertions(1);
+
     const result = await DB.table(TABLE).where("name", "foo").count();
 
-    expect(result)
-      .toEqual(getItems.filter(({ name }) => name === "foo").length);
+    expect(result).toEqual(ITEMS.filter(({ name }) => name === "foo").length);
   });
 
-  test("DB.count (callback style)", () => {
+  test("db.count (callback style)", (done) => {
     DB.table(TABLE).where("name", "foo").count((err, res) => {
       expect(err).toBe(null);
-      expect(res)
-        .toEqual(getItems.filter(({ name }) => name === "foo").length);
+      expect(res).toEqual(ITEMS.filter(({ name }) => name === "foo").length);
+
+      done();
     });
   });
 
-  test("DB.exists (async/await style)", async () => {
+  test("db.exists (async/await style)", async () => {
+    expect.assertions(1);
+
     const result = await DB.table(TABLE).where("name", "foo").exists();
 
-    expect(result)
-      .toEqual(!!getItems.filter(({ name }) => name === "foo"));
+    expect(result).toEqual(!!ITEMS.filter(({ name }) => name === "foo").length);
   });
 
-  test("DB.exists (callback style)", () => {
+  test("db.exists (callback style)", (done) => {
     DB.table(TABLE).where("name", "foo").exists((err, res) => {
       expect(err).toBe(null);
-      expect(res)
-        .toEqual(!!getItems.filter(({ name }) => name === "foo"));
+      expect(res).toEqual(!!ITEMS.filter(({ name }) => name === "foo").length);
+
+      done();
     });
   });
 
-  test("db.min", () => {
-    DB.table(TABLE).min("num", (err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(getItems.sort((a, b) => a.num - b.num)[0].num);
-    });
+  test("db.max (async/await style)", async () => {
+    expect.assertions(1);
+
+    const result = await DB.table(TABLE).max("num");
+
+    expect(result).toEqual(utils.array.clone(ITEMS).sort((a, b) => b.num - a.num)[0].num);
   });
 
-  test("db.max", () => {
+  test("db.max (callback style)", (done) => {
     DB.table(TABLE).max("num", (err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.sort((a, b) => b.num - a.num)[0].num);
+      expect(res).toEqual(utils.array.clone(ITEMS).sort((a, b) => b.num - a.num)[0].num);
+
+      done();
     });
   });
 
-  test("db.avg", () => {
+  test("db.min (async/await style)", async () => {
+    expect.assertions(1);
+
+    const result = await DB.table(TABLE).min("num");
+
+    expect(result).toEqual(utils.array.clone(ITEMS).sort((a, b) => a.num - b.num)[0].num);
+  });
+
+  test("db.min (callback style)", (done) => {
+    DB.table(TABLE).min("num", (err, res) => {
+      expect(err).toBe(null);
+      expect(res).toEqual(utils.array.clone(ITEMS).sort((a, b) => a.num - b.num)[0].num);
+
+      done();
+    });
+  });
+
+  test("db.avg (async/await style)", async () => {
+    expect.assertions(1);
+
+    const result = await DB.table(TABLE).avg("num");
+
+    expect(result).toEqual(ITEMS.reduce((prev, cur) => prev + cur.num, 0) / ITEMS.length);
+  });
+
+  test("db.avg (callback style)", (done) => {
     DB.table(TABLE).avg("num", (err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.reduce((prev, curr) => prev + curr.num, 0) / getItems.length);
+      expect(res).toEqual(ITEMS.reduce((prev, cur) => prev + cur.num, 0) / ITEMS.length);
+
+      done();
     });
   });
 
-  test("db.orderBy", () => {
-    DB.table(TABLE).orderBy("num", "desc").get(["name", "num", "style"], (err, res) => {
+  test("db.orderBy", (done) => {
+    DB.table(TABLE).orderBy("num", "desc").get((err, res) => {
       expect(err).toBe(null);
-      expect(res[0]).toEqual(getItems.sort((a, b) => b.num - a.num)[0]);
+      expect(res).toEqual(utils.array.clone(ITEMS).sort((a, b) => b.num - a.num));
+
+      done();
     });
   });
 
-  test("db.map", () => {
-    DB.table(TABLE).orderBy("num").map(({ name }) => ({ name: name || "was null" })).get((err, res) => {
+  test("db.map", (done) => {
+    DB.table(TABLE).map(({ name }) => ({ name: name || "was null" })).get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.sort((a, b) => a.num - b.num).map(({ name }) => ({ name: name || "was null" })));
+      expect(res).toEqual(ITEMS.map(({ name }) => ({ name: name || "was null" })));
+
+      done();
     });
   });
 
-  test("db.skip", () => {
-    DB.table(TABLE).skip(4).orderBy("num").get(["name", "num", "style"], (err, res) => {
+  test("db.skip", (done) => {
+    DB.table(TABLE).skip(4).get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.sort((a, b) => a.num - b.num).slice(4));
+      expect(res).toEqual(utils.array.clone(ITEMS).slice(4));
+
+      done();
     });
   });
 
-  test("db.limit", () => {
-    DB.table(TABLE).limit(4).orderBy("num").get(["name", "num", "style"], (err, res) => {
+  test("db.limit", (done) => {
+    DB.table(TABLE).limit(4).get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(getItems.sort((a, b) => a.num - b.num).slice(0, 4));
+      expect(res).toEqual(utils.array.clone(ITEMS).slice(0, 4));
+
+      done();
     });
   });
-
-  const JOIN_ITEMS = [
-    {
-      for_name: "foo",
-      bill: 200,
-    },
-    {
-      for_name: "bar",
-      bill: 452,
-    },
-    {
-      for_name: "bar",
-      bill: 706,
-    },
-  ];
 
   test("db.join", async () => {
-    const result1 = await DB.table(JOIN_TABLE).insert(JOIN_ITEMS);
-    expect(result1).toBe(JOIN_ITEMS.length);
+    expect.assertions(3);
 
-    const result = await DB.table(TABLE)
-      .orderBy("num")
+    const joinInsertResult = await DB.table(JOIN_TABLE).insert(JOIN_ITEMS);
+    expect(joinInsertResult).toBe(JOIN_ITEMS.length);
+
+    const joinResult = await DB.table(JOIN_TABLE).get();
+    expect(joinResult.length).toBe(JOIN_ITEMS.length);
+
+    const result = await DB.table(TABLE).orderBy("num")
       .join(JOIN_TABLE, (q) => q.on("for_name", `${TABLE}.name`))
-      .get(["name", "num", "style", `${JOIN_TABLE}.for_name`, `${JOIN_TABLE}.bill`]);
+      .get();
 
     expect(result).toEqual(
-      getItems.sort((a, b) => a.num - b.num)
+      utils.array.clone(ITEMS).sort((a, b) => a.num - b.num)
         .map((item) =>
           ({
             ...item,
-            [JOIN_TABLE]: JOIN_ITEMS.filter(({ for_name }) => item.name === for_name),
+            [JOIN_TABLE]: joinResult.filter(({ for_name }) => item.name === for_name),
           }),
       ),
     );
   });
 
-  test("db.update", () => {
+  test("db.update (async/await style)", async () => {
+    expect.assertions(2);
+
+    const updated = await DB.table(TABLE).where("name", "foo").update({ num: 1000 });
+
+    expect(updated).toBe(ITEMS.filter(({ name }) => name === "foo").length);
+
+    const result = await DB.table(TABLE).get();
+
+    expect(result).toEqual(ITEMS.map((item) => ({ ...item, num: item.name === "foo" ? 1000 : item.num })));
+  });
+
+  test("db.update (callback style)", (done) => {
     DB.table(TABLE).where("name", "foo").update({ num: 1000 }, (err, res) => {
       expect(err).toBe(null);
-      expect(res).toBe(getItems.filter(({ name }) => name === "foo").length);
+      expect(res).toBe(ITEMS.filter(({ name }) => name === "foo").length);
 
-      const newItems = getItems.map((item) => ({ ...item, num: item.name === "foo" ? 1000 : item.num }));
-      getItems.length = 0;
-      getItems.push(...newItems);
-
-      DB.table(TABLE).orderBy("num").get(["name", "style", "num"], (err, res) => {
+      DB.table(TABLE).get((err, res) => {
         expect(err).toBe(null);
-        expect(res).toEqual(getItems.sort((a, b) => a.num - b.num));
+        expect(res).toEqual(ITEMS.map((item) => ({ ...item, num: item.name === "foo" ? 1000 : item.num })));
+
+        done();
       });
     });
   });
 
-  test("db.increment", () => {
+  test("db.increment (async/await style)", async () => {
+    expect.assertions(1);
+
+    const result = await DB.table(TABLE).where("name", "bar").increment("num");
+
+    expect(result).toBe(ITEMS.filter(({ name }) => name === "bar").length);
+  });
+
+  test("db.increment (callback style)", (done) => {
     DB.table(TABLE).where("name", "bar").increment("num", (err, res) => {
       expect(err).toBe(null);
+      expect(res).toBe(ITEMS.filter(({ name }) => name === "bar").length);
 
-      const newItems = getItems.map((item) => ({ ...item, num: item.name === "bar" ? item.num + 1 : item.num }));
-      getItems.length = 0;
-      getItems.push(...newItems);
-
-      expect(res).toBe(getItems.filter(({ name }) => name === "bar").length);
+      done();
     });
   });
 
-  test("db.delete", () => {
-    DB.table(JOIN_TABLE).delete((err, res) => {
+  test("db.delete (async/await style)", async () => {
+    expect.assertions(1);
+
+    const result = await DB.table(TABLE).delete();
+
+    expect(result).toBe(ITEMS.length);
+  });
+
+  test("db.delete (callback style)", (done) => {
+    DB.table(TABLE).delete((err, res) => {
       expect(err).toBe(null);
-      expect(res).toBe(JOIN_ITEMS.length);
+      expect(res).toBe(ITEMS.length);
+
+      done();
     });
   });
 });

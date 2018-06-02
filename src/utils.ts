@@ -118,26 +118,6 @@ export const makeTableId = (name: string) => `${makeTableType(name)}_id`;
 export const makeMorphType = (name: string) => `${makeTableType(name)}able`;
 
 /**
- * Sets the value of the given path in the given object
- * @param {object} obj
- * @param {string} path
- * @param {*} value
- * @example
- * const obj = { foo: { bar: "Hello" } };
- * setObjectValue(obj, "foo.bar", "hello world");
- * // obj -> { foo: { bar: "hello world" } }
- */
-export const setObjectValue = (obj: { [key: string]: any }, path: string, value: any) => {
-  const keys = path.split(".");
-  const length = keys.length - 1;
-  let i = 0;
-
-  for (; i < length; i++) obj = obj[keys[i]];
-
-  obj[keys[i]] = value;
-};
-
-/**
  * Gets the name of the caller method of the given function
  * @param {Function} func
  * @returns {string}

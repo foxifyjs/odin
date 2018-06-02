@@ -346,7 +346,7 @@ class DB<T = any, D extends Driver<T> = any> {
 
   decrement(field: string, count?: number | Driver.Callback<number>, callback?: Driver.Callback<number>) {
     if (count === undefined) count = 1;
-    else if (func.isInstance(count)) {
+    else if (func.isFunction(count)) {
       callback = count;
       count = 1;
     }
