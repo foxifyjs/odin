@@ -12,8 +12,9 @@
 
 ---
 
-## [next](https://github.com/foxifyjs/odin/releases/tag/next) - *(2018-__-__)*
+## [v0.1.0-beta.5](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.5) - *(2018-08-16)*
 
+- :star2: Some enhancements
 - :eyeglasses: Added some tests
 
 ## [v0.1.0-beta.4](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.4) - *(2018-05-24)*
