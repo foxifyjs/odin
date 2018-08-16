@@ -97,8 +97,6 @@ interface Driver<T = any> extends Base<T> {
 }
 
 class Driver<T = any> extends Base<T> {
-  protected _table!: string;
-
   static connect(con: connect.Connection) {
     if (con.connection)
       return () => new this((con.connection as mongodb.MongoClient).db(con.database));
@@ -114,9 +112,9 @@ class Driver<T = any> extends Base<T> {
     return () => new this(server.db(con.database));
   }
 
-  get driver(): "MongoDB" {
-    return "MongoDB";
-  }
+  protected _table!: string;
+
+  readonly driver = "MongoDB";
 
   protected _query!: mongodb.Collection;
 
@@ -153,7 +151,7 @@ class Driver<T = any> extends Base<T> {
 
     if (Array.isArray(document)) return document.map(this._prepareToRead);
 
-    return utils.object.map(
+    return utils.object.mapValues(
       utils.object.mapKeys(document, (value, key) => key === "_id" ? "id" : key),
       (value, key) => isID(key as string) ?
         value && value.toString() :
@@ -170,7 +168,7 @@ class Driver<T = any> extends Base<T> {
 
     if (Array.isArray(document)) return document.map(this._prepareToStore);
 
-    return utils.object.map(
+    return utils.object.mapValues(
       utils.object.mapKeys(document, (value, key) => key === "id" ? "_id" : key),
       (value, key) => isID(key as string) ?
         (
@@ -379,6 +377,37 @@ class Driver<T = any> extends Base<T> {
     return this;
   }
 
+  // groupBy(field: string, query?: Base.GroupQuery<T>) {
+  //   const MATCH: { [key: string]: any } = {};
+
+  //   this.pipeline({ $group: { _id: field } }, { $project: { [field]: "$_id" } });
+
+  //   if (!query) return this;
+
+  //   const QUERY = {
+  //     having: (field: any, operator: any, value?: any) => {
+  //       field = prepareKey(field);
+
+  //       if (value === undefined) {
+  //         value = operator;
+  //         operator = "=";
+  //       }
+
+  //       MATCH[field] = {
+  //         [`$${OPERATORS[operator]}`]: prepareValue(field, value),
+  //       };
+
+  //       return QUERY;
+  //     },
+  //   };
+
+  //   query(QUERY);
+
+  //   if (utils.object.isEmpty(MATCH)) return this;
+
+  //   return this.pipeline({ $match: MATCH });
+  // }
+
   orderBy(field: string, order?: Base.Order) {
     return this.pipeline({ $sort: { [field]: order === "desc" ? -1 : 1 } });
   }
@@ -394,7 +423,7 @@ class Driver<T = any> extends Base<T> {
   /*********************************** Read ***********************************/
 
   private _aggregate(options?: mongodb.CollectionAggregationOptions) {
-    // FIXME: the mongodb typing has a bug i think
+    // FIXME: the mongodb typing has a bug i think (aggregation mapping)
     return this._mappers.reduce(
       (query: any, mapper) => query.map(mapper),
       this._query.aggregate(
@@ -414,7 +443,7 @@ class Driver<T = any> extends Base<T> {
   }
 
   count(callback?: mongodb.MongoCallback<number>): Promise<number> | void {
-    return this._query.count(this._filter, callback as any);
+    return this._query.countDocuments(this._filter, callback as any);
   }
 
   get(

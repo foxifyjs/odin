@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-const TABLE = "users";
+const TABLE = "driver_users";
 const ITEMS = [
   {
     name: "foo",
@@ -44,7 +44,7 @@ const ITEMS = [
   },
 ];
 
-const JOIN_TABLE = "bills";
+const JOIN_TABLE = "driver_bills";
 const JOIN_ITEMS = [
   {
     for_name: "foo",
@@ -347,6 +347,19 @@ describe("`MongoDB` driver", () => {
       done();
     });
   });
+
+  // test("db.groupBy", (done) => {
+  //   DB.table(TABLE).groupBy("style", (q) => q.having("num", ">=", 10)).get((err, res) => {
+  //     expect(err).toBe(null);
+
+  //     const GROUPED = utils.array.groupBy(ITEMS, "style");
+
+  //     expect(res)
+  //       .toEqual(Object.keys(GROUPED).reduce((prev, cur) => (prev.push(...GROUPED[cur]), prev), [] as any[]));
+
+  //     done();
+  //   });
+  // });
 
   test("db.orderBy", (done) => {
     DB.table(TABLE).orderBy("num", "desc").get((err, res) => {

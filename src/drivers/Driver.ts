@@ -10,6 +10,12 @@ module Driver {
 
   export type Id = number | mongodb.ObjectId;
 
+  export interface GroupQueryObject<T = any> {
+    having: (field: string, operator: Operator | any, value?: any) => GroupQueryObject<T>;
+  }
+
+  export type GroupQuery<T = any> = (query: GroupQueryObject<T>) => void;
+
   export interface JoinQueryObject<T = any> {
     on: (field: string, operator: Operator | any, value?: any) => JoinQueryObject<T>;
   }
@@ -24,7 +30,7 @@ module Driver {
 abstract class Driver<T = any> {
   protected _query: any;
 
-  abstract get driver(): connections.Driver;
+  abstract readonly driver: connections.Driver;
 
   constructor(query: connections.Query) {
     this._query = query;
@@ -62,13 +68,11 @@ abstract class Driver<T = any> {
 
   abstract whereNotNull(field: string): this;
 
-  /*************** Mapping, Ordering, Grouping, Limit & Offset ****************/
+  /*************** Mapping, Grouping, Ordering, Limit & Offset ****************/
 
   abstract map(fn: Driver.Mapper<T>): this;
 
-  // TODO groupBy
-  // @see https://stackoverflow.com/questions/21023005/mongodb-aggregation-group-by-several-fields
-  // abstract groupBy(field: string): this;
+  // abstract groupBy(field: string, query?: Driver.GroupQuery<T>): this;
 
   abstract orderBy(field: string, order?: Driver.Order): this;
 

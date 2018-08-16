@@ -42,7 +42,7 @@ export const getConnection = <T = any, D extends drivers.Base<T> = drivers.Base<
   (global as any)[CONNECTIONS_GLOBAL][name]();
 
 export default (connections: connect.Connections) => {
-  utils.object.map(connections, (connection: connect.Connection, name) => {
+  utils.object.forEach(connections, (connection: connect.Connection, name) => {
     if (!(global as any)[CONNECTIONS_GLOBAL][name])
       setConnection(name as string, connect(connection) as any);
   });

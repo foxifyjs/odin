@@ -35,18 +35,18 @@ export function mixins(...baseCtors: any[]) {
 /**
  * Adds the getter/setter to the given object
  * @param {object} obj
- * @param {("get" | "set")} mothod
+ * @param {("get" | "set")} method
  * @param {string} name
  * @param {(value?: any) => any} func
  */
-export function define(obj: object, mothod: "get" | "set", name: string, func: (value?: any) => any) {
+export function define(obj: object, method: "get" | "set", name: string, func: (value?: any) => any) {
   Object.defineProperty(
     obj,
     name,
     {
       configurable: true,
       enumerable: true,
-      [mothod]: func,
+      [method]: func,
     },
   );
 }
