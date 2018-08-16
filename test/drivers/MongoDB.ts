@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-const TABLE = "driver_users";
+const TABLE = "users";
 const ITEMS = [
   {
     name: "foo",
@@ -44,7 +44,7 @@ const ITEMS = [
   },
 ];
 
-const JOIN_TABLE = "driver_bills";
+const JOIN_TABLE = "bills";
 const JOIN_ITEMS = [
   {
     for_name: "foo",
@@ -89,6 +89,18 @@ afterEach((done) => {
     if (err) throw err;
 
     DB.table(TABLE).insert(ITEMS, (err, inserted) => {
+      if (err) throw err;
+
+      done();
+    });
+  });
+});
+
+afterAll((done) => {
+  DB.table(TABLE).delete((err) => {
+    if (err) throw err;
+
+    DB.table(JOIN_TABLE).delete((err) => {
       if (err) throw err;
 
       done();
@@ -417,7 +429,7 @@ describe("`MongoDB` driver", () => {
             ...item,
             [JOIN_TABLE]: joinResult.filter(({ for_name }) => item.name === for_name),
           }),
-      ),
+        ),
     );
   });
 
