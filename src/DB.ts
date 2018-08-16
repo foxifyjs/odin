@@ -41,6 +41,8 @@ interface DB<T = any, D extends Driver<T> = any> {
 
   map(fn: Driver.Mapper<T>): this;
 
+  // groupBy(field: string, query?: Driver.GroupQuery<T>): this;
+
   orderBy(field: string, order?: Driver.Order): this;
 
   skip(offset: number): this;
@@ -250,6 +252,14 @@ class DB<T = any, D extends Driver<T> = any> {
     return this;
   }
 
+  // groupBy(field: string, query?: Driver.GroupQuery<T>) {
+  //   this._getting = true;
+
+  //   this._query = this._query.groupBy.call(this._query, ...arguments);
+
+  //   return this;
+  // }
+
   orderBy(field: string, order?: Driver.Order) {
     this._getting = true;
 
@@ -346,7 +356,7 @@ class DB<T = any, D extends Driver<T> = any> {
 
   decrement(field: string, count?: number | Driver.Callback<number>, callback?: Driver.Callback<number>) {
     if (count === undefined) count = 1;
-    else if (func.isInstance(count)) {
+    else if (func.isFunction(count)) {
       callback = count;
       count = 1;
     }

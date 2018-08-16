@@ -50,7 +50,7 @@ const _projection = (fieldASTs: any) => fieldASTs.selectionSet.selections.reduce
   return projections;
 }, {});
 
-const _prepare = (item: Model) => item.toJson();
+const _prepare = (item: Model) => item.toJSON();
 
 module GraphQL {
   export interface Schema {
@@ -95,7 +95,7 @@ class GraphQL {
           const projection = _projection(fieldASTs.fieldNodes[0]);
 
           let query = (this as any) as ModelConstructor | Query;
-          utils.object.map(params, (value, key) => {
+          utils.object.forEach(params, (value, key) => {
             query = query.where(key as string, value);
           });
 
@@ -109,7 +109,7 @@ class GraphQL {
           const projection = _projection(fieldASTs.fieldNodes[0]);
 
           let query = (this as any) as ModelConstructor | Query;
-          utils.object.map(params, (value, key) => {
+          utils.object.forEach(params, (value, key) => {
             query = query.where(key as string, value);
           });
 
@@ -158,7 +158,7 @@ class GraphQL {
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
           let query = (this as any) as ModelConstructor | Query;
-          utils.object.map(params.query, (value, key) => {
+          utils.object.forEach(params.query, (value, key) => {
             query = query.where(key as string, value);
           });
 
@@ -174,7 +174,7 @@ class GraphQL {
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
           let query = (this as any) as ModelConstructor | Query;
-          utils.object.map(params.data, (value, key) => {
+          utils.object.forEach(params.data, (value, key) => {
             query = query.where(key as string, value);
           });
 

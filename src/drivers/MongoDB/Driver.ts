@@ -2,6 +2,7 @@ import * as deasync from "deasync";
 import * as mongodb from "mongodb";
 import { connect, Query } from "../../connections";
 import * as utils from "../../utils";
+import * as async from "async";
 import Base from "../Driver";
 
 const { ObjectId } = mongodb;
@@ -96,39 +97,24 @@ interface Driver<T = any> extends Base<T> {
 }
 
 class Driver<T = any> extends Base<T> {
-  protected _table!: string;
-
   static connect(con: connect.Connection) {
     if (con.connection)
-      return () => new this(
-        (con.connection as mongodb.MongoClient).db(con.database),
-      );
+      return () => new this((con.connection as mongodb.MongoClient).db(con.database));
 
     let uri = "mongodb://";
 
-    if (con.user && con.password)
-      uri += `${
-        con.user
-        }:${
-        con.password
-        }@`;
+    if (con.user && con.password) uri += `${con.user}:${con.password}@`;
 
-    uri += `${
-      con.host || "127.0.0.1"
-      }:${
-      con.port || "27017"
-      }/${
-      con.database
-      }`;
+    uri += `${con.host || "127.0.0.1"}:${con.port || "27017"}/${con.database}`;
 
     const server = <mongodb.MongoClient>deasync(mongodb.MongoClient.connect)(uri);
 
     return () => new this(server.db(con.database));
   }
 
-  get driver(): "MongoDB" {
-    return "MongoDB";
-  }
+  protected _table!: string;
+
+  readonly driver = "MongoDB";
 
   protected _query!: mongodb.Collection;
 
@@ -159,25 +145,16 @@ class Driver<T = any> extends Base<T> {
   private _prepareToRead = (document: any): any => {
     if (
       !document ||
-      !utils.object.isInstance(document) ||
-      utils.date.isInstance(document)
+      !(utils.object.isObject(document) || typeof document === "object") ||
+      utils.date.isDate(document)
     ) return document;
 
     if (Array.isArray(document)) return document.map(this._prepareToRead);
 
-    if ((document as any)._id) {
-      document = {
-        id: (document as any)._id,
-        ...document,
-      };
-
-      delete document._id;
-    }
-
-    return utils.object.map(
-      document,
+    return utils.object.mapValues(
+      utils.object.mapKeys(document, (value, key) => key === "_id" ? "id" : key),
       (value, key) => isID(key as string) ?
-        value.toString() :
+        value && value.toString() :
         this._prepareToRead(value),
     );
   }
@@ -185,23 +162,14 @@ class Driver<T = any> extends Base<T> {
   private _prepareToStore = (document: any): any => {
     if (
       !document ||
-      !utils.object.isInstance(document) ||
-      utils.date.isInstance(document)
+      !(utils.object.isObject(document) || typeof document === "object") ||
+      utils.date.isDate(document)
     ) return document;
 
     if (Array.isArray(document)) return document.map(this._prepareToStore);
 
-    if ((document as any).id) {
-      document = {
-        _id: (document as any).id,
-        ...document,
-      };
-
-      delete document.id;
-    }
-
-    return utils.object.map(
-      document,
+    return utils.object.mapValues(
+      utils.object.mapKeys(document, (value, key) => key === "id" ? "_id" : key),
       (value, key) => isID(key as string) ?
         (
           ObjectId.isValid(value) ?
@@ -251,7 +219,7 @@ class Driver<T = any> extends Base<T> {
           operator = "=";
         }
 
-        if (utils.string.isInstance(value) && new RegExp(`^${this._table}\..+`).test(value)) {
+        if (utils.string.isString(value) && new RegExp(`^${this._table}\..+`).test(value)) {
           const keys = utils.array.tail(value.split("."));
 
           keys.push(prepareKey(keys.pop()));
@@ -299,13 +267,7 @@ class Driver<T = any> extends Base<T> {
     });
 
     return this.pipeline({
-      $lookup:
-        {
-          from: table,
-          let: LET,
-          pipeline: PIPELINE,
-          as,
-        },
+      $lookup: { from: table, let: LET, pipeline: PIPELINE, as },
     });
   }
 
@@ -415,6 +377,37 @@ class Driver<T = any> extends Base<T> {
     return this;
   }
 
+  // groupBy(field: string, query?: Base.GroupQuery<T>) {
+  //   const MATCH: { [key: string]: any } = {};
+
+  //   this.pipeline({ $group: { _id: field } }, { $project: { [field]: "$_id" } });
+
+  //   if (!query) return this;
+
+  //   const QUERY = {
+  //     having: (field: any, operator: any, value?: any) => {
+  //       field = prepareKey(field);
+
+  //       if (value === undefined) {
+  //         value = operator;
+  //         operator = "=";
+  //       }
+
+  //       MATCH[field] = {
+  //         [`$${OPERATORS[operator]}`]: prepareValue(field, value),
+  //       };
+
+  //       return QUERY;
+  //     },
+  //   };
+
+  //   query(QUERY);
+
+  //   if (utils.object.isEmpty(MATCH)) return this;
+
+  //   return this.pipeline({ $match: MATCH });
+  // }
+
   orderBy(field: string, order?: Base.Order) {
     return this.pipeline({ $sort: { [field]: order === "desc" ? -1 : 1 } });
   }
@@ -430,18 +423,17 @@ class Driver<T = any> extends Base<T> {
   /*********************************** Read ***********************************/
 
   private _aggregate(options?: mongodb.CollectionAggregationOptions) {
-    // FIXME the mongodb typing has a bug i think
-    let query: any = this._query.aggregate(
-      [
-        { $match: this._filter },
-        ...this._pipeline,
-      ],
-      options,
-    );
-
-    this._mappers.map((mapper) => query = query.map(mapper));
-
-    return query as mongodb.AggregationCursor;
+    // FIXME: the mongodb typing has a bug i think (aggregation mapping)
+    return this._mappers.reduce(
+      (query: any, mapper) => query.map(mapper),
+      this._query.aggregate(
+        [
+          { $match: this._filter },
+          ...this._pipeline,
+        ],
+        options,
+      ),
+    ) as mongodb.AggregationCursor;
   }
 
   async exists(callback?: mongodb.MongoCallback<boolean>) {
@@ -451,23 +443,20 @@ class Driver<T = any> extends Base<T> {
   }
 
   count(callback?: mongodb.MongoCallback<number>): Promise<number> | void {
-    return this._query.count(this._filter, callback as any);
+    return this._query.countDocuments(this._filter, callback as any);
   }
 
   get(
     fields?: string[] | mongodb.MongoCallback<T[]>,
     callback?: mongodb.MongoCallback<T[]>,
   ): Promise<T[]> | void {
-    if (utils.function.isInstance(fields)) {
+    if (utils.function.isFunction(fields)) {
       callback = fields;
       fields = undefined;
     }
 
     if (fields) this.pipeline({
-      $project: fields.reduce((prev, cur) => ({
-        ...prev,
-        [cur === "id" ? "_id" : cur]: 1,
-      }), { _id: 0 }),
+      $project: fields.reduce((prev, cur) => (prev[prepareKey(cur)] = 1, prev), { _id: 0 } as { [key: string]: any }),
     });
 
     return this._aggregate()
@@ -475,7 +464,7 @@ class Driver<T = any> extends Base<T> {
   }
 
   async first(fields?: string[] | mongodb.MongoCallback<T>, callback?: mongodb.MongoCallback<T>) {
-    if (utils.function.isInstance(fields)) {
+    if (utils.function.isFunction(fields)) {
       callback = fields;
       fields = undefined;
     }
@@ -483,10 +472,7 @@ class Driver<T = any> extends Base<T> {
     this.limit(1);
 
     if (fields) this.pipeline({
-      $project: fields.reduce((prev, cur) => ({
-        ...prev,
-        [cur === "id" ? "_id" : cur]: 1,
-      }), { _id: 0 }),
+      $project: fields.reduce((prev, cur) => (prev[prepareKey(cur)] = 1, prev), { _id: 0 } as { [key: string]: any }),
     });
 
     // @ts-ignore:next-line
@@ -496,14 +482,18 @@ class Driver<T = any> extends Base<T> {
   }
 
   value(field: string, callback?: mongodb.MongoCallback<any>) {
+    field = prepareKey(field);
+
     const keys = field.split(".");
 
-    return this.pipeline({
-      $project: {
-        _id: 0,
-        [field === "id" ? "_id" : field]: 1,
+    return this.pipeline(
+      {
+        $project: {
+          _id: 0,
+          [field]: { $ifNull: [`$${field}`, "$__NULL__"] },
+        },
       },
-    }).map((item: any) => keys.reduce((prev, key) => prev[key], item))
+    ).map((item: any) => keys.reduce((prev, key) => prev[key], item))
       ._aggregate()
       .toArray(callback as any) as any;
   }
@@ -606,7 +596,7 @@ class Driver<T = any> extends Base<T> {
     callback?: mongodb.MongoCallback<number>,
   ) {
     if (count === undefined) count = 1;
-    else if (utils.function.isInstance(count)) {
+    else if (utils.function.isFunction(count)) {
       callback = count;
       count = 1;
     }

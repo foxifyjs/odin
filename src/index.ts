@@ -12,7 +12,6 @@ import * as utils from "./utils";
 
 module ModelConstructor {
   export type Connection = string;
-  // export type Connection = string | ConnectionObject;
 
   export interface ConnectionObject {
     driver?: string;
@@ -53,12 +52,14 @@ interface ModelConstructor<T = any> extends QueryBuilder, GraphQLConstructor {
 
   validate<T = object>(document: T, updating?: boolean): T;
 
-  new <T>(document?: ModelConstructor.Document): Model<T>;
+  new <T = any>(document?: ModelConstructor.Document): Model<T>;
 }
 
 export interface Model<T = any> extends QueryInstance<T>, Relational {
   constructor: typeof Model;
 }
+
+export { DB, GraphQL, Types, connections };
 
 @utils.mixins(QueryBuilder, Relational, GraphQLInstance)
 export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInstance {
@@ -86,7 +87,7 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
   }
 
   private static get _schema() {
-    // TODO id
+    // TODO: id
     const schema: ModelConstructor.Schema = {
       id: this.Types.ObjectId,
       ...this.schema,
@@ -156,7 +157,7 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
     const validation = validator(this._schema, document);
 
     if (validation.errors && updating) {
-      utils.object.map(validation.errors, (errors, key) => {
+      utils.object.forEach(validation.errors, (errors, key) => {
         if (errors.length === 1 && errors.first() === "Must be provided")
           delete (validation.errors as any)[key];
       });
@@ -196,7 +197,7 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
       setters.push(setterName);
     }
 
-    utils.object.map(document, (value, key) => {
+    utils.object.forEach(document, (value, key) => {
       if (setters.indexOf(key as string) === -1) this.attributes[key] = value;
       else (this as any)[key] = value;
     });
@@ -213,16 +214,26 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
     });
   }
 
+  /**
+   * Gets the given attribute's value
+   * @param {string} attribute
+   * @returns {*}
+   */
   getAttribute(attribute: string) {
     return attribute.split(".").reduce((prev, curr) => prev[curr], this.attributes);
   }
 
+  /**
+   * Sets the given attribute's value
+   * @param {string} attribute
+   * @param {*} value
+   */
   setAttribute(attribute: string, value: any) {
-    utils.setObjectValue(this.attributes, attribute, value);
+    utils.object.set(this.attributes, attribute, value);
   }
 
-  toJson() {
-    return utils.object.map(this.attributes, (value, attr) => {
+  toJSON() {
+    return utils.object.mapValues(this.attributes, (value, attr) => {
       const getter = (this as any)[utils.getGetterName(attr as string)];
 
       return (getter ? getter(value) : value);
@@ -230,7 +241,7 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
   }
 
   inspect() {
-    return this.toJson();
+    return this.toJSON();
   }
 }
 
@@ -239,7 +250,7 @@ const ModelConstructor: ModelConstructor = Model as any;
 export default ModelConstructor;
 
 /**
- * FIXME I know this seems ugly but in my defense,
+ * FIXME: I know this seems ugly but in my defense,
  * `Typescript` doesn't support static method inside interfaces at the moment
  */
 module.exports = exports.default;

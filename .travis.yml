@@ -10,7 +10,11 @@ node_js:
   - "8"
 
 script:
-  - npm run coveralls || echo "push to coveralls failed"
+  - npm run codecov
+
+cache:
+  directories:
+    - "node_modules"
 
 notifications:
   email:
