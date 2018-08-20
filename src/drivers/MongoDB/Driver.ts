@@ -155,7 +155,7 @@ class Driver<T = any> extends Base<T> {
       utils.object.mapKeys(document, (value, key) => key === "_id" ? "id" : key),
       (value, key) => isID(key as string) ?
         value && value.toString() :
-        this._prepareToRead(value),
+        this._prepareToRead(value)
     );
   }
 
@@ -176,7 +176,7 @@ class Driver<T = any> extends Base<T> {
             new ObjectId(value) :
             this._prepareToStore(value)
         ) :
-        this._prepareToStore(value),
+        this._prepareToStore(value)
     );
   }
 
@@ -204,7 +204,7 @@ class Driver<T = any> extends Base<T> {
   join(
     table: string,
     query: Base.JoinQuery<T> = (q) => q.on(utils.makeTableId(table), `${table}.id`),
-    as: string = table,
+    as: string = table
   ) {
     const LET: { [key: string]: any } = {};
     const EXPR_MATCH: object[] = [];
@@ -431,8 +431,8 @@ class Driver<T = any> extends Base<T> {
           { $match: this._filter },
           ...this._pipeline,
         ],
-        options,
-      ),
+        options
+      )
     ) as mongodb.AggregationCursor;
   }
 
@@ -448,7 +448,7 @@ class Driver<T = any> extends Base<T> {
 
   get(
     fields?: string[] | mongodb.MongoCallback<T[]>,
-    callback?: mongodb.MongoCallback<T[]>,
+    callback?: mongodb.MongoCallback<T[]>
   ): Promise<T[]> | void {
     if (utils.function.isFunction(fields)) {
       callback = fields;
@@ -492,7 +492,7 @@ class Driver<T = any> extends Base<T> {
           _id: 0,
           [field]: { $ifNull: [`$${field}`, "$__NULL__"] },
         },
-      },
+      }
     ).map((item: any) => keys.reduce((prev, key) => prev[key], item))
       ._aggregate()
       .toArray(callback as any) as any;
@@ -571,7 +571,7 @@ class Driver<T = any> extends Base<T> {
 
   private async _update(
     update: object,
-    callback?: mongodb.MongoCallback<mongodb.UpdateWriteOpResult>,
+    callback?: mongodb.MongoCallback<mongodb.UpdateWriteOpResult>
   ): Promise<mongodb.UpdateWriteOpResult> {
     if (callback)
       return this._query.updateMany(this._filter, update, callback) as any;
@@ -593,7 +593,7 @@ class Driver<T = any> extends Base<T> {
   async increment(
     field: string,
     count?: number | mongodb.MongoCallback<number>,
-    callback?: mongodb.MongoCallback<number>,
+    callback?: mongodb.MongoCallback<number>
   ) {
     if (count === undefined) count = 1;
     else if (utils.function.isFunction(count)) {

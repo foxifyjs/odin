@@ -6,7 +6,7 @@ class HasMany<T = any> extends Base {
     return query.join(
       this.relation,
       (q) => q.on(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`),
-      this.as,
+      this.as
     );
   }
 }

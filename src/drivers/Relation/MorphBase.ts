@@ -16,7 +16,7 @@ abstract class MorphBase<T = any> extends Relation<T> {
     localKey: string = "id",
     foreignKey: string = `${utils.makeMorphType(relation.toString())}_id`,
     type: string = utils.makeMorphType(relation.toString()),
-    caller: (...args: any[]) => any,
+    caller: (...args: any[]) => any
   ) {
     super(model, relation, localKey, foreignKey, caller);
 

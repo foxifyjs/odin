@@ -60,7 +60,7 @@ class Query<T = any> extends DB<T> {
         async.map(
           res,
           iterator,
-          callback as any,
+          callback as any
         );
       });
 
@@ -73,7 +73,7 @@ class Query<T = any> extends DB<T> {
         if (err) throw err;
 
         items = res as any[];
-      },
+      }
     );
 
     return items;
@@ -112,7 +112,7 @@ class Query<T = any> extends DB<T> {
           if (err) return callback(err, undefined as any);
 
           super.insert(res, callback);
-        },
+        }
       );
     }
 
@@ -126,7 +126,7 @@ class Query<T = any> extends DB<T> {
         if (err) throw err;
 
         items = res;
-      },
+      }
     );
 
     return super.insert(items);

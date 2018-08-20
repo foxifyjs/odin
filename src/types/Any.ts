@@ -85,9 +85,9 @@ class TypeAny implements GraphQL {
               if (err) throw err;
 
               if (result) errors = utils.array.compact(result as string[]);
-            },
+            }
           );
-      },
+      }
     );
 
     if (errors.length === 0) return { errors: null, value };

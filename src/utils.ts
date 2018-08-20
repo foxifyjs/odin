@@ -47,7 +47,7 @@ export function define(obj: object, method: "get" | "set", name: string, func: (
       configurable: true,
       enumerable: true,
       [method]: func,
-    },
+    }
   );
 }
 
@@ -94,7 +94,7 @@ export const makeTableName = (name: string) => {
 export const makeTableType = (name: string) => {
   const key = name.split("_");
 
-  key.push(exports.string.singularize(key.pop() as string));
+  key.push(exports.string.pluralize(key.pop() as string, 1));
 
   return key.join("_");
 };
