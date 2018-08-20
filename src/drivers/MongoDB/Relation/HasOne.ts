@@ -9,7 +9,7 @@ class HasOne<T = any> extends Base {
     return query.join(
       this.relation,
       (q) => q.on(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`),
-      as,
+      as
     ).driver((q: Driver<T>) => q.pipeline({
       $unwind: { path: `$${as}`, preserveNullAndEmptyArrays: true },
     }));

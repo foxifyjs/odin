@@ -12,7 +12,7 @@ abstract class HasOne<T = any> extends Relation<T> {
     relation: ModelConstructor,
     localKey: string = utils.makeTableId(relation.toString()),
     foreignKey: string = "id",
-    caller: (...args: any[]) => any,
+    caller: (...args: any[]) => any
   ) {
     super(model, relation, localKey, foreignKey, caller);
   }

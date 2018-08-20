@@ -21,7 +21,7 @@ class TypeArray extends TypeAny {
     this.ofType = type;
 
     return this._test(
-      (v: any[]) => array.first(array.deepFlatten(array.compact(v.map((item) => type.validate(item).errors)))),
+      (v: any[]) => array.first(array.deepFlatten(array.compact(v.map((item) => type.validate(item).errors))))
     )
       ._cast((v: any[]) => v.map((item) => type.validate(item).value));
   }

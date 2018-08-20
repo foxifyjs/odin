@@ -131,7 +131,7 @@ abstract class Relation<T = any> {
     relation: ModelConstructor,
     localKey: string,
     foreignKey: string,
-    caller: (...args: any[]) => any,
+    caller: (...args: any[]) => any
   ) {
     this._model = model;
     this._relation = relation;
@@ -147,7 +147,7 @@ abstract class Relation<T = any> {
 
     return query.where(
       this.foreignKey,
-      this.model.getAttribute(this.localKey),
+      this.model.getAttribute(this.localKey)
     );
   }
 
@@ -268,7 +268,7 @@ abstract class Relation<T = any> {
           if (err) callback(err, undefined as any);
 
           this._query().insert(newItems as T[], callback);
-        },
+        }
       );
 
     async.map(
@@ -281,7 +281,7 @@ abstract class Relation<T = any> {
         if (err) throw err;
 
         items = newItems as T[];
-      },
+      }
     );
 
     return await this._query().insert(items);
@@ -306,7 +306,7 @@ abstract class Relation<T = any> {
   save(model: Model<T>, callback?: Driver.Callback<Model<T>>) {
     model.setAttribute(
       this.foreignKey,
-      this.model.getAttribute(this.localKey),
+      this.model.getAttribute(this.localKey)
     );
 
     return model.save(callback as any) as Promise<Model<T>> | void;
