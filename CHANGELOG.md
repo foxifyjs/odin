@@ -12,7 +12,11 @@
 
 ---
 
-## [v0.1.0-beta.6](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.5) - *(2018-08-21)*
+## [v0.1.0-beta.7](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.7) - *(2018-08-21)*
+
+- :beetle: `GraphQL` query bug fix
+
+## [v0.1.0-beta.6](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.6) - *(2018-08-21)*
 
 - :boom: `GraphQL` change insert single to create single (eq. `insert_user` => `create_user`)
 - :boom: `GraphQL` change `data` argument to `query`

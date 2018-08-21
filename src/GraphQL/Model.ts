@@ -1,6 +1,6 @@
 import * as Base from "graphql";
 import Query from "../base/Query";
-import ModelConstructor, { Model } from "../index";
+import ModelConstructor, { Model, DB } from "../index";
 import TypeAny from "../types/Any";
 import * as utils from "../utils";
 
@@ -87,7 +87,7 @@ const _orderBy = (model: string, schema: ModelConstructor.Schema) => {
   });
 };
 
-const _prepare = (item: Model) => item.toJSON();
+const _prepare = (item: Model) => item && item.toJSON();
 
 module GraphQL {
   export interface Schema {
@@ -103,6 +103,8 @@ class GraphQL {
   private static _table: string;
   private static timestamps: boolean;
   private static softDelete: boolean;
+  static DB: ModelConstructor.DB;
+  static connection: ModelConstructor.Connection;
 
   static toGraphQL(): any {
     const name = this.name;
@@ -128,19 +130,21 @@ class GraphQL {
       },
     });
 
+    const getDB = () => this.DB.connection(this.connection).table(this._table);
+
     const queries = {
       [single]: {
         type,
         args,
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
           const projection = _projection(fieldASTs.fieldNodes[0]);
+          const query: DB = utils.object.reduce(
+            params,
+            (query, value, key) => query.where(key, value),
+            getDB()
+          );
 
-          let query = (this as any) as ModelConstructor | Query;
-          utils.object.forEach(params, (value, key) => {
-            query = query.where(key as string, value);
-          });
-
-          return _prepare(await (query as Query).first(projection));
+          return await query.first(projection);
         },
       },
       [multiple]: {
@@ -160,28 +164,29 @@ class GraphQL {
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
           const projection = _projection(fieldASTs.fieldNodes[0]);
 
-          let query = (this as any) as ModelConstructor | Query;
+          let db = getDB();
 
-          if (this.timestamps) query = query.orderBy("created_at", "desc");
+          if (this.timestamps) db = db.orderBy("created_at", "desc");
 
-          utils.object.forEach(params, (value, key) => {
-            switch (key) {
-              case "skip":
-                query = query.skip(value);
-                break;
-              case "limit":
-                query = query.limit(value);
-                break;
-              case "orderBy":
-                value = value.split("_");
-                query = query.orderBy(value.shift(), value[0].toLowerCase());
-                break;
-              default:
-                query = query.where(key as string, value);
-            }
-          });
+          const query: DB = utils.object.reduce(
+            params,
+            (query, value, key) => {
+              switch (key) {
+                case "skip":
+                  return query.skip(value);
+                case "limit":
+                  return query.limit(value);
+                case "orderBy":
+                  value = value.split("_");
+                  return query.orderBy(value.shift(), value[0].toLowerCase());
+                default:
+                  return query.where(key as string, value);
+              }
+            },
+            db
+          );
 
-          return (await (query as Query).get(projection)).map(_prepare);
+          return await query.get(projection);
         },
       },
     };
@@ -225,10 +230,11 @@ class GraphQL {
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
-          let query = (this as any) as ModelConstructor | Query;
-          utils.object.forEach(params.query, (value, key) => {
-            query = query.where(key as string, value);
-          });
+          const query: Query = utils.object.reduce(
+            params.query,
+            (query, value, key) => query.where(key, value),
+            (this as any) as ModelConstructor | Query
+          );
 
           return await (query as Query).update(params.data);
         },
@@ -241,10 +247,11 @@ class GraphQL {
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
-          let query = (this as any) as ModelConstructor | Query;
-          utils.object.forEach(params.query, (value, key) => {
-            query = query.where(key as string, value);
-          });
+          const query: Query = utils.object.reduce(
+            params.query,
+            (query, value, key) => query.where(key, value),
+            (this as any) as ModelConstructor | Query
+          );
 
           return await (query as Query).delete();
         },
@@ -260,13 +267,13 @@ class GraphQL {
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
-          let query = (this as any) as ModelConstructor | Query;
+          const query: Query = utils.object.reduce(
+            params.query,
+            (query, value, key) => query.where(key, value),
+            (this as any) as ModelConstructor | Query
+          );
 
-          utils.object.forEach(params.query, (value, key) => {
-            query = query.where(key as string, value);
-          });
-
-          return await (query as Query).update({ deleted_at: null });
+          return await query.update({ deleted_at: null });
         },
       };
 

@@ -14,7 +14,7 @@ const GraphQL: GraphQL = (...models) => {
   const queries: GraphQL.Queries = {};
   const mutations: GraphQL.Queries = {};
 
-  models.map((Model) => {
+  models.forEach((Model) => {
     const gql = Model.toGraphQL();
 
     Object.assign(queries, gql.queries);
