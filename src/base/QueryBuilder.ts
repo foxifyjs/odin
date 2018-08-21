@@ -5,6 +5,10 @@ import * as utils from "../utils";
 import Query from "./Query";
 
 interface QueryBuilder<T = any> {
+  /******************************* With Trashed *******************************/
+
+  withTrashed(): Query<T>;
+
   /****************************** With Relations ******************************/
 
   with(...relations: string[]): Query<T>;
@@ -82,10 +86,10 @@ interface QueryBuilder<T = any> {
   create(item: T): Promise<Model<T>>;
   create(item: T, callback: Driver.Callback<Model<T>>): void;
 
-  /********************************** Updates *********************************/
+  // /********************************** Updates *********************************/
 
-  save(): Promise<Model<T>>;
-  save(callback: Driver.Callback<Model<T>>): void;
+  // save(): Promise<Model<T>>;
+  // save(callback: Driver.Callback<Model<T>>): void;
 
   /********************************** Deletes *********************************/
 
@@ -94,13 +98,22 @@ interface QueryBuilder<T = any> {
 }
 
 export interface QueryInstance<T = any> {
+  /********************************** Updates *********************************/
+
   save(): Promise<Model<T>>;
   save(callback: Driver.Callback<Model<T>>): void;
+
+  /********************************* Restoring ********************************/
+
+  restore(): Promise<boolean>;
+  restore(callback: Driver.Callback<boolean>): void;
 }
 
 class QueryBuilder {
   static connection: string;
   static _table: string;
+  static softDelete: boolean;
+  static DELETED_AT: string;
 
   private _isNew!: boolean;
 
@@ -108,6 +121,12 @@ class QueryBuilder {
 
   static query(relations?: Relation[]) {
     return new Query(this as any, this._table, relations);
+  }
+
+  /******************************* With Trashed *******************************/
+
+  static withTrashed() {
+    return this.query().withTrashed();
   }
 
   /****************************** With Relations ******************************/
@@ -282,10 +301,33 @@ class QueryBuilder {
 
   /********************************** Deletes *********************************/
 
-  static destroy(ids: Driver.Id | Driver.Id[]) {
-    if (Array.isArray(ids)) return this.query().whereIn("id", ids).delete();
+  static destroy(ids: Driver.Id | Driver.Id[], callback?: Driver.Callback<number>) {
+    let query = this.query();
 
-    return this.query().where("id", ids).delete();
+    if (Array.isArray(ids)) query = query.whereIn("id", ids);
+    else query = query.where("id", ids);
+
+    if (this.softDelete) return query.update({ [this.DELETED_AT]: new Date() }, callback);
+
+    return query.delete(callback);
+  }
+
+  /********************************* Restoring ********************************/
+
+  async restore(callback?: Driver.Callback<boolean>) {
+    const id = this.attributes.id;
+
+    if (this._isNew || !id) return false;
+
+    const queryBuilder = (this.constructor as typeof QueryBuilder).where("id", id);
+
+    if (callback) return queryBuilder.restore((err, res) => {
+      if (err) return callback(err, res as any);
+
+      callback(err, !!res);
+    });
+
+    return !!(await queryBuilder.restore());
   }
 }
 

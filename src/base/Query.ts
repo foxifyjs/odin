@@ -7,7 +7,15 @@ import * as utils from "../utils";
 
 // @ts-ignore:next-line
 interface Query<T = any> extends DB<T> {
+  /******************************* With Trashed *******************************/
+
+  withTrashed(): this;
+
+  /*********************************** Joins **********************************/
+
   join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string): this;
+
+  /*********************************** Read ***********************************/
 
   get(): Promise<Array<Model<T>>>;
   get(callback: Driver.Callback<Array<Model<T>>>): void;
@@ -15,12 +23,20 @@ interface Query<T = any> extends DB<T> {
   first(): Promise<Model<T>>;
   first(callback: Driver.Callback<Model<T>>): void;
 
+  /********************************** Inserts *********************************/
+
   insert(items: T[]): Promise<number>;
   insert(items: T[], callback: Driver.Callback<number>): void;
+
+  /********************************* Restoring ********************************/
+
+  restore(): Promise<number>;
+  restore(callback: Driver.Callback<number>): void;
 }
 
 class Query<T = any> extends DB<T> {
   protected readonly _model: ModelConstructor;
+  protected _withTrashed = false;
 
   constructor(model: ModelConstructor, table: string, relations: Relation[] = []) {
     super(model.connection);
@@ -31,6 +47,22 @@ class Query<T = any> extends DB<T> {
 
     relations.forEach((relation) => relation.load(this));
   }
+
+  private _apply_trashed_options() {
+    if (!this._withTrashed) this.whereNull(this._model.DELETED_AT);
+
+    return this;
+  }
+
+  /******************************* With Trashed *******************************/
+
+  withTrashed() {
+    this._withTrashed = true;
+
+    return this;
+  }
+
+  /*********************************** Joins **********************************/
 
   join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string) {
     if (!utils.string.isString(table)) {
@@ -49,9 +81,25 @@ class Query<T = any> extends DB<T> {
     return super.join(table, query, as);
   }
 
+  /*********************************** Read ***********************************/
+
+  exists(callback?: Driver.Callback<boolean>) {
+    this._apply_trashed_options();
+
+    return super.exists(callback);
+  }
+
+  count(callback?: Driver.Callback<number>) {
+    this._apply_trashed_options();
+
+    return super.count(callback);
+  }
+
   // @ts-ignore:next-line
   async get(callback?: Driver.Callback<Array<Model<T>>>) {
     const iterator = (item: any, cb: any) => cb(undefined, new this._model(item));
+
+    this._apply_trashed_options();
 
     if (callback)
       return super.get((err, res) => {
@@ -81,21 +129,58 @@ class Query<T = any> extends DB<T> {
 
   // @ts-ignore:next-line
   async first(callback?: Driver.Callback<Model<T>>) {
+    const model = this._model;
+
+    this._apply_trashed_options();
+
     if (callback)
-      return super.first((err, res) => callback(err, res && new this._model(res) as any));
+      return super.first((err, res) => callback(err, res && new model(res)));
 
     const item = await super.first();
 
-    return item && new this._model(item);
+    return item && new model(item);
   }
 
+  value(field: string, callback?: Driver.Callback<any>) {
+    this._apply_trashed_options();
+
+    return super.value(field, callback);
+  }
+
+  pluck(field: string, callback?: Driver.Callback<any>) {
+    this._apply_trashed_options();
+
+    return super.pluck(field, callback);
+  }
+
+  max(field: string, callback?: Driver.Callback<any>) {
+    this._apply_trashed_options();
+
+    return super.max(field, callback);
+  }
+
+  min(field: string, callback?: Driver.Callback<any>) {
+    this._apply_trashed_options();
+
+    return super.min(field, callback);
+  }
+
+  avg(field: string, callback?: Driver.Callback<any>) {
+    this._apply_trashed_options();
+
+    return super.avg(field, callback);
+  }
+
+  /********************************** Inserts *********************************/
+
   insert(items: T[], callback?: Driver.Callback<number>) {
+    const model = this._model;
     const error = !Array.isArray(items) &&
       new Error(`Expected 'items' to be an array, '${typeof items}' given`);
 
     const iterator = (item: T, cb: any) => {
       try {
-        cb(undefined, this._model.validate(item));
+        cb(undefined, model.validate(item));
       } catch (err) {
         cb(err);
       }
@@ -133,8 +218,10 @@ class Query<T = any> extends DB<T> {
   }
 
   insertGetId(item: T, callback?: Driver.Callback<Driver.Id>) {
+    const model = this._model;
+
     try {
-      item = this._model.validate<T>(item);
+      item = model.validate<T>(item);
     } catch (err) {
       if (callback) return callback(err, undefined as any);
 
@@ -143,6 +230,8 @@ class Query<T = any> extends DB<T> {
 
     return super.insertGetId(item, callback);
   }
+
+  /********************************** Updates *********************************/
 
   update(update: T, callback?: Driver.Callback<number>) {
     try {
@@ -153,7 +242,37 @@ class Query<T = any> extends DB<T> {
       throw err;
     }
 
+    this._apply_trashed_options();
+
     return super.update(update, callback);
+  }
+
+  // FIXME: updated_at
+  increment(field: string, count?: number | Driver.Callback<number>, callback?: Driver.Callback<number>) {
+    this._apply_trashed_options();
+
+    return super.increment(field, count, callback);
+  }
+
+  // FIXME: updated_at
+  decrement(field: string, count?: number | Driver.Callback<number>, callback?: Driver.Callback<number>) {
+    this._apply_trashed_options();
+
+    return super.decrement(field, count, callback);
+  }
+
+  /********************************** Deletes *********************************/
+
+  delete(callback?: Driver.Callback<number>) {
+    this._apply_trashed_options();
+
+    return super.delete(callback);
+  }
+
+  /********************************* Restoring ********************************/
+
+  restore(callback?: Driver.Callback<number>) {
+    return super.update({ [this._model.DELETED_AT]: null } as any, callback);
   }
 }
 

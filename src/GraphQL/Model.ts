@@ -103,6 +103,9 @@ class GraphQL {
   private static _table: string;
   private static timestamps: boolean;
   private static softDelete: boolean;
+  private static CREATED_AT: string;
+  private static UPDATED_AT: string;
+  private static DELETED_AT: string;
   static DB: ModelConstructor.DB;
   static connection: ModelConstructor.Connection;
 
@@ -112,13 +115,8 @@ class GraphQL {
     const multiple = this._table;
     const single = utils.string.pluralize(multiple, 1);
 
-    const schema = _schema(name, this.schema);
-    const args = {
-      id: {
-        type: Base.GraphQLID,
-      },
-      ...schema.args,
-    };
+    const schema = _schema(name, this._schema);
+    const args = schema.args;
     const type = new Base.GraphQLObjectType({
       name,
       fields: {
@@ -192,7 +190,7 @@ class GraphQL {
 
     const inputType = new Base.GraphQLInputObjectType({
       name: `${name}Input`,
-      fields: schema.args,
+      fields: utils.object.omit(args, ["id", this.CREATED_AT, this.UPDATED_AT, this.DELETED_AT]) as any,
     });
 
     const mutations = {
@@ -222,7 +220,7 @@ class GraphQL {
         type: Base.GraphQLInt,
         args: {
           query: {
-            type: new Base.GraphQLNonNull(inputType),
+            type: args,
           },
           data: {
             type: new Base.GraphQLNonNull(inputType),
@@ -242,7 +240,7 @@ class GraphQL {
         type: Base.GraphQLInt,
         args: {
           query: {
-            type: new Base.GraphQLNonNull(inputType),
+            type: args,
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
@@ -262,17 +260,17 @@ class GraphQL {
         type: Base.GraphQLInt,
         args: {
           query: {
-            type: new Base.GraphQLNonNull(inputType),
+            type: args,
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
           const query: Query = utils.object.reduce(
             params.query,
             (query, value, key) => query.where(key, value),
-            (this as any) as ModelConstructor | Query
+            ((this as any) as ModelConstructor).withTrashed()
           );
 
-          return await query.update({ deleted_at: null });
+          return await query.restore();
         },
       };
 

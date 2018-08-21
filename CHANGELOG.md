@@ -12,6 +12,11 @@
 
 ---
 
+## [v0.1.0-beta.9](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.9) - *(2018-08-21)*
+
+- :star2: `UPDATED_AT` and `DELETED_AT` is applied
+- :beetle: `GraphQL` restore bug fix
+
 ## [v0.1.0-beta.8](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.8) - *(2018-08-21)*
 
 - :beetle: `GraphQL` query bug fix

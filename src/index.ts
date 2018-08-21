@@ -49,8 +49,15 @@ interface ModelConstructor<T = any> extends QueryBuilder, GraphQLConstructor {
   connections: typeof connections;
 
   connection: ModelConstructor.Connection;
+
   table?: string;
+
   timestamps?: boolean;
+  softDelete: boolean;
+
+  CREATED_AT: string;
+  UPDATED_AT: string;
+  DELETED_AT: string;
 
   readonly driver: TDriver;
   readonly filename: string;
@@ -172,7 +179,11 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
 
     if (validation.errors) throw validation.errors;
 
-    return validation.value;
+    const value = validation.value;
+
+    if (updating && this.timestamps) value[this.UPDATED_AT] = new Date();
+
+    return value;
   }
 
   private _isNew: boolean = false;
