@@ -49,7 +49,8 @@ class Query<T = any> extends DB<T> {
   }
 
   private _apply_trashed_options() {
-    if (!this._withTrashed) this.whereNull(this._model.DELETED_AT);
+    if (this._model.softDelete && !this._withTrashed)
+      this.whereNull(this._model.DELETED_AT);
 
     return this;
   }

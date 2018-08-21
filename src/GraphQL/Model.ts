@@ -89,6 +89,22 @@ const _orderBy = (model: string, schema: ModelConstructor.Schema) => {
 
 const _prepare = (item: Model) => item && item.toJSON();
 
+const _encapsulate = async (fn: () => Promise<any>) => {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof Error) throw err;
+
+    const errorMessage = utils.object.reduce(err, (prev, message, field) => {
+      prev.push(`[${field}]: ${message}`);
+
+      return prev;
+    }, []).join(", ");
+
+    throw new Error(errorMessage);
+  }
+};
+
 module GraphQL {
   export interface Schema {
     [key: string]: {
@@ -98,7 +114,6 @@ module GraphQL {
 }
 
 class GraphQL {
-  private static schema: ModelConstructor.Schema;
   private static _schema: ModelConstructor.Schema;
   private static _table: string;
   private static timestamps: boolean;
@@ -213,7 +228,9 @@ class GraphQL {
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
-          return _prepare(await ((this as any) as ModelConstructor).create(params.data));
+          const result = await _encapsulate(async () => await ((this as any) as ModelConstructor).create(params.data));
+
+          return _prepare(result);
         },
       },
       [`insert_${multiple}`]: {
@@ -224,7 +241,7 @@ class GraphQL {
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
-          return await ((this as any) as ModelConstructor).insert(params.data);
+          return await _encapsulate(async () => await ((this as any) as ModelConstructor).insert(params.data));
         },
       },
       [`update_${multiple}`]: {
@@ -244,7 +261,7 @@ class GraphQL {
             (this as any) as ModelConstructor | Query
           );
 
-          return await query.update(params.data);
+          return await _encapsulate(async () => await query.update(params.data));
         },
       },
       [`delete_${multiple}`]: {

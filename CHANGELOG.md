@@ -12,6 +12,11 @@
 
 ---
 
+## [v0.1.0-beta.14](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.14) - *(2018-08-21)*
+
+- :beetle: `Model` none safe delete models query bug fix
+- :beetle: `GraphQL` error handling bug fix
+
 ## [v0.1.0-beta.13](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.13) - *(2018-08-21)*
 
 - :beetle: `GraphQL` query bug fix
