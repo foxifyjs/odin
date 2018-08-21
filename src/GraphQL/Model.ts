@@ -127,7 +127,13 @@ class GraphQL {
       },
     });
 
-    const getDB = () => this.DB.connection(this.connection).table(this._table);
+    const getDB = () => {
+      const db = this.DB.connection(this.connection).table(this._table);
+
+      if (this.softDelete) return db.whereNull(this.DELETED_AT);
+
+      return db;
+    };
 
     const queries = {
       [single]: {
