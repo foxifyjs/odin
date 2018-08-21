@@ -1,4 +1,5 @@
 import * as Base from "graphql";
+import { GraphQLDateTime } from "graphql-iso-date";
 
 class Type {
   toGraphQL(model: string, key: string) {
@@ -42,6 +43,11 @@ class Type {
       case "String":
         field = Base.GraphQLString;
         arg = Base.GraphQLString;
+
+        break;
+      case "Date":
+        field = GraphQLDateTime;
+        arg = GraphQLDateTime;
 
         break;
     }
