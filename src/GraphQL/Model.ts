@@ -188,6 +188,11 @@ class GraphQL {
       },
     };
 
+    const queryInputType = new Base.GraphQLInputObjectType({
+      name: `${name}QueryInput`,
+      fields: args,
+    });
+
     const inputType = new Base.GraphQLInputObjectType({
       name: `${name}Input`,
       fields: utils.object.omit(args, ["id", this.CREATED_AT, this.UPDATED_AT, this.DELETED_AT]) as any,
@@ -220,7 +225,7 @@ class GraphQL {
         type: Base.GraphQLInt,
         args: {
           query: {
-            type: args,
+            type: queryInputType,
           },
           data: {
             type: new Base.GraphQLNonNull(inputType),
@@ -240,7 +245,7 @@ class GraphQL {
         type: Base.GraphQLInt,
         args: {
           query: {
-            type: args,
+            type: queryInputType,
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
@@ -260,7 +265,7 @@ class GraphQL {
         type: Base.GraphQLInt,
         args: {
           query: {
-            type: args,
+            type: queryInputType,
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {

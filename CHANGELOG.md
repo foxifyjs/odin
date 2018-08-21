@@ -12,6 +12,10 @@
 
 ---
 
+## [v0.1.0-beta.11](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.11) - *(2018-08-21)*
+
+- :beetle: `GraphQL` mutations bug fix
+
 ## [v0.1.0-beta.10](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.10) - *(2018-08-21)*
 
 - :beetle: `GraphQL` schema type `Date` bug fix
