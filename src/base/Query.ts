@@ -29,7 +29,7 @@ class Query<T = any> extends DB<T> {
 
     this._model = model;
 
-    relations.map((relation) => relation.load(this));
+    relations.forEach((relation) => relation.load(this));
   }
 
   join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string) {
@@ -51,7 +51,7 @@ class Query<T = any> extends DB<T> {
 
   // @ts-ignore:next-line
   async get(callback?: Driver.Callback<Array<Model<T>>>) {
-    const iterator = (item: any, callback: any) => callback(undefined, new this._model(item));
+    const iterator = (item: any, cb: any) => cb(undefined, new this._model(item));
 
     if (callback)
       return super.get((err, res) => {

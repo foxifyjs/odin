@@ -31,6 +31,11 @@ module ModelConstructor {
 
     [key: string]: any;
   }
+
+  export type DB = typeof DB;
+  export type GraphQL = typeof GraphQL;
+  export type Types = typeof Types;
+  export type connections = typeof connections;
 }
 
 interface ModelConstructor<T = any> extends QueryBuilder, GraphQLConstructor {
