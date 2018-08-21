@@ -266,6 +266,9 @@ class Query<T = any> extends DB<T> {
   delete(callback?: Driver.Callback<number>) {
     this._apply_trashed_options();
 
+    if (this._model.softDelete)
+      return super.update({ [this._model.DELETED_AT]: new Date() } as any, callback);
+
     return super.delete(callback);
   }
 

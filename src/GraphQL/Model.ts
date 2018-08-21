@@ -238,7 +238,7 @@ class GraphQL {
             (this as any) as ModelConstructor | Query
           );
 
-          return await (query as Query).update(params.data);
+          return await query.update(params.data);
         },
       },
       [`delete_${multiple}`]: {
@@ -255,7 +255,7 @@ class GraphQL {
             (this as any) as ModelConstructor | Query
           );
 
-          return await (query as Query).delete();
+          return await query.delete();
         },
       },
     };

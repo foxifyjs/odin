@@ -307,8 +307,6 @@ class QueryBuilder {
     if (Array.isArray(ids)) query = query.whereIn("id", ids);
     else query = query.where("id", ids);
 
-    if (this.softDelete) return query.update({ [this.DELETED_AT]: new Date() }, callback);
-
     return query.delete(callback);
   }
 
