@@ -47,10 +47,10 @@ const _schema = (model: string, schema: ModelConstructor.Schema) => {
 };
 
 const _projection = (fieldASTs: any) => fieldASTs.selectionSet.selections.reduce((projections: any, selection: any) => {
-  projections[selection.name.value] = 1;
+  projections.push(selection.name.value);
 
   return projections;
-}, {});
+}, []);
 
 const _orderBy = (model: string, schema: ModelConstructor.Schema) => {
   const orderByASC = (key: string) => `${key}_ASC`;
@@ -113,7 +113,6 @@ class GraphQL {
     const single = utils.string.pluralize(multiple, 1);
 
     const schema = _schema(name, this.schema);
-    const fields = schema.fields;
     const args = {
       id: {
         type: Base.GraphQLID,
@@ -124,9 +123,9 @@ class GraphQL {
       name,
       fields: {
         id: {
-          type: new Base.GraphQLNonNull(Base.GraphQLID),
+          type: Base.GraphQLID,
         },
-        ...fields,
+        ...schema.fields,
       },
     });
 

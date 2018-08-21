@@ -12,6 +12,10 @@
 
 ---
 
+## [v0.1.0-beta.8](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.8) - *(2018-08-21)*
+
+- :beetle: `GraphQL` query bug fix
+
 ## [v0.1.0-beta.7](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.7) - *(2018-08-21)*
 
 - :beetle: `GraphQL` query bug fix
