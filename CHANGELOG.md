@@ -12,6 +12,10 @@
 
 ---
 
+## [v0.1.0-beta.15](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.15) - *(2018-08-22)*
+
+- :beetle: `Model` schema bug fix
+
 ## [v0.1.0-beta.14](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.14) - *(2018-08-21)*
 
 - :beetle: `Model` none safe delete models query bug fix

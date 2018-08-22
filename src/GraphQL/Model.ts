@@ -256,7 +256,7 @@ class GraphQL {
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
           const query: Query = utils.object.reduce(
-            params.query,
+            params.query || {},
             (query, value, key) => query.where(key, value),
             (this as any) as ModelConstructor | Query
           );
@@ -273,7 +273,7 @@ class GraphQL {
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
           const query: Query = utils.object.reduce(
-            params.query,
+            params.query || {},
             (query, value, key) => query.where(key, value),
             (this as any) as ModelConstructor | Query
           );

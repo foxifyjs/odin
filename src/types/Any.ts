@@ -57,17 +57,21 @@ class TypeAny implements GraphQL {
   // allow(...vs: any[]) {
   // }
 
-  validate(value: any = this._default()): { value: any, errors: string[] | null } {
+  validate(value?: any, updating: boolean = false): { value: any, errors: string[] | null } {
     if (value === undefined || value === null) {
-      if (this._required) return { errors: ["Must be provided"], value };
+      if (!updating) value = this._default();
 
-      return { errors: null, value };
+      if (value === undefined || value === null) {
+        if (this._required) return { errors: ["Must be provided"], value };
+
+        return { errors: null, value };
+      }
     }
 
     const baseError = this._base(value);
     if (baseError) return { errors: [baseError], value };
 
-    this._casts.map((_cast) => value = _cast(value));
+    this._casts.forEach((_cast) => value = _cast(value));
 
     let errors: string[] = [];
 

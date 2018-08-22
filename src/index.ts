@@ -139,7 +139,7 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
 
         if (type instanceof TypeAny) {
           // Type
-          const validation = type.validate(item);
+          const validation = type.validate(item, updating);
 
           if (validation.value) value[key] = validation.value;
 
@@ -170,7 +170,7 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
 
     if (validation.errors && updating) {
       utils.object.forEach(validation.errors, (errors, key) => {
-        if (errors.length === 1 && errors.first() === "Must be provided")
+        if (errors.length === 1 && errors[0] === "Must be provided")
           delete (validation.errors as any)[key];
       });
 
