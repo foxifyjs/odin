@@ -6,7 +6,7 @@ const {
 
 class User extends Model {
     bills() {
-        return this.hasMany(require("./Bill"));
+        return this.hasMany(Model.models.Bill);
     }
 }
 
@@ -18,5 +18,7 @@ User.schema = {
     username: Types.String.token.required,
     email: Types.String.email.required,
 };
+
+Model.register(User);
 
 module.exports = User;

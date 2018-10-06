@@ -10,6 +10,8 @@ import GraphQLInstance, { GraphQLConstructor } from "./GraphQL/Model";
 import GraphQL from "./GraphQL";
 import * as utils from "./utils";
 
+const MODELS: { [name: string]: Model | undefined } = {};
+
 module ModelConstructor {
   export type Connection = string;
 
@@ -61,6 +63,11 @@ interface ModelConstructor<T = any> extends QueryBuilder, GraphQLConstructor {
 
   readonly driver: TDriver;
   readonly filename: string;
+  readonly models: { [name: string]: Model | undefined };
+
+  isModel: (arg: any) => arg is Model;
+
+  register: (...models: Model[]) => void;
 
   validate<T = object>(document: T, updating?: boolean): T;
 
@@ -68,6 +75,7 @@ interface ModelConstructor<T = any> extends QueryBuilder, GraphQLConstructor {
 }
 
 export interface Model<T = any> extends QueryInstance<T>, Relational {
+  name: string;
   constructor: typeof Model;
 }
 
@@ -122,6 +130,20 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
 
   static get driver() {
     return getConnection(this.connection).driver;
+  }
+
+  static get models() {
+    return MODELS;
+  }
+
+  static isModel = (arg: any): arg is Model => arg instanceof Model;
+
+  static register = (...models: Model[]) => {
+    models.forEach((model) => {
+      if (MODELS[model.name]) throw new Error(`Model "${model.name}" already exists`);
+
+      MODELS[model.name] = model;
+    });
   }
 
   static toString() {
