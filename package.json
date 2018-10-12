@@ -1,6 +1,6 @@
 {
   "name": "@foxify/odin",
-  "version": "0.1.0-beta.16",
+  "version": "0.1.0-beta.17",
   "description": "Active Record Model",
   "author": "Ardalan Amini <ardalanamini22@gmail.com> [https://github.com/ardalanamini]",
   "contributors": [
@@ -41,6 +41,9 @@
   ],
   "dependencies": {
     "@types/mongodb": "^3.1.12",
+    "@types/node": "^10.11.7",
+    "@types/graphql": "^0.13.4",
+    "@types/graphql-iso-date": "^3.3.0",
     "app-root-path": "^2.1.0",
     "async": "^2.6.1",
     "caller-id": "^0.1.0",
@@ -56,11 +59,8 @@
     "@types/app-root-path": "^1.2.4",
     "@types/async": "^2.0.49",
     "@types/deasync": "^0.1.0",
-    "@types/graphql": "^0.13.4",
-    "@types/graphql-iso-date": "^3.3.0",
     "@types/jest": "^23.3.5",
     "@types/mysql": "^2.15.5",
-    "@types/node": "^10.11.7",
     "codecov": "^3.1.0",
     "dotenv": "^6.1.0",
     "fs-readdir-recursive": "^1.1.0",
