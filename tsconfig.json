@@ -11,6 +11,7 @@
     "outDir": "dist",
     "experimentalDecorators": true,
     "declaration": true,
+    "removeComments": false,
     "strict": true
   },
   "include": [

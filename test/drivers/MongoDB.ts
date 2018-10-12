@@ -1,4 +1,4 @@
-import { DB, connections } from "../../src";
+import { connections, DB } from "../../src";
 import * as utils from "../../src/utils";
 
 declare global {
@@ -129,18 +129,20 @@ describe("`MongoDB` driver", () => {
   test("db.insert many (async/await style)", async () => {
     expect.assertions(1);
 
-    const result = await DB.table(TABLE).insert(ITEMS.map((item: any) => utils.object.omit(item, ["id"])));
+    const result = await DB.table(TABLE)
+      .insert(ITEMS.map((item: any) => utils.object.omit(item, ["id"])));
 
     expect(result).toBe(ITEMS.length);
   });
 
   test("db.insert many (callback style)", (done) => {
-    DB.table(TABLE).insert(ITEMS.map((item: any) => utils.object.omit(item, ["id"])), (err, res) => {
-      expect(err).toBe(null);
-      expect(res).toBe(ITEMS.length);
+    DB.table(TABLE)
+      .insert(ITEMS.map((item: any) => utils.object.omit(item, ["id"])), (err, res) => {
+        expect(err).toBe(null);
+        expect(res).toBe(ITEMS.length);
 
-      done();
-    });
+        done();
+      });
   });
 
   test("db.value (async/await style)", async () => {
@@ -215,7 +217,7 @@ describe("`MongoDB` driver", () => {
   test("db.whereLike", (done) => {
     DB.table(TABLE).whereLike("name", "foo").get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(ITEMS.filter(({ name }) => /foo/.test(name)));
+      expect(res).toEqual(ITEMS.filter(({ name }) => /foo/.test(name as any)));
 
       done();
     });
@@ -224,7 +226,7 @@ describe("`MongoDB` driver", () => {
   test("db.whereIn", (done) => {
     DB.table(TABLE).whereIn("name", ["foo", "bar"]).get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(ITEMS.filter(({ name }) => /^(foo|bar)$/.test(name)));
+      expect(res).toEqual(ITEMS.filter(({ name }) => /^(foo|bar)$/.test(name as any)));
 
       done();
     });
@@ -233,7 +235,7 @@ describe("`MongoDB` driver", () => {
   test("db.whereNotIn", (done) => {
     DB.table(TABLE).whereNotIn("name", ["foo", "bar"]).get((err, res) => {
       expect(err).toBe(null);
-      expect(res).toEqual(ITEMS.filter(({ name }) => !/^(foo|bar)$/.test(name)));
+      expect(res).toEqual(ITEMS.filter(({ name }) => !/^(foo|bar)$/.test(name as any)));
 
       done();
     });
@@ -367,7 +369,8 @@ describe("`MongoDB` driver", () => {
   //     const GROUPED = utils.array.groupBy(ITEMS, "style");
 
   //     expect(res)
-  //       .toEqual(Object.keys(GROUPED).reduce((prev, cur) => (prev.push(...GROUPED[cur]), prev), [] as any[]));
+  //       .toEqual(Object.keys(GROUPED)
+  //         .reduce((prev, cur) => (prev.push(...GROUPED[cur]), prev), [] as any[]));
 
   //     done();
   //   });
@@ -419,17 +422,18 @@ describe("`MongoDB` driver", () => {
     expect(joinResult.length).toBe(JOIN_ITEMS.length);
 
     const result = await DB.table(TABLE).orderBy("num")
-      .join(JOIN_TABLE, (q) => q.on("for_name", `${TABLE}.name`))
+      .join(JOIN_TABLE, q => q.on("for_name", `${TABLE}.name`))
       .get();
 
     expect(result).toEqual(
       utils.array.clone(ITEMS).sort((a, b) => a.num - b.num)
-        .map((item) =>
+        .map(item =>
           ({
             ...item,
-            [JOIN_TABLE]: joinResult.filter(({ for_name }) => item.name === for_name),
-          }),
-        ),
+            [JOIN_TABLE]: (joinResult as Array<{ for_name: string }>)
+              .filter(({ for_name }) => item.name === for_name),
+          })
+        )
     );
   });
 
@@ -442,7 +446,8 @@ describe("`MongoDB` driver", () => {
 
     const result = await DB.table(TABLE).get();
 
-    expect(result).toEqual(ITEMS.map((item) => ({ ...item, num: item.name === "foo" ? 1000 : item.num })));
+    expect(result)
+      .toEqual(ITEMS.map(item => ({ ...item, num: item.name === "foo" ? 1000 : item.num })));
   });
 
   test("db.update (callback style)", (done) => {
@@ -452,7 +457,8 @@ describe("`MongoDB` driver", () => {
 
       DB.table(TABLE).get((err, res) => {
         expect(err).toBe(null);
-        expect(res).toEqual(ITEMS.map((item) => ({ ...item, num: item.name === "foo" ? 1000 : item.num })));
+        expect(res)
+          .toEqual(ITEMS.map(item => ({ ...item, num: item.name === "foo" ? 1000 : item.num })));
 
         done();
       });

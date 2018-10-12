@@ -1,18 +1,17 @@
-import * as DB from "./DB";
 import QueryBuilder, { QueryInstance } from "./base/QueryBuilder";
 import Relational from "./base/Relational";
-import connections, { connect, getConnection, Driver as TDriver } from "./connections";
+import connections, { Driver as TDriver, getConnection } from "./connections";
+import * as DB from "./DB";
 import { Base as Driver } from "./drivers";
-import Relation from "./drivers/Relation/Base";
+import GraphQL from "./GraphQL";
+import GraphQLInstance, { GraphQLConstructor } from "./GraphQL/Model";
 import * as Types from "./types";
 import TypeAny from "./types/Any";
-import GraphQLInstance, { GraphQLConstructor } from "./GraphQL/Model";
-import GraphQL from "./GraphQL";
 import * as utils from "./utils";
 
 const MODELS: { [name: string]: Model | undefined } = {};
 
-module ModelConstructor {
+namespace ModelConstructor {
   export type Connection = string;
 
   export interface ConnectionObject {
@@ -75,6 +74,7 @@ interface ModelConstructor<T = any> extends QueryBuilder, GraphQLConstructor {
 }
 
 export interface Model<T = any> extends QueryInstance<T>, Relational {
+  id?: Driver.Id;
   name: string;
   constructor: typeof Model;
 }
@@ -83,24 +83,24 @@ export { DB, GraphQL, Types, connections };
 
 @utils.mixins(QueryBuilder, Relational, GraphQLInstance)
 export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInstance {
-  static DB = DB;
-  static GraphQL = GraphQL;
-  static Types = Types;
-  static connections = connections;
+  public static DB = DB;
+  public static GraphQL = GraphQL;
+  public static Types = Types;
+  public static connections = connections;
 
-  static connection: ModelConstructor.Connection = "default";
+  public static connection: ModelConstructor.Connection = "default";
 
-  static table?: string;
+  public static table?: string;
 
-  static schema: ModelConstructor.Schema = {};
+  public static schema: ModelConstructor.Schema = {};
 
-  static timestamps: boolean = true;
+  public static timestamps: boolean = true;
 
-  static softDelete: boolean = false;
+  public static softDelete: boolean = false;
 
-  static CREATED_AT = "created_at";
-  static UPDATED_AT = "updated_at";
-  static DELETED_AT = "deleted_at";
+  public static CREATED_AT = "created_at";
+  public static UPDATED_AT = "updated_at";
+  public static DELETED_AT = "deleted_at";
 
   private static get _table() {
     return this.table || utils.makeTableName(this.name);
@@ -136,9 +136,9 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
     return MODELS;
   }
 
-  static isModel = (arg: any): arg is Model => arg instanceof Model;
+  public static isModel = (arg: any): arg is Model => arg instanceof Model;
 
-  static register = (...models: Model[]) => {
+  public static register = (...models: Model[]) => {
     models.forEach((model) => {
       if (MODELS[model.name]) throw new Error(`Model "${model.name}" already exists`);
 
@@ -146,11 +146,11 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
     });
   }
 
-  static toString() {
+  public static toString() {
     return this._table;
   }
 
-  static validate<T = object>(document: T, updating: boolean = false) {
+  public static validate<T = object>(document: T, updating: boolean = false) {
     const validator = (schema: ModelConstructor.Schema, doc: T) => {
       const value: { [key: string]: any } = {};
       let errors: { [key: string]: any } | null = {};
@@ -210,7 +210,7 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
 
   private _isNew: boolean = false;
 
-  attributes: ModelConstructor.Document = {};
+  public attributes: ModelConstructor.Document = {};
 
   constructor(document: ModelConstructor.Document = {}) {
     if (!document.id) this._isNew = true;
@@ -231,7 +231,7 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
 
       const setterName = utils.getSetterName(attr);
       const setter = (this as any)[setterName] || ((origin: any) => origin);
-      utils.define(this, "set", attr, (value) => this.attributes[attr] = setter(value));
+      utils.define(this, "set", attr, value => this.attributes[attr] = setter(value));
       setters.push(setterName);
     }
 
@@ -257,7 +257,7 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
    * @param {string} attribute
    * @returns {*}
    */
-  getAttribute(attribute: string) {
+  public getAttribute(attribute: string) {
     return attribute.split(".").reduce((prev, curr) => prev[curr], this.attributes);
   }
 
@@ -266,11 +266,11 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
    * @param {string} attribute
    * @param {*} value
    */
-  setAttribute(attribute: string, value: any) {
+  public setAttribute(attribute: string, value: any) {
     utils.object.set(this.attributes, attribute, value);
   }
 
-  toJSON() {
+  public toJSON() {
     return utils.object.mapValues(this.attributes, (value, attr) => {
       const getter = (this as any)[utils.getGetterName(attr as string)];
 
@@ -278,7 +278,7 @@ export class Model<T = any> implements QueryInstance<T>, Relational, GraphQLInst
     });
   }
 
-  inspect() {
+  public inspect() {
     return this.toJSON();
   }
 }

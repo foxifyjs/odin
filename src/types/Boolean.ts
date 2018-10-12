@@ -1,5 +1,5 @@
-import TypeAny from "./Any";
 import * as utils from "../utils";
+import TypeAny from "./Any";
 
 class TypeBoolean extends TypeAny {
   protected _type = "Boolean";

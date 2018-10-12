@@ -30,105 +30,105 @@ module Driver {
 abstract class Driver<T = any> {
   protected _query: any;
 
-  abstract readonly driver: connections.Driver;
+  public abstract readonly driver: connections.Driver;
 
   constructor(query: connections.Query) {
     this._query = query;
   }
 
-  abstract table(table: string): this;
+  public abstract table(table: string): this;
 
   /*********************************** Joins **********************************/
 
-  abstract join(table: string, query?: Driver.JoinQuery<T>, as?: string): this;
+  public abstract join(table: string, query?: Driver.JoinQuery<T>, as?: string): this;
 
   /******************************* Where Clauses ******************************/
 
   // abstract where(query: Driver.WhereQuery): this;
-  abstract where(field: string, value: any): this;
-  abstract where(field: string, operator: Driver.Operator, value: any): this;
+  public abstract where(field: string, value: any): this;
+  public abstract where(field: string, operator: Driver.Operator, value: any): this;
 
   // abstract orWhere(query: Driver.WhereQuery): this;
-  abstract orWhere(field: string, value: any): this;
-  abstract orWhere(field: string, operator: Driver.Operator, value: any): this;
+  public abstract orWhere(field: string, value: any): this;
+  public abstract orWhere(field: string, operator: Driver.Operator, value: any): this;
 
-  abstract whereLike(field: string, value: any): this;
+  public abstract whereLike(field: string, value: any): this;
 
-  abstract whereNotLike(field: string, value: any): this;
+  public abstract whereNotLike(field: string, value: any): this;
 
-  abstract whereIn(field: string, values: any[]): this;
+  public abstract whereIn(field: string, values: any[]): this;
 
-  abstract whereNotIn(field: string, values: any[]): this;
+  public abstract whereNotIn(field: string, values: any[]): this;
 
-  abstract whereBetween(field: string, start: any, end: any): this;
+  public abstract whereBetween(field: string, start: any, end: any): this;
 
-  abstract whereNotBetween(field: string, start: any, end: any): this;
+  public abstract whereNotBetween(field: string, start: any, end: any): this;
 
-  abstract whereNull(field: string): this;
+  public abstract whereNull(field: string): this;
 
-  abstract whereNotNull(field: string): this;
+  public abstract whereNotNull(field: string): this;
 
   /*************** Mapping, Grouping, Ordering, Limit & Offset ****************/
 
-  abstract map(fn: Driver.Mapper<T>): this;
+  public abstract map(fn: Driver.Mapper<T>): this;
 
-  // abstract groupBy(field: string, query?: Driver.GroupQuery<T>): this;
+  // public abstract groupBy(field: string, query?: Driver.GroupQuery<T>): this;
 
-  abstract orderBy(field: string, order?: Driver.Order): this;
+  public abstract orderBy(field: string, order?: Driver.Order): this;
 
-  abstract skip(offset: number): this;
+  public abstract skip(offset: number): this;
 
-  abstract limit(limit: number): this;
+  public abstract limit(limit: number): this;
 
   /*********************************** Read ***********************************/
 
-  abstract exists(): Promise<boolean>;
-  abstract exists(callback: Driver.Callback<boolean>): void;
+  public abstract exists(): Promise<boolean>;
+  public abstract exists(callback: Driver.Callback<boolean>): void;
 
-  abstract count(): Promise<number>;
-  abstract count(callback: Driver.Callback<number>): void;
+  public abstract count(): Promise<number>;
+  public abstract count(callback: Driver.Callback<number>): void;
 
-  abstract get(fields?: string[]): Promise<T[]>;
-  abstract get(fields: string[], callback: Driver.Callback<T[]>): void;
-  abstract get(callback: Driver.Callback<T[]>): void;
+  public abstract get(fields?: string[]): Promise<T[]>;
+  public abstract get(fields: string[], callback: Driver.Callback<T[]>): void;
+  public abstract get(callback: Driver.Callback<T[]>): void;
 
-  abstract first(fields?: string[]): Promise<T>;
-  abstract first(fields: string[], callback: Driver.Callback<T>): void;
-  abstract first(callback: Driver.Callback<T>): void;
+  public abstract first(fields?: string[]): Promise<T>;
+  public abstract first(fields: string[], callback: Driver.Callback<T>): void;
+  public abstract first(callback: Driver.Callback<T>): void;
 
-  abstract value(field: string): Promise<any>;
-  abstract value(field: string, callback: Driver.Callback<any>): void;
+  public abstract value(field: string): Promise<any>;
+  public abstract value(field: string, callback: Driver.Callback<any>): void;
 
-  abstract max(field: string): Promise<any>;
-  abstract max(field: string, callback: Driver.Callback<any>): void;
+  public abstract max(field: string): Promise<any>;
+  public abstract max(field: string, callback: Driver.Callback<any>): void;
 
-  abstract min(field: string): Promise<any>;
-  abstract min(field: string, callback: Driver.Callback<any>): void;
+  public abstract min(field: string): Promise<any>;
+  public abstract min(field: string, callback: Driver.Callback<any>): void;
 
-  abstract avg(field: string): Promise<any>;
-  abstract avg(field: string, callback: Driver.Callback<any>): void;
+  public abstract avg(field: string): Promise<any>;
+  public abstract avg(field: string, callback: Driver.Callback<any>): void;
 
   /********************************** Inserts *********************************/
 
-  abstract insert(item: T | T[]): Promise<number>;
-  abstract insert(item: T | T[], callback: Driver.Callback<number>): void;
+  public abstract insert(item: T | T[]): Promise<number>;
+  public abstract insert(item: T | T[], callback: Driver.Callback<number>): void;
 
-  abstract insertGetId(item: T): Promise<Driver.Id>;
-  abstract insertGetId(item: T, callback: Driver.Callback<Driver.Id>): void;
+  public abstract insertGetId(item: T): Promise<Driver.Id>;
+  public abstract insertGetId(item: T, callback: Driver.Callback<Driver.Id>): void;
 
   /********************************** Updates *********************************/
 
-  abstract update(update: T): Promise<number>;
-  abstract update(update: T, callback: Driver.Callback<number>): void;
+  public abstract update(update: T): Promise<number>;
+  public abstract update(update: T, callback: Driver.Callback<number>): void;
 
-  abstract increment(field: string, count?: number): Promise<number>;
-  abstract increment(field: string, callback: Driver.Callback<number>): void;
-  abstract increment(field: string, count: number, callback: Driver.Callback<number>): void;
+  public abstract increment(field: string, count?: number): Promise<number>;
+  public abstract increment(field: string, callback: Driver.Callback<number>): void;
+  public abstract increment(field: string, count: number, callback: Driver.Callback<number>): void;
 
   /********************************** Deletes *********************************/
 
-  abstract delete(): Promise<number>;
-  abstract delete(callback: Driver.Callback<number>): void;
+  public abstract delete(): Promise<number>;
+  public abstract delete(callback: Driver.Callback<number>): void;
 }
 
 export default Driver;

@@ -75,7 +75,7 @@ afterAll((done) => {
 });
 
 class User extends Odin {
-  static schema = {
+  public static schema = {
     username: Odin.Types.String.alphanum.min(3).required,
     email: Odin.Types.String.email.required,
     name: {

@@ -3,10 +3,7 @@ import * as utils from "../../utils";
 import Driver from "../Driver";
 import Relation from "../Relation/Base";
 
-// @ts-ignore:next-line
-interface HasOne<T = any> extends Relation<T> { }
-
-abstract class HasOne<T = any> extends Relation<T> {
+abstract class HasOne<T = any> extends Relation<T, "HasOne"> {
   constructor(
     model: Model,
     relation: ModelConstructor,
@@ -17,17 +14,20 @@ abstract class HasOne<T = any> extends Relation<T> {
     super(model, relation, localKey, foreignKey, caller);
   }
 
-  // @ts-ignore:next-line
-  insert(items: T[], callback?: Driver.Callback<number>) {
+  public insert(items: T[]): Promise<undefined>;
+  public insert(items: T[], callback: Driver.Callback<undefined>): void;
+  public async insert(items: T[], callback?: Driver.Callback<undefined>) {
     const error = new TypeError("'hasOne' relation can't insert multiple items");
 
     if (callback)
-      return callback(error, undefined as any);
+      return callback(error, undefined);
 
     throw error;
   }
 
-  async create(item: T, callback?: Driver.Callback<Model<T>>) {
+  public create(item: T): Promise<Model<T>>;
+  public create(item: T, callback: Driver.Callback<Model<T>>): void;
+  public async create(item: T, callback?: Driver.Callback<Model<T>>) {
     const error = new TypeError(`This item already has one ${this.as}`);
 
     if (callback)
@@ -45,7 +45,9 @@ abstract class HasOne<T = any> extends Relation<T> {
     return await super.create(item);
   }
 
-  async save(item: Model<T>, callback?: Driver.Callback<Model<T>>) {
+  public save(model: Model<T>): Promise<Model<T>>;
+  public save(model: Model<T>, callback: Driver.Callback<Model<T>>): void;
+  public async save(item: Model<T>, callback?: Driver.Callback<Model<T>>) {
     const error = new TypeError(`This item already has one ${this.as}`);
     const id = item.getAttribute("id");
 

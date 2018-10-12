@@ -33,20 +33,21 @@ class TypeAny implements GraphQL {
     return this;
   }
 
-  get required() {
+  public get required() {
     this._required = true;
 
     return this;
   }
 
-  default(v: any) {
+  public default(v: any) {
     if (utils.function.isFunction(v)) {
       this._default = v;
 
       return this;
     }
 
-    if (this._base(v)) throw new TypeError(`The given value must be of "${this.constructor.name}" type`);
+    if (this._base(v))
+      throw new TypeError(`The given value must be of "${this.constructor.name}" type`);
 
     this._default = () => v;
 
@@ -57,21 +58,21 @@ class TypeAny implements GraphQL {
   // allow(...vs: any[]) {
   // }
 
-  validate(value?: any, updating: boolean = false): { value: any, errors: string[] | null } {
+  public validate(value?: any, updating: boolean = false): { value: any, errors: string[] | null } {
     if (value === undefined || value === null) {
       if (!updating) value = this._default();
 
       if (value === undefined || value === null) {
-        if (this._required) return { errors: ["Must be provided"], value };
+        if (this._required) return { value, errors: ["Must be provided"] };
 
-        return { errors: null, value };
+        return { value, errors: null };
       }
     }
 
     const baseError = this._base(value);
-    if (baseError) return { errors: [baseError], value };
+    if (baseError) return { value, errors: [baseError] };
 
-    this._casts.forEach((_cast) => value = _cast(value));
+    this._casts.forEach(_cast => value = _cast(value));
 
     let errors: string[] = [];
 
@@ -94,7 +95,7 @@ class TypeAny implements GraphQL {
       }
     );
 
-    if (errors.length === 0) return { errors: null, value };
+    if (errors.length === 0) return { value, errors: null };
 
     return {
       errors,

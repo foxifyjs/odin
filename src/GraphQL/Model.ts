@@ -1,6 +1,6 @@
 import * as Base from "graphql";
 import Query from "../base/Query";
-import ModelConstructor, { Model, DB } from "../index";
+import ModelConstructor, { DB, Model } from "../index";
 import TypeAny from "../types/Any";
 import * as utils from "../utils";
 
@@ -46,11 +46,14 @@ const _schema = (model: string, schema: ModelConstructor.Schema) => {
   };
 };
 
-const _projection = (fieldASTs: any) => fieldASTs.selectionSet.selections.reduce((projections: any, selection: any) => {
-  projections.push(selection.name.value);
+const _projection = (fieldASTs: any) => fieldASTs.selectionSet.selections.reduce(
+  (projections: any, selection: any) => {
+    projections.push(selection.name.value);
 
-  return projections;
-}, []);
+    return projections;
+  },
+  []
+);
 
 const _orderBy = (model: string, schema: ModelConstructor.Schema) => {
   const orderByASC = (key: string) => `${key}_ASC`;
@@ -95,11 +98,15 @@ const _encapsulate = async (fn: () => Promise<any>) => {
   } catch (err) {
     if (err instanceof Error) throw err;
 
-    const errorMessage = utils.object.reduce(err, (prev, message, field) => {
-      prev.push(`[${field}]: ${message}`);
+    const errorMessage = utils.object.reduce(
+      err,
+      (prev, message, field) => {
+        prev.push(`[${field}]: ${message}`);
 
-      return prev;
-    }, []).join(", ");
+        return prev;
+      },
+      []
+    ).join(", ");
 
     throw new Error(errorMessage);
   }
@@ -121,10 +128,10 @@ class GraphQL {
   private static CREATED_AT: string;
   private static UPDATED_AT: string;
   private static DELETED_AT: string;
-  static DB: ModelConstructor.DB;
-  static connection: ModelConstructor.Connection;
+  public static DB: ModelConstructor.DB;
+  public static connection: ModelConstructor.Connection;
 
-  static toGraphQL(): any {
+  public static toGraphQL(): any {
     const name = this.name;
 
     const multiple = this._table;
@@ -216,7 +223,10 @@ class GraphQL {
 
     const inputType = new Base.GraphQLInputObjectType({
       name: `${name}Input`,
-      fields: utils.object.omit(args, ["id", this.CREATED_AT, this.UPDATED_AT, this.DELETED_AT]) as any,
+      fields: utils.object.omit(
+        args,
+        ["id", this.CREATED_AT, this.UPDATED_AT, this.DELETED_AT]
+      ) as any,
     });
 
     const mutations = {
@@ -228,7 +238,9 @@ class GraphQL {
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
-          const result = await _encapsulate(async () => await ((this as any) as ModelConstructor).create(params.data));
+          const result = await _encapsulate(
+            async () => await ((this as any) as ModelConstructor).create(params.data)
+          );
 
           return _prepare(result);
         },
@@ -240,9 +252,9 @@ class GraphQL {
             type: new Base.GraphQLList(new Base.GraphQLNonNull(inputType)),
           },
         },
-        resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
-          return await _encapsulate(async () => await ((this as any) as ModelConstructor).insert(params.data));
-        },
+        resolve: async (root: any, params: any, options: any, fieldASTs: any) => await _encapsulate(
+          async () => await ((this as any) as ModelConstructor).insert(params.data)
+        ),
       },
       [`update_${multiple}`]: {
         type: Base.GraphQLInt,

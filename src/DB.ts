@@ -1,117 +1,10 @@
-import { Connection, getConnection } from "./connections";
+import { getConnection } from "./connections";
 import { Base as Driver } from "./drivers";
 import { function as func } from "./utils";
 
-module DB { }
+namespace DB { }
 
-interface DB<T = any, D extends Driver<T> = any> {
-  /********************************** Driver **********************************/
-
-  driver(fn: (query: D) => D): this;
-
-  /*********************************** Joins **********************************/
-
-  join(table: string, query?: Driver.JoinQuery<T>, as?: string): this;
-
-  /******************************* Where Clauses ******************************/
-
-  where(field: string, value: any): this;
-  where(field: string, operator: Driver.Operator, value: any): this;
-
-  orWhere(field: string, value: any): this;
-  orWhere(field: string, operator: Driver.Operator, value: any): this;
-
-  whereLike(field: string, value: any): this;
-
-  whereNotLike(field: string, value: any): this;
-
-  whereIn(field: string, values: any[]): this;
-
-  whereNotIn(field: string, values: any[]): this;
-
-  whereBetween(field: string, start: any, end: any): this;
-
-  whereNotBetween(field: string, start: any, end: any): this;
-
-  whereNull(field: string): this;
-
-  whereNotNull(field: string): this;
-
-  /*************** Mapping, Ordering, Grouping, Limit & Offset ****************/
-
-  map(fn: Driver.Mapper<T>): this;
-
-  // groupBy(field: string, query?: Driver.GroupQuery<T>): this;
-
-  orderBy(field: string, order?: Driver.Order): this;
-
-  skip(offset: number): this;
-
-  offset(offset: number): this;
-
-  limit(limit: number): this;
-
-  take(limit: number): this;
-
-  /*********************************** Read ***********************************/
-
-  exists(): Promise<boolean>;
-  exists(callback: Driver.Callback<boolean>): void;
-
-  count(): Promise<number>;
-  count(callback: Driver.Callback<number>): void;
-
-  get(fields?: string[]): Promise<T[]>;
-  get(fields: string[], callback: Driver.Callback<T[]>): void;
-  get(callback: Driver.Callback<T[]>): void;
-
-  first(fields?: string[]): Promise<T>;
-  first(fields: string[], callback: Driver.Callback<T>): void;
-  first(callback: Driver.Callback<T>): void;
-
-  value(field: string): Promise<any>;
-  value(field: string, callback: Driver.Callback<any>): void;
-
-  pluck(field: string): Promise<any>;
-  pluck(field: string, callback: Driver.Callback<any>): void;
-
-  max(field: string): Promise<any>;
-  max(field: string, callback: Driver.Callback<any>): void;
-
-  min(field: string): Promise<any>;
-  min(field: string, callback: Driver.Callback<any>): void;
-
-  avg(field: string): Promise<any>;
-  avg(field: string, callback: Driver.Callback<any>): void;
-
-  /********************************** Inserts *********************************/
-
-  insert(item: T | T[]): Promise<number>;
-  insert(item: T | T[], callback: Driver.Callback<number>): void;
-
-  insertGetId(item: T): Promise<Driver.Id>;
-  insertGetId(item: T, callback: Driver.Callback<Driver.Id>): void;
-
-  /********************************** Updates *********************************/
-
-  update(update: T): Promise<number>;
-  update(update: T, callback: Driver.Callback<number>): void;
-
-  increment(field: string, count?: number): Promise<number>;
-  increment(field: string, callback: Driver.Callback<number>): void;
-  increment(field: string, count: number, callback: Driver.Callback<number>): void;
-
-  decrement(field: string, count?: number): Promise<number>;
-  decrement(field: string, callback: Driver.Callback<number>): void;
-  decrement(field: string, count: number, callback: Driver.Callback<number>): void;
-
-  /********************************** Deletes *********************************/
-
-  delete(): Promise<number>;
-  delete(callback: Driver.Callback<number>): void;
-}
-
-class DB<T = any, D extends Driver<T> = any> {
+class DB<T = any, D extends Driver<T> = any, A = undefined> {
   private _query: D;
 
   private _getting = false;
@@ -120,11 +13,11 @@ class DB<T = any, D extends Driver<T> = any> {
     this._query = getConnection(connection);
   }
 
-  static connection(connection: string) {
+  public static connection(connection: string) {
     return new this(connection);
   }
 
-  static table(table: string) {
+  public static table(table: string) {
     let connection = "default";
 
     const keys = table.split(".");
@@ -136,7 +29,7 @@ class DB<T = any, D extends Driver<T> = any> {
     return this.connection(connection).table(table);
   }
 
-  table(table: string) {
+  public table(table: string) {
     this._query = this._query.table.call(this._query, table);
 
     return this;
@@ -144,7 +37,7 @@ class DB<T = any, D extends Driver<T> = any> {
 
   /********************************** Driver **********************************/
 
-  driver(fn: (query: D) => D) {
+  public driver(fn: (query: D) => D) {
     this._query = fn(this._query);
 
     return this;
@@ -152,222 +45,281 @@ class DB<T = any, D extends Driver<T> = any> {
 
   /*********************************** Joins **********************************/
 
-  join(table: string, query?: Driver.JoinQuery<T>, as?: string) {
+  public join(table: string, query?: Driver.JoinQuery<T>, as?: string): this;
+  public join() {
     this._getting = true;
 
-    this._query = this._query.join.call(this._query, table, query, as);
+    this._query = this._query.join.apply(this._query, arguments);
 
     return this;
   }
 
   /******************************* Where Clauses ******************************/
 
-  where(field: string, operator: Driver.Operator | any, value?: any) {
+  public where(field: string, value: any): this;
+  public where(field: string, operator: Driver.Operator, value: any): this;
+  public where() {
     this._getting = true;
 
-    this._query = this._query.where.call(this._query, ...arguments);
+    this._query = this._query.where.apply(this._query, arguments);
 
     return this;
   }
 
-  orWhere(field: string, operator: Driver.Operator | any, value?: any) {
+  public orWhere(field: string, value: any): this;
+  public orWhere(field: string, operator: Driver.Operator, value: any): this;
+  public orWhere() {
     this._getting = true;
 
-    this._query = this._query.orWhere.call(this._query, ...arguments);
+    this._query = this._query.orWhere.apply(this._query, arguments);
 
     return this;
   }
 
-  whereLike(field: string, value: any) {
+  public whereLike(field: string, value: any): this;
+  public whereLike() {
     this._getting = true;
 
-    this._query = this._query.whereLike.call(this._query, ...arguments);
+    this._query = this._query.whereLike.apply(this._query, arguments);
 
     return this;
   }
 
-  whereNotLike(field: string, value: any) {
+  public whereNotLike(field: string, value: any): this;
+  public whereNotLike() {
     this._getting = true;
 
-    this._query = this._query.whereNotLike.call(this._query, ...arguments);
+    this._query = this._query.whereNotLike.apply(this._query, arguments);
 
     return this;
   }
 
-  whereIn(field: string, values: any[]) {
+  public whereIn(field: string, values: any[]): this;
+  public whereIn() {
     this._getting = true;
 
-    this._query = this._query.whereIn.call(this._query, ...arguments);
+    this._query = this._query.whereIn.apply(this._query, arguments);
 
     return this;
   }
 
-  whereNotIn(field: string, values: any[]) {
+  public whereNotIn(field: string, values: any[]): this;
+  public whereNotIn() {
     this._getting = true;
 
-    this._query = this._query.whereNotIn.call(this._query, ...arguments);
+    this._query = this._query.whereNotIn.apply(this._query, arguments);
 
     return this;
   }
 
-  whereBetween(field: string, start: any, end: any) {
+  public whereBetween(field: string, start: any, end: any): this;
+  public whereBetween() {
     this._getting = true;
 
-    this._query = this._query.whereBetween.call(this._query, ...arguments);
+    this._query = this._query.whereBetween.apply(this._query, arguments);
 
     return this;
   }
 
-  whereNotBetween(field: string, start: any, end: any) {
+  public whereNotBetween(field: string, start: any, end: any): this;
+  public whereNotBetween() {
     this._getting = true;
 
-    this._query = this._query.whereNotBetween.call(this._query, ...arguments);
+    this._query = this._query.whereNotBetween.apply(this._query, arguments);
 
     return this;
   }
 
-  whereNull(field: string) {
+  public whereNull(field: string): this;
+  public whereNull() {
     this._getting = true;
 
-    this._query = this._query.whereNull.call(this._query, ...arguments);
+    this._query = this._query.whereNull.apply(this._query, arguments);
 
     return this;
   }
 
-  whereNotNull(field: string) {
+  public whereNotNull(field: string): this;
+  public whereNotNull() {
     this._getting = true;
 
-    this._query = this._query.whereNotNull.call(this._query, ...arguments);
+    this._query = this._query.whereNotNull.apply(this._query, arguments);
 
     return this;
   }
 
   /*************** Mapping, Ordering, Grouping, Limit & Offset ****************/
 
-  map(fn: Driver.Mapper<T>) {
+  public map(fn: Driver.Mapper<T>): this;
+  public map() {
     this._getting = true;
 
-    this._query = this._query.map.call(this._query, ...arguments);
+    this._query = this._query.map.apply(this._query, arguments);
 
     return this;
   }
 
-  // groupBy(field: string, query?: Driver.GroupQuery<T>) {
+  // public groupBy(field: string, query?: Driver.GroupQuery<T>): this;
+  // groupBy() {
   //   this._getting = true;
 
-  //   this._query = this._query.groupBy.call(this._query, ...arguments);
+  //   this._query = this._query.groupBy.apply(this._query, arguments);
 
   //   return this;
   // }
 
-  orderBy(field: string, order?: Driver.Order) {
+  public orderBy(field: string, order?: Driver.Order): this;
+  public orderBy() {
     this._getting = true;
 
-    this._query = this._query.orderBy.call(this._query, ...arguments);
+    this._query = this._query.orderBy.apply(this._query, arguments);
 
     return this;
   }
 
-  skip(offset: number) {
+  public skip(offset: number): this;
+  public skip() {
     this._getting = true;
 
-    this._query = this._query.skip.call(this._query, ...arguments);
+    this._query = this._query.skip.apply(this._query, arguments);
 
     return this;
   }
 
-  offset(offset: number) {
-    return this.skip(offset);
+  public offset(offset: number): this;
+  public offset() {
+    return this.skip.apply(this, arguments);
   }
 
-  limit(limit: number) {
+  public limit(limit: number): this;
+  public limit() {
     this._getting = true;
 
-    this._query = this._query.limit.call(this._query, ...arguments);
+    this._query = this._query.limit.apply(this._query, arguments);
 
     return this;
   }
 
-  take(limit: number) {
-    return this.limit(limit);
+  public take(limit: number): this;
+  public take() {
+    return this.limit.apply(this, arguments);
   }
 
   /*********************************** Read ***********************************/
 
-  exists(callback?: Driver.Callback<boolean>) {
-    return this._query.exists.call(this._query, ...arguments);
+  public exists(): Promise<boolean>;
+  public exists(callback: Driver.Callback<boolean>): void;
+  public exists() {
+    return this._query.exists.apply(this._query, arguments);
   }
 
-  count(callback?: Driver.Callback<number>) {
-    return this._query.count.call(this._query, ...arguments);
+  public count(): Promise<number>;
+  public count(callback: Driver.Callback<number>): void;
+  public count() {
+    return this._query.count.apply(this._query, arguments);
   }
 
-  get(fields?: string[] | Driver.Callback<T[]>, callback?: Driver.Callback<T[]>) {
-    return this._query.get.call(this._query, ...arguments);
+  public get(fields?: string[]): Promise<Array<A extends undefined ? T : any>>;
+  public get(
+    fields: string[], callback: Driver.Callback<Array<A extends undefined ? T : any>>): void;
+  public get(callback: Driver.Callback<Array<A extends undefined ? T : any>>): void;
+  public get() {
+    return this._query.get.apply(this._query, arguments);
   }
 
-  first(fields?: string[] | Driver.Callback<T>, callback?: Driver.Callback<T>) {
-    return this._query.first.call(this._query, ...arguments);
+  public first(fields?: string[]): Promise<A extends undefined ? T : any>;
+  public first(fields: string[], callback: Driver.Callback<A extends undefined ? T : any>): void;
+  public first(callback: Driver.Callback<A extends undefined ? T : any>): void;
+  public first() {
+    return this._query.first.apply(this._query, arguments);
   }
 
-  value(field: string, callback?: Driver.Callback<any>) {
-    return this._query.value.call(this._query, ...arguments);
+  public value(field: string): Promise<any>;
+  public value(field: string, callback: Driver.Callback<any>): void;
+  public value() {
+    return this._query.value.apply(this._query, arguments);
   }
 
-  pluck(field: string, callback?: Driver.Callback<any>) {
-    return this.value(field, callback);
+  public pluck(field: string): Promise<any>;
+  public pluck(field: string, callback: Driver.Callback<any>): void;
+  public pluck() {
+    return this.value.apply(this, arguments);
   }
 
-  max(field: string, callback?: Driver.Callback<any>) {
-    return this._query.max.call(this._query, ...arguments);
+  public max(field: string): Promise<any>;
+  public max(field: string, callback: Driver.Callback<any>): void;
+  public max() {
+    return this._query.max.apply(this._query, arguments);
   }
 
-  min(field: string, callback?: Driver.Callback<any>) {
-    return this._query.min.call(this._query, ...arguments);
+  public min(field: string): Promise<any>;
+  public min(field: string, callback: Driver.Callback<any>): void;
+  public min() {
+    return this._query.min.apply(this._query, arguments);
   }
 
-  avg(field: string, callback?: Driver.Callback<any>) {
-    return this._query.avg.call(this._query, ...arguments);
+  public avg(field: string): Promise<any>;
+  public avg(field: string, callback: Driver.Callback<any>): void;
+  public avg() {
+    return this._query.avg.apply(this._query, arguments);
   }
 
   /********************************** Inserts *********************************/
 
-  insert(item: T | T[], callback?: Driver.Callback<number>) {
+  public insert(item: T | T[]): Promise<number>;
+  public insert(item: T | T[], callback: Driver.Callback<number>): void;
+  public insert() {
     if (this._getting) throw new Error("Unexpected call to 'insert' after querying");
 
-    return this._query.insert.call(this._query, ...arguments);
+    return this._query.insert.apply(this._query, arguments);
   }
 
-  insertGetId(item: T, callback?: Driver.Callback<Driver.Id>) {
+  public insertGetId(item: T): Promise<Driver.Id>;
+  public insertGetId(item: T, callback: Driver.Callback<Driver.Id>): void;
+  public insertGetId() {
     if (this._getting) throw new Error("Unexpected call to 'insertGetId' after querying");
 
-    return this._query.insertGetId.call(this._query, ...arguments);
+    return this._query.insertGetId.apply(this._query, arguments);
   }
 
   /********************************** Updates *********************************/
 
-  update(update: T, callback?: Driver.Callback<number>) {
-    return this._query.update.call(this._query, ...arguments);
+  public update(update: T): Promise<number>;
+  public update(update: T, callback: Driver.Callback<number>): void;
+  public update() {
+    return this._query.update.apply(this._query, arguments);
   }
 
-  increment(field: string, count?: number | Driver.Callback<number>, callback?: Driver.Callback<number>) {
-    return this._query.increment.call(this._query, ...arguments);
+  public increment(field: string, count?: number): Promise<number>;
+  public increment(field: string, callback: Driver.Callback<number>): void;
+  public increment(field: string, count: number, callback: Driver.Callback<number>): void;
+  public increment() {
+    return this._query.increment.apply(this._query, arguments);
   }
 
-  decrement(field: string, count?: number | Driver.Callback<number>, callback?: Driver.Callback<number>) {
+  public decrement(field: string, count?: number): Promise<number>;
+  public decrement(field: string, callback: Driver.Callback<number>): void;
+  public decrement(field: string, count: number, callback: Driver.Callback<number>): void;
+  public decrement(
+    field: string,
+    count?: number | Driver.Callback<number>,
+    callback?: Driver.Callback<number>
+  ) {
     if (count === undefined) count = 1;
     else if (func.isFunction(count)) {
       callback = count;
       count = 1;
     }
 
-    return this.increment(field, -count, callback);
+    return this.increment.call(this, field, -count, callback);
   }
 
   /********************************** Deletes *********************************/
 
-  delete(callback?: Driver.Callback<number>) {
-    return this._query.delete.call(this._query, ...arguments);
+  public delete(): Promise<number>;
+  public delete(callback: Driver.Callback<number>): void;
+  public delete() {
+    return this._query.delete.apply(this._query, arguments);
   }
 }
 

@@ -46,6 +46,7 @@ tsc.on('close', (code) => {
       ecma: 6,
       output: {
         beautify: true,
+        comments: true,
         preamble: LICENSE,
       },
     });

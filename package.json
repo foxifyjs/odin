@@ -1,6 +1,6 @@
 {
   "name": "@foxify/odin",
-  "version": "0.1.0-beta.15",
+  "version": "0.1.0-beta.16",
   "description": "Active Record Model",
   "author": "Ardalan Amini <ardalanamini22@gmail.com> [https://github.com/ardalanamini]",
   "contributors": [
@@ -40,16 +40,16 @@
     "validation"
   ],
   "dependencies": {
-    "@types/mongodb": "^3.1.4",
+    "@types/mongodb": "^3.1.12",
     "app-root-path": "^2.1.0",
     "async": "^2.6.1",
     "caller-id": "^0.1.0",
     "deasync": "^0.1.13",
     "graphql": "^0.13.2",
-    "graphql-iso-date": "^3.5.0",
-    "mongodb": "^3.1.3",
+    "graphql-iso-date": "^3.6.1",
+    "mongodb": "^3.1.8",
     "mysql": "^2.16.0",
-    "prototyped.js": "^0.18.1",
+    "prototyped.js": "^0.20.1",
     "verifications": "^0.3.0"
   },
   "devDependencies": {
@@ -58,18 +58,19 @@
     "@types/deasync": "^0.1.0",
     "@types/graphql": "^0.13.4",
     "@types/graphql-iso-date": "^3.3.0",
-    "@types/jest": "^23.3.1",
+    "@types/jest": "^23.3.5",
     "@types/mysql": "^2.15.5",
-    "@types/node": "^10.7.1",
-    "codecov": "^3.0.4",
-    "dotenv": "^6.0.0",
+    "@types/node": "^10.11.7",
+    "codecov": "^3.1.0",
+    "dotenv": "^6.1.0",
     "fs-readdir-recursive": "^1.1.0",
-    "jest": "^23.5.0",
-    "mongodb-memory-server": "^2.0.0",
+    "jest": "^23.6.0",
+    "mongodb-memory-server": "^2.4.3",
     "rimraf": "^2.6.2",
-    "ts-jest": "^23.1.4",
+    "ts-jest": "^23.10.4",
     "tslint": "^5.11.0",
-    "typescript": "^3.0.1",
+    "tslint-config-airbnb": "^5.11.0",
+    "typescript": "^3.1.3",
     "uglify-es": "^3.3.9"
   },
   "jest": {

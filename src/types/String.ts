@@ -1,6 +1,6 @@
-import TypeAny from "./Any";
 import * as Verifications from "verifications";
 import * as utils from "../utils";
+import TypeAny from "./Any";
 
 // tslint:disable-next-line:max-line-length
 const ipv4Regex = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
@@ -24,11 +24,13 @@ class TypeString extends TypeAny {
   }
 
   get alphanum() {
-    return this._test((v: string) => !/^[a-zA-Z0-9]*$/.test(v) ? `Must only contain a-z, A-Z, 0-9` : null);
+    return this._test((v: string) => !/^[a-zA-Z0-9]*$/.test(v)
+      ? `Must only contain a-z, A-Z, 0-9` : null);
   }
 
   get ip() {
-    return this._test((v: string) => !(ipv4Regex.test(v) || ipv6Regex.test(v)) ? `Must be an ipv4 or ipv6` : null);
+    return this._test((v: string) => !(ipv4Regex.test(v) || ipv6Regex.test(v))
+      ? `Must be an ipv4 or ipv6` : null);
   }
 
   get ipv4() {
@@ -40,14 +42,16 @@ class TypeString extends TypeAny {
   }
 
   get email() {
-    return this._test((v: string) => !/^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/.test(v) ? "Must be an email address" : null);
+    return this._test((v: string) => !/^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/.test(v)
+      ? "Must be an email address" : null);
   }
 
   get creditCard() {
-    return this._test((v: string) => !Verifications.CreditCard.verify(v) ? "Must be a credit-card" : null);
+    return this._test((v: string) => !Verifications.CreditCard.verify(v)
+      ? "Must be a credit-card" : null);
   }
 
-  min(n: number) {
+  public min(n: number) {
     if (!utils.number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
@@ -55,7 +59,7 @@ class TypeString extends TypeAny {
     return this._test((v: string) => v.length < n ? `Must be at least ${n} characters` : null);
   }
 
-  max(n: number) {
+  public max(n: number) {
     if (!utils.number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
@@ -63,7 +67,7 @@ class TypeString extends TypeAny {
     return this._test((v: string) => v.length > n ? `Must be at most ${n} characters` : null);
   }
 
-  length(n: number) {
+  public length(n: number) {
     if (!utils.number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
@@ -71,7 +75,7 @@ class TypeString extends TypeAny {
     return this._test((v: string) => v.length !== n ? `Must be exactly ${n} characters` : null);
   }
 
-  regex(r: RegExp) {
+  public regex(r: RegExp) {
     if (!(r instanceof RegExp)) throw new TypeError("'r' must be a regex");
 
     return this._test((v: string) => !r.test(v) ? `Must match ${r}` : null);
@@ -79,11 +83,11 @@ class TypeString extends TypeAny {
 
   /********** CASTS **********/
 
-  truncate(length: number) {
+  public truncate(length: number) {
     return this._cast((v: string) => utils.string.truncate(v, length));
   }
 
-  replace(pattern: string | RegExp, replacement: string) {
+  public replace(pattern: string | RegExp, replacement: string) {
     return this._cast((v: string) => v.replace(pattern, replacement));
   }
 }

@@ -1,23 +1,22 @@
-import ModelConstructor, { Model } from "../../index";
-import * as utils from "../../utils";
+import { Model } from "../../index";
 import Driver from "../Driver";
 import Relation from "../Relation/MorphBase";
 
-// @ts-ignore:next-line
-interface MorphOne<T = any> extends Relation<T> { }
-
-abstract class MorphOne<T = any> extends Relation<T> {
-  // @ts-ignore:next-line
-  insert(items: T[], callback?: Driver.Callback<number>) {
+abstract class MorphOne<T = any> extends Relation<T, "MorphOne"> {
+  public insert(items: T[]): Promise<undefined>;
+  public insert(items: T[], callback: Driver.Callback<undefined>): void;
+  public async insert(items: T[], callback?: Driver.Callback<undefined>) {
     const error = new TypeError(`'${this.constructor.name}' relation can't insert multiple items`);
 
     if (callback)
-      return callback(error, undefined as any);
+      return callback(error, undefined);
 
     throw error;
   }
 
-  async create(item: T, callback?: Driver.Callback<Model<T>>) {
+  public create(item: T): Promise<Model<T>>;
+  public create(item: T, callback: Driver.Callback<Model<T>>): void;
+  public async create(item: T, callback?: Driver.Callback<Model<T>>) {
     const error = new TypeError(`This item already has one ${this.as}`);
 
     if (callback)
@@ -35,7 +34,9 @@ abstract class MorphOne<T = any> extends Relation<T> {
     return await super.create(item);
   }
 
-  async save(item: Model<T>, callback?: Driver.Callback<Model<T>>) {
+  public save(model: Model<T>): Promise<Model<T>>;
+  public save(model: Model<T>, callback: Driver.Callback<Model<T>>): void;
+  public async save(item: Model<T>, callback?: Driver.Callback<Model<T>>) {
     const error = new TypeError(`This item already has one ${this.as}`);
     const id = item.getAttribute("id");
 

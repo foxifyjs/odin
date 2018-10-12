@@ -2,7 +2,7 @@ import * as Base from "graphql";
 import { GraphQLDateTime } from "graphql-iso-date";
 
 class Type {
-  toGraphQL(model: string, key: string) {
+  public toGraphQL(model: string, key: string) {
     let field: Base.GraphQLType | undefined;
     let arg: Base.GraphQLInputType | undefined;
 

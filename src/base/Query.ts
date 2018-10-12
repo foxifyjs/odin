@@ -5,36 +5,7 @@ import Relation from "../drivers/Relation/Base";
 import ModelConstructor, { Model } from "../index";
 import * as utils from "../utils";
 
-// @ts-ignore:next-line
-interface Query<T = any> extends DB<T> {
-  /******************************* With Trashed *******************************/
-
-  withTrashed(): this;
-
-  /*********************************** Joins **********************************/
-
-  join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string): this;
-
-  /*********************************** Read ***********************************/
-
-  get(): Promise<Array<Model<T>>>;
-  get(callback: Driver.Callback<Array<Model<T>>>): void;
-
-  first(): Promise<Model<T>>;
-  first(callback: Driver.Callback<Model<T>>): void;
-
-  /********************************** Inserts *********************************/
-
-  insert(items: T[]): Promise<number>;
-  insert(items: T[], callback: Driver.Callback<number>): void;
-
-  /********************************* Restoring ********************************/
-
-  restore(): Promise<number>;
-  restore(callback: Driver.Callback<number>): void;
-}
-
-class Query<T = any> extends DB<T> {
+class Query<T = any, D extends Driver<T> = any> extends DB<T, D, "query"> {
   protected readonly _model: ModelConstructor;
   protected _withTrashed = false;
 
@@ -45,7 +16,7 @@ class Query<T = any> extends DB<T> {
 
     this._model = model;
 
-    relations.forEach((relation) => relation.load(this));
+    relations.forEach(relation => relation.load(this));
   }
 
   private _apply_trashed_options() {
@@ -57,7 +28,7 @@ class Query<T = any> extends DB<T> {
 
   /******************************* With Trashed *******************************/
 
-  withTrashed() {
+  public withTrashed() {
     this._withTrashed = true;
 
     return this;
@@ -65,7 +36,8 @@ class Query<T = any> extends DB<T> {
 
   /*********************************** Joins **********************************/
 
-  join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string) {
+  public join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string): this;
+  public join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string) {
     if (!utils.string.isString(table)) {
       const model = table;
       table = model.toString();
@@ -84,20 +56,25 @@ class Query<T = any> extends DB<T> {
 
   /*********************************** Read ***********************************/
 
-  exists(callback?: Driver.Callback<boolean>) {
+  public exists(): Promise<boolean>;
+  public exists(callback: Driver.Callback<boolean>): void;
+  public exists() {
     this._apply_trashed_options();
 
-    return super.exists(callback);
+    return super.exists.apply(this, arguments);
   }
 
-  count(callback?: Driver.Callback<number>) {
+  public count(): Promise<number>;
+  public count(callback: Driver.Callback<number>): void;
+  public count() {
     this._apply_trashed_options();
 
-    return super.count(callback);
+    return super.count.apply(this, arguments);
   }
 
-  // @ts-ignore:next-line
-  async get(callback?: Driver.Callback<Array<Model<T>>>) {
+  public get(): Promise<Array<Model<T>>>;
+  public get(callback: Driver.Callback<Array<Model<T>>>): void;
+  public async get(callback?: Driver.Callback<Array<Model<T>>>) {
     const iterator = (item: any, cb: any) => cb(undefined, new this._model(item));
 
     this._apply_trashed_options();
@@ -128,8 +105,9 @@ class Query<T = any> extends DB<T> {
     return items;
   }
 
-  // @ts-ignore:next-line
-  async first(callback?: Driver.Callback<Model<T>>) {
+  public first(): Promise<Model<T>>;
+  public first(callback: Driver.Callback<Model<T>>): void;
+  public async first(callback?: Driver.Callback<Model<T>>) {
     const model = this._model;
 
     this._apply_trashed_options();
@@ -142,39 +120,51 @@ class Query<T = any> extends DB<T> {
     return item && new model(item);
   }
 
-  value(field: string, callback?: Driver.Callback<any>) {
+  public value(field: string): Promise<any>;
+  public value(field: string, callback: Driver.Callback<any>): void;
+  public value() {
     this._apply_trashed_options();
 
-    return super.value(field, callback);
+    return super.value.apply(this, arguments);
   }
 
-  pluck(field: string, callback?: Driver.Callback<any>) {
+  public pluck(field: string): Promise<any>;
+  public pluck(field: string, callback: Driver.Callback<any>): void;
+  public pluck() {
     this._apply_trashed_options();
 
-    return super.pluck(field, callback);
+    return super.pluck.apply(this, arguments);
   }
 
-  max(field: string, callback?: Driver.Callback<any>) {
+  public max(field: string): Promise<any>;
+  public max(field: string, callback: Driver.Callback<any>): void;
+  public max() {
     this._apply_trashed_options();
 
-    return super.max(field, callback);
+    return super.max.apply(this, arguments);
   }
 
-  min(field: string, callback?: Driver.Callback<any>) {
+  public min(field: string): Promise<any>;
+  public min(field: string, callback: Driver.Callback<any>): void;
+  public min() {
     this._apply_trashed_options();
 
-    return super.min(field, callback);
+    return super.min.apply(this, arguments);
   }
 
-  avg(field: string, callback?: Driver.Callback<any>) {
+  public avg(field: string): Promise<any>;
+  public avg(field: string, callback: Driver.Callback<any>): void;
+  public avg() {
     this._apply_trashed_options();
 
-    return super.avg(field, callback);
+    return super.avg.apply(this, arguments);
   }
 
   /********************************** Inserts *********************************/
 
-  insert(items: T[], callback?: Driver.Callback<number>) {
+  public insert(items: T[]): Promise<number>;
+  public insert(items: T[], callback: Driver.Callback<number>): void;
+  public insert(items: T[], callback?: Driver.Callback<number>) {
     const model = this._model;
     const error = !Array.isArray(items) &&
       new Error(`Expected 'items' to be an array, '${typeof items}' given`);
@@ -190,8 +180,7 @@ class Query<T = any> extends DB<T> {
     if (callback) {
       if (error) return callback(error, undefined as any);
 
-      return async.map(
-        // @ts-ignore:next-line
+      return (async as any).map(
         items,
         iterator,
         (err: any, res: T[]) => {
@@ -204,8 +193,7 @@ class Query<T = any> extends DB<T> {
 
     if (error) throw error;
 
-    async.map(
-      // @ts-ignore:next-line
+    (async as any).map(
       items,
       iterator,
       (err: any, res: T[]) => {
@@ -218,7 +206,9 @@ class Query<T = any> extends DB<T> {
     return super.insert(items);
   }
 
-  insertGetId(item: T, callback?: Driver.Callback<Driver.Id>) {
+  public insertGetId(item: T): Promise<Driver.Id>;
+  public insertGetId(item: T, callback: Driver.Callback<Driver.Id>): void;
+  public insertGetId(item: T, callback?: Driver.Callback<Driver.Id>) {
     const model = this._model;
 
     try {
@@ -229,12 +219,14 @@ class Query<T = any> extends DB<T> {
       throw err;
     }
 
-    return super.insertGetId(item, callback);
+    return super.insertGetId.call(this, item, callback);
   }
 
   /********************************** Updates *********************************/
 
-  update(update: T, callback?: Driver.Callback<number>) {
+  public update(update: T): Promise<number>;
+  public update(update: T, callback: Driver.Callback<number>): void;
+  public update(update: T, callback?: Driver.Callback<number>) {
     try {
       update = this._model.validate<T>(update, true);
     } catch (err) {
@@ -245,38 +237,48 @@ class Query<T = any> extends DB<T> {
 
     this._apply_trashed_options();
 
-    return super.update(update, callback);
+    return super.update.call(this, update, callback);
   }
 
   // FIXME: updated_at
-  increment(field: string, count?: number | Driver.Callback<number>, callback?: Driver.Callback<number>) {
+  public increment(field: string, count?: number): Promise<number>;
+  public increment(field: string, callback: Driver.Callback<number>): void;
+  public increment(field: string, count: number, callback: Driver.Callback<number>): void;
+  public increment() {
     this._apply_trashed_options();
 
-    return super.increment(field, count, callback);
+    return super.increment.apply(this, arguments);
   }
 
   // FIXME: updated_at
-  decrement(field: string, count?: number | Driver.Callback<number>, callback?: Driver.Callback<number>) {
+  public decrement(field: string, count?: number): Promise<number>;
+  public decrement(field: string, callback: Driver.Callback<number>): void;
+  public decrement(field: string, count: number, callback: Driver.Callback<number>): void;
+  public decrement() {
     this._apply_trashed_options();
 
-    return super.decrement(field, count, callback);
+    return super.decrement.apply(this, arguments);
   }
 
   /********************************** Deletes *********************************/
 
-  delete(callback?: Driver.Callback<number>) {
+  public delete(): Promise<number>;
+  public delete(callback: Driver.Callback<number>): void;
+  public delete(callback?: Driver.Callback<number>) {
     this._apply_trashed_options();
 
     if (this._model.softDelete)
-      return super.update({ [this._model.DELETED_AT]: new Date() } as any, callback);
+      return super.update.call(this, { [this._model.DELETED_AT]: new Date() } as any, callback);
 
-    return super.delete(callback);
+    return super.delete.call(this, callback);
   }
 
   /********************************* Restoring ********************************/
 
-  restore(callback?: Driver.Callback<number>) {
-    return super.update({ [this._model.DELETED_AT]: null } as any, callback);
+  public restore(): Promise<number>;
+  public restore(callback: Driver.Callback<number>): void;
+  public restore(callback?: Driver.Callback<number>) {
+    return super.update.call(this, { [this._model.DELETED_AT]: null } as any, callback);
   }
 }
 

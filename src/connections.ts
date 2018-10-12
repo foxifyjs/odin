@@ -2,11 +2,9 @@ import * as mongodb from "mongodb";
 import * as drivers from "./drivers";
 import * as utils from "./utils";
 
-const CONNECTIONS_GLOBAL = Symbol("__FOXIFY_ODIN__");
+const CONNECTIONS: { [name: string]: Connection } = {};
 
-if (!(global as any)[CONNECTIONS_GLOBAL]) (global as any)[CONNECTIONS_GLOBAL] = {};
-
-const setConnection = (name: string, connection: Connection) => (global as any)[CONNECTIONS_GLOBAL][name] = connection;
+const setConnection = (name: string, connection: Connection) => CONNECTIONS[name] = connection;
 
 const connect = (connection: connect.Connection) => {
   switch (connection.driver) {
@@ -34,16 +32,17 @@ export namespace connect {
   }
 
   export interface Connections {
-    [name: string]: connect.Connection;
+    [name: string]: Connection;
   }
 }
 
-export const getConnection = <T = any, D extends drivers.Base<T> = drivers.Base<T>>(name: string): D =>
-  (global as any)[CONNECTIONS_GLOBAL][name]();
+export const getConnection = <T = any, D extends drivers.Base<T> = drivers.Base<T>>(
+  name: string
+): D => CONNECTIONS[name]();
 
 export default (connections: connect.Connections) => {
   utils.object.forEach(connections, (connection: connect.Connection, name) => {
-    if (!(global as any)[CONNECTIONS_GLOBAL][name])
+    if (!CONNECTIONS[name])
       setConnection(name as string, connect(connection) as any);
   });
 };

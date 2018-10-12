@@ -1,5 +1,5 @@
-import TypeAny from "./Any";
 import { number } from "../utils";
+import TypeAny from "./Any";
 
 class TypeNumber extends TypeAny {
   protected _type = "Number";
@@ -22,26 +22,26 @@ class TypeNumber extends TypeAny {
     return this._test((v: number) => v > 0 ? `Must be a negative number` : null);
   }
 
-  min(n: number) {
+  public min(n: number) {
     if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     return this._test((v: number) => v < n ? `Must be at least ${n}` : null);
   }
 
-  max(n: number) {
+  public max(n: number) {
     if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     return this._test((v: number) => v > n ? `Must be at most ${n}` : null);
   }
 
-  precision(n: number) {
+  public precision(n: number) {
     if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     return this._test((v: number) => `${v}`.split(".")[1].length < n ?
       `Must be have at most ${n} decimal places` : null);
   }
 
-  multiple(n: number) {
+  public multiple(n: number) {
     if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");

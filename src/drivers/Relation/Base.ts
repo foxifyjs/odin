@@ -1,143 +1,20 @@
-import * as DB from "../../DB";
+import * as async from "async";
 import Query from "../../base/Query";
 import ModelConstructor, { Model } from "../../index";
 import * as utils from "../../utils";
 import Driver from "../Driver";
-import * as async from "async";
 
-interface Relation<T = any> {
-  /****************************** With Relations ******************************/
-
-  with(...relations: string[]): Query<T>;
-
-  /*********************************** Joins **********************************/
-
-  join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string): Query<T>;
-
-  /******************************* Where Clauses ******************************/
-
-  where(field: string, value: any): Query<T>;
-  where(field: string, operator: Driver.Operator, value: any): Query<T>;
-
-  whereIn(field: string, values: any[]): Query<T>;
-
-  whereNotIn(field: string, values: any[]): Query<T>;
-
-  whereBetween(field: string, start: any, end: any): Query<T>;
-
-  whereNotBetween(field: string, start: any, end: any): Query<T>;
-
-  whereNull(field: string): Query<T>;
-
-  whereNotNull(field: string): Query<T>;
-
-  /******************** Ordering, Grouping, Limit & Offset ********************/
-
-  orderBy(field: string, order?: Driver.Order): Query<T>;
-
-  skip(offset: number): Query<T>;
-
-  offset(offset: number): Query<T>;
-
-  limit(limit: number): Query<T>;
-
-  take(limit: number): Query<T>;
-
-  /*********************************** Read ***********************************/
-
-  exists(): Promise<boolean>;
-  exists(callback: Driver.Callback<boolean>): void;
-
-  count(): Promise<number>;
-  count(callback: Driver.Callback<number>): void;
-
-  get(): Promise<Array<Model<T>>>;
-  get(callback: Driver.Callback<Array<Model<T>>>): void;
-
-  first(): Promise<Model<T>>;
-  first(callback: Driver.Callback<Model<T>>): void;
-
-  value(field: string): Promise<any>;
-  value(field: string, callback: Driver.Callback<any>): void;
-
-  pluck(field: string): Promise<any>;
-  pluck(field: string, callback: Driver.Callback<any>): void;
-
-  max(field: string): Promise<any>;
-  max(field: string, callback: Driver.Callback<any>): void;
-
-  min(field: string): Promise<any>;
-  min(field: string, callback: Driver.Callback<any>): void;
-
-  /********************************** Inserts *********************************/
-
-  insert(items: T[]): Promise<number>;
-  insert(items: T[], callback: Driver.Callback<number>): void;
-
-  create(item: T): Promise<Model<T>>;
-  create(item: T, callback: Driver.Callback<Model<T>>): void;
-
-  save(model: Model<T>): Promise<Model<T>>;
-  save(model: Model<T>, callback: Driver.Callback<Model<T>>): void;
-
-  /********************************** Updates *********************************/
-
-  update(update: T): Promise<number>;
-  update(update: T, callback: Driver.Callback<number>): void;
-
-  increment(field: string, count?: number): Promise<number>;
-  increment(field: string, callback: Driver.Callback<number>): void;
-  increment(field: string, count: number, callback: Driver.Callback<number>): void;
-
-  decrement(field: string, count?: number): Promise<number>;
-  decrement(field: string, callback: Driver.Callback<number>): void;
-  decrement(field: string, count: number, callback: Driver.Callback<number>): void;
-
-  /********************************** Deletes *********************************/
-
-  delete(): Promise<number>;
-  delete(callback: Driver.Callback<number>): void;
-}
-
-abstract class Relation<T = any> {
-  private readonly _model: Model;
-  private readonly _relation: ModelConstructor;
-  private readonly _localKey: string;
-  private readonly _foreignKey: string;
-  private readonly _as: string;
-
-  get model() {
-    return this._model;
-  }
-
-  get relation() {
-    return this._relation;
-  }
-
-  get localKey() {
-    return this._localKey;
-  }
-
-  get foreignKey() {
-    return this._foreignKey;
-  }
-
-  get as() {
-    return this._as;
-  }
+abstract class Relation<T = any, A = undefined> {
+  public readonly as: string;
 
   constructor(
-    model: Model,
-    relation: ModelConstructor,
-    localKey: string,
-    foreignKey: string,
+    public readonly model: Model,
+    public readonly relation: ModelConstructor,
+    public readonly localKey: string,
+    public readonly foreignKey: string,
     caller: (...args: any[]) => any
   ) {
-    this._model = model;
-    this._relation = relation;
-    this._localKey = localKey;
-    this._foreignKey = foreignKey;
-    this._as = utils.getCallerFunctionName(caller);
+    this.as = utils.getCallerFunctionName(caller);
   }
 
   protected _query(relations?: string[]): Query {
@@ -151,109 +28,178 @@ abstract class Relation<T = any> {
     );
   }
 
-  abstract load(query: Query<T>): any;
+  public abstract load(query: Query<T>): any;
 
   /****************************** With Relations ******************************/
 
-  with(...relations: string[]) {
-    return this._query(relations);
+  public with(...relations: string[]): Query<T>;
+  public with() {
+    return this._query.call(this, arguments);
   }
 
   /*********************************** Joins **********************************/
 
-  join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string) {
-    return this._query().join(table, query, as);
+  public join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string): Query<T>;
+  public join() {
+    const query = this._query();
+
+    return query.join.apply(query, arguments);
   }
 
   /******************************* Where Clauses ******************************/
 
-  where(field: string, operator: Driver.Operator | any, value?: any) {
-    return this._query().where(field, operator, value);
+  public where(field: string, value: any): Query<T>;
+  public where(field: string, operator: Driver.Operator, value: any): Query<T>;
+  public where() {
+    const query = this._query();
+
+    return query.where.apply(query, arguments);
   }
 
-  whereIn(field: string, values: any[]) {
-    return this._query().whereIn(field, values);
+  public whereIn(field: string, values: any[]): Query<T>;
+  public whereIn() {
+    const query = this._query();
+
+    return query.whereIn.apply(query, arguments);
   }
 
-  whereNotIn(field: string, values: any[]) {
-    return this._query().whereNotIn(field, values);
+  public whereNotIn(field: string, values: any[]): Query<T>;
+  public whereNotIn() {
+    const query = this._query();
+
+    return query.whereNotIn.apply(query, arguments);
   }
 
-  whereBetween(field: string, start: any, end: any) {
-    return this._query().whereBetween(field, start, end);
+  public whereBetween(field: string, start: any, end: any): Query<T>;
+  public whereBetween() {
+    const query = this._query();
+
+    return query.whereBetween.apply(query, arguments);
   }
 
-  whereNotBetween(field: string, start: any, end: any) {
-    return this._query().whereNotBetween(field, start, end);
+  public whereNotBetween(field: string, start: any, end: any): Query<T>;
+  public whereNotBetween() {
+    const query = this._query();
+
+    return query.whereNotBetween.apply(query, arguments);
   }
 
-  whereNull(field: string) {
-    return this._query().whereNull(field);
+  public whereNull(field: string): Query<T>;
+  public whereNull() {
+    const query = this._query();
+
+    return query.whereNull.apply(query, arguments);
   }
 
-  whereNotNull(field: string) {
-    return this._query().whereNotNull(field);
+  public whereNotNull(field: string): Query<T>;
+  public whereNotNull() {
+    const query = this._query();
+
+    return query.whereNotNull.apply(query, arguments);
   }
 
   /******************** Ordering, Grouping, Limit & Offset ********************/
 
-  orderBy(field: string, order?: Driver.Order) {
-    return this._query().orderBy(field, order);
+  public orderBy(field: string, order?: Driver.Order): Query<T>;
+  public orderBy() {
+    const query = this._query();
+
+    return query.orderBy.apply(query, arguments);
   }
 
-  skip(offset: number) {
-    return this._query().skip(offset);
+  public skip(offset: number): Query<T>;
+  public skip() {
+    const query = this._query();
+
+    return query.skip.apply(query, arguments);
   }
 
-  offset(offset: number) {
-    return this.skip(offset);
+  public offset(offset: number): Query<T>;
+  public offset() {
+    return this.skip.apply(this, arguments);
   }
 
-  limit(limit: number) {
-    return this._query().limit(limit);
+  public limit(limit: number): Query<T>;
+  public limit() {
+    const query = this._query();
+
+    return query.limit.apply(query, arguments);
   }
 
-  take(limit: number) {
-    return this.limit(limit);
+  public take(limit: number): Query<T>;
+  public take() {
+    return this.limit.apply(this, arguments);
   }
 
   /*********************************** Read ***********************************/
 
-  exists(callback?: Driver.Callback<boolean>) {
-    return this._query().exists(callback);
+  public exists(): Promise<boolean>;
+  public exists(callback: Driver.Callback<boolean>): void;
+  public exists() {
+    const query = this._query();
+
+    return query.exists.apply(query, arguments);
   }
 
-  count(callback?: Driver.Callback<number>) {
-    return this._query().count(callback);
+  public count(): Promise<number>;
+  public count(callback: Driver.Callback<number>): void;
+  public count() {
+    const query = this._query();
+
+    return query.count.apply(query, arguments);
   }
 
-  get(callback?: Driver.Callback<any>) {
-    return this._query().get(callback);
+  public get(): Promise<Array<Model<T>>>;
+  public get(callback: Driver.Callback<Array<Model<T>>>): void;
+  public get() {
+    const query = this._query();
+
+    return query.get.apply(query, arguments);
   }
 
-  first(callback?: Driver.Callback<any>) {
-    return this._query().first(callback);
+  public first(): Promise<Model<T>>;
+  public first(callback: Driver.Callback<Model<T>>): void;
+  public first() {
+    const query = this._query();
+
+    return query.first.apply(query, arguments);
   }
 
-  value(field: string, callback?: Driver.Callback<any>) {
-    return this._query().value(field, callback);
+  public value(field: string): Promise<any>;
+  public value(field: string, callback: Driver.Callback<any>): void;
+  public value() {
+    const query = this._query();
+
+    return query.value.apply(query, arguments);
   }
 
-  pluck(field: string, callback?: Driver.Callback<any>) {
-    return this.value(field, callback);
+  public pluck(field: string): Promise<any>;
+  public pluck(field: string, callback: Driver.Callback<any>): void;
+  public pluck() {
+    return this.value.apply(this, arguments);
   }
 
-  max(field: string, callback?: Driver.Callback<any>) {
-    return this._query().max(field, callback);
+  public max(field: string): Promise<any>;
+  public max(field: string, callback: Driver.Callback<any>): void;
+  public max() {
+    const query = this._query();
+
+    return query.max.apply(query, arguments);
   }
 
-  min(field: string, callback?: Driver.Callback<any>) {
-    return this._query().min(field, callback);
+  public min(field: string): Promise<any>;
+  public min(field: string, callback: Driver.Callback<any>): void;
+  public min() {
+    const query = this._query();
+
+    return query.min.apply(query, arguments);
   }
 
   /********************************** Inserts *********************************/
 
-  async insert(items: T[], callback?: Driver.Callback<number>) {
+  public insert(items: T[]): Promise<A extends undefined ? number : any>;
+  public insert(items: T[], callback: Driver.Callback<A extends undefined ? number : any>): void;
+  public async insert(items: T[], callback?: Driver.Callback<A extends undefined ? number : any>) {
     const foreignKey = this.foreignKey;
     const localAttribute = this.model.getAttribute(this.localKey);
 
@@ -267,7 +213,7 @@ abstract class Relation<T = any> {
         (err, newItems) => {
           if (err) callback(err, undefined as any);
 
-          this._query().insert(newItems as T[], callback);
+          this._query().insert(newItems as T[], callback as any);
         }
       );
 
@@ -287,7 +233,9 @@ abstract class Relation<T = any> {
     return await this._query().insert(items);
   }
 
-  async create(item: T, callback?: Driver.Callback<Model<T>>) {
+  public create(item: T): Promise<Model<T>>;
+  public create(item: T, callback: Driver.Callback<Model<T>>): void;
+  public async create(item: T, callback?: Driver.Callback<Model<T>>) {
     item = {
       ...(item as any),
       [this.foreignKey]: this.model.getAttribute(this.localKey),
@@ -303,7 +251,9 @@ abstract class Relation<T = any> {
     return await this.where("id", await this._query().insertGetId(item)).first();
   }
 
-  save(model: Model<T>, callback?: Driver.Callback<Model<T>>) {
+  public save(model: Model<T>): Promise<Model<T>>;
+  public save(model: Model<T>, callback: Driver.Callback<Model<T>>): void;
+  public save(model: Model<T>, callback?: Driver.Callback<Model<T>>) {
     model.setAttribute(
       this.foreignKey,
       this.model.getAttribute(this.localKey)
@@ -314,22 +264,40 @@ abstract class Relation<T = any> {
 
   /********************************** Updates *********************************/
 
-  update(update: T, callback?: Driver.Callback<number>) {
-    return this._query().update(update, callback);
+  public update(update: T): Promise<number>;
+  public update(update: T, callback: Driver.Callback<number>): void;
+  public update() {
+    const query = this._query();
+
+    return query.update.apply(query, arguments);
   }
 
-  increment(field: string, count?: number | Driver.Callback<number>, callback?: Driver.Callback<number>) {
-    return this._query().increment(field, count, callback);
+  public increment(field: string, count?: number): Promise<number>;
+  public increment(field: string, callback: Driver.Callback<number>): void;
+  public increment(field: string, count: number, callback: Driver.Callback<number>): void;
+  public increment() {
+    const query = this._query();
+
+    return query.increment.apply(query, arguments);
   }
 
-  decrement(field: string, count?: number | Driver.Callback<number>, callback?: Driver.Callback<number>) {
-    return this._query().decrement(field, count, callback);
+  public decrement(field: string, count?: number): Promise<number>;
+  public decrement(field: string, callback: Driver.Callback<number>): void;
+  public decrement(field: string, count: number, callback: Driver.Callback<number>): void;
+  public decrement() {
+    const query = this._query();
+
+    return query.decrement.apply(query, arguments);
   }
 
   /********************************** Deletes *********************************/
 
-  delete(callback?: Driver.Callback<number>) {
-    return this._query().delete(callback);
+  public delete(): Promise<number>;
+  public delete(callback: Driver.Callback<number>): void;
+  public delete() {
+    const query = this._query();
+
+    return query.delete.apply(query, arguments);
   }
 }
 

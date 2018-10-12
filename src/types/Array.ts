@@ -1,5 +1,5 @@
-import TypeAny from "./Any";
 import { array, number } from "../utils";
+import TypeAny from "./Any";
 
 interface TypeArray {
   ofType: TypeAny;
@@ -14,19 +14,27 @@ class TypeArray extends TypeAny {
     return "Must be an array";
   }
 
-  of(type: TypeAny) {
+  public of(type: TypeAny) {
     if (!(type instanceof TypeAny))
-      throw new TypeError(`Expected 'type' to be a 'TypeAny' instance, got '${typeof type}' insted`);
+      throw new TypeError(`Expected 'type' to be a 'TypeAny' instance, got '${
+        typeof type
+        }' insted`);
 
     this.ofType = type;
 
     return this._test(
-      (v: any[]) => array.first(array.deepFlatten(array.compact(v.map((item) => type.validate(item).errors))))
+      (v: any[]) => array.first(
+        array.deepFlatten(
+          array.compact(
+            v.map(item => type.validate(item).errors)
+          )
+        )
+      )
     )
-      ._cast((v: any[]) => v.map((item) => type.validate(item).value));
+      ._cast((v: any[]) => v.map(item => type.validate(item).value));
   }
 
-  min(n: number) {
+  public min(n: number) {
     if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
@@ -34,7 +42,7 @@ class TypeArray extends TypeAny {
     return this._test((v: any[]) => v.length < n ? `Must be at least ${n} items` : null);
   }
 
-  max(n: number) {
+  public max(n: number) {
     if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");
@@ -42,7 +50,7 @@ class TypeArray extends TypeAny {
     return this._test((v: any[]) => v.length > n ? `Must be at most ${n} items` : null);
   }
 
-  length(n: number) {
+  public length(n: number) {
     if (!number.isNumber(n)) throw new TypeError("'n' must be a number");
 
     if (n < 0) throw new TypeError("'n' must be a positive number");

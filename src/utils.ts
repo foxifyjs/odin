@@ -17,7 +17,8 @@ export function mixins(...baseCtors: any[]) {
     baseCtors.forEach((baseCtor) => {
       // static methods
       Object.getOwnPropertyNames(baseCtor).forEach((name) => {
-        if (!exports.array.contains(["length", "constructor", "prototype", "name"], name) && !derivedCtor[name])
+        if (!exports.array.contains(["length", "constructor", "prototype", "name"], name)
+          && !derivedCtor[name])
           derivedCtor[name] = baseCtor[name];
       });
 
@@ -39,7 +40,12 @@ export function mixins(...baseCtors: any[]) {
  * @param {string} name
  * @param {(value?: any) => any} func
  */
-export function define(obj: object, method: "get" | "set", name: string, func: (value?: any) => any) {
+export function define(
+  obj: object,
+  method: "get" | "set",
+  name: string,
+  func: (value?: any) => any
+) {
   Object.defineProperty(
     obj,
     name,
@@ -58,7 +64,8 @@ export function define(obj: object, method: "get" | "set", name: string, func: (
  * @example
  * getGetterName("first_name"); // getFirstNameAttribute
  */
-export const getGetterName = (key: string) => `get${exports.string.capitalize(exports.string.camelCase(key))}Attribute`;
+export const getGetterName = (key: string) =>
+  `get${exports.string.capitalize(exports.string.camelCase(key))}Attribute`;
 
 /**
  * Generates setter name for the given key
@@ -67,7 +74,8 @@ export const getGetterName = (key: string) => `get${exports.string.capitalize(ex
  * @example
  * getSetterName("first_name"); // setFirstNameAttribute
  */
-export const getSetterName = (key: string) => `set${exports.string.capitalize(exports.string.camelCase(key))}Attribute`;
+export const getSetterName = (key: string) =>
+  `set${exports.string.capitalize(exports.string.camelCase(key))}Attribute`;
 
 /**
  * Generates table name for the given name
@@ -122,4 +130,5 @@ export const makeMorphType = (name: string) => `${makeTableType(name)}able`;
  * @param {Function} func
  * @returns {string}
  */
-export const getCallerFunctionName = (func: (...args: any[]) => any) => callerId.getData(func).methodName;
+export const getCallerFunctionName = (func: (...args: any[]) => any) =>
+  callerId.getData(func).methodName;

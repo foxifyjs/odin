@@ -12,6 +12,11 @@
 
 ---
 
+## [v0.1.0-beta.16](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.16) - *(2018-10-12)*
+
+- :beetle: Typescript bug fix
+- :eyeglasses: Added windows os
+
 ## [v0.1.0-beta.15](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.15) - *(2018-08-22)*
 
 - :beetle: `Model` schema bug fix

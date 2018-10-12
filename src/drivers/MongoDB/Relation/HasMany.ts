@@ -1,11 +1,11 @@
-import { HasMany as Base } from "../../Relation";
 import Query from "../../../base/Query";
+import { HasMany as Base } from "../../Relation";
 
 class HasMany<T = any> extends Base {
-  load(query: Query<T>) {
+  public load(query: Query<T>) {
     return query.join(
       this.relation,
-      (q) => q.on(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`),
+      q => q.on(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`),
       this.as
     );
   }
