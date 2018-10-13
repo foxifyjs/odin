@@ -1,4 +1,4 @@
-import ModelConstructor, { Model } from "../../index";
+import * as Model from "../../index";
 import * as utils from "../../utils";
 import Driver from "../Driver";
 import Relation from "../Relation/Base";
@@ -6,7 +6,7 @@ import Relation from "../Relation/Base";
 abstract class HasOne<T = any> extends Relation<T, "HasOne"> {
   constructor(
     model: Model,
-    relation: ModelConstructor,
+    relation: typeof Model,
     localKey: string = utils.makeTableId(relation.toString()),
     foreignKey: string = "id",
     caller: (...args: any[]) => any

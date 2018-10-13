@@ -1,10 +1,11 @@
 import * as Base from "graphql";
 import Query from "../base/Query";
-import ModelConstructor, { DB, Model } from "../index";
+import * as DB from "../DB";
+import * as Model from "../index";
 import TypeAny from "../types/Any";
 import * as utils from "../utils";
 
-const _schema = (model: string, schema: ModelConstructor.Schema) => {
+const _schema = (model: string, schema: Model.Schema) => {
   const fields: GraphQL.Schema = {};
   const args: any = {};
 
@@ -55,10 +56,10 @@ const _projection = (fieldASTs: any) => fieldASTs.selectionSet.selections.reduce
   []
 );
 
-const _orderBy = (model: string, schema: ModelConstructor.Schema) => {
+const _orderBy = (model: string, schema: Model.Schema) => {
   const orderByASC = (key: string) => `${key}_ASC`;
   const orderByDESC = (key: string) => `${key}_DESC`;
-  const getValues = (schema: ModelConstructor.Schema, keyPrefix?: string) => {
+  const getValues = (schema: Model.Schema, keyPrefix?: string) => {
     const values: { [key: string]: any } = {};
 
     for (const key in schema) {
@@ -121,15 +122,15 @@ module GraphQL {
 }
 
 class GraphQL {
-  private static _schema: ModelConstructor.Schema;
+  private static _schema: Model.Schema;
   private static _table: string;
   private static timestamps: boolean;
-  private static softDelete: boolean;
+  // private static softDelete: boolean;
   private static CREATED_AT: string;
   private static UPDATED_AT: string;
   private static DELETED_AT: string;
-  public static DB: ModelConstructor.DB;
-  public static connection: ModelConstructor.Connection;
+  public static DB: Model.DB;
+  public static connection: Model.Connection;
 
   public static toGraphQL(): any {
     const name = this.name;
@@ -152,7 +153,7 @@ class GraphQL {
     const getDB = () => {
       const db = this.DB.connection(this.connection).table(this._table);
 
-      if (this.softDelete) return db.whereNull(this.DELETED_AT);
+      if ((this as any).softDelete) return db.whereNull(this.DELETED_AT);
 
       return db;
     };
@@ -239,7 +240,7 @@ class GraphQL {
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
           const result = await _encapsulate(
-            async () => await ((this as any) as ModelConstructor).create(params.data)
+            async () => await ((this as any) as typeof Model).create(params.data)
           );
 
           return _prepare(result);
@@ -253,7 +254,7 @@ class GraphQL {
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => await _encapsulate(
-          async () => await ((this as any) as ModelConstructor).insert(params.data)
+          async () => await ((this as any) as typeof Model).insert(params.data)
         ),
       },
       [`update_${multiple}`]: {
@@ -270,7 +271,7 @@ class GraphQL {
           const query: Query = utils.object.reduce(
             params.query || {},
             (query, value, key) => query.where(key, value),
-            (this as any) as ModelConstructor | Query
+            (this as any) as Model | Query
           );
 
           return await _encapsulate(async () => await query.update(params.data));
@@ -287,7 +288,7 @@ class GraphQL {
           const query: Query = utils.object.reduce(
             params.query || {},
             (query, value, key) => query.where(key, value),
-            (this as any) as ModelConstructor | Query
+            (this as any) as Model | Query
           );
 
           return await query.delete();
@@ -295,7 +296,7 @@ class GraphQL {
       },
     };
 
-    if (this.softDelete)
+    if ((this as any).softDelete)
       mutations[`restore_${multiple}`] = {
         type: Base.GraphQLInt,
         args: {
@@ -307,7 +308,7 @@ class GraphQL {
           const query: Query = utils.object.reduce(
             params.query,
             (query, value, key) => query.where(key, value),
-            ((this as any) as ModelConstructor).withTrashed()
+            ((this as any) as typeof Model).withTrashed()
           );
 
           return await query.restore();
@@ -319,10 +320,6 @@ class GraphQL {
       mutations,
     };
   }
-}
-
-export interface GraphQLConstructor {
-  toGraphQL(): any;
 }
 
 export default GraphQL;

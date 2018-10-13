@@ -1,5 +1,5 @@
 import * as Base from "graphql";
-import Model from "../index";
+import * as Model from "../index";
 
 module GraphQL {
   export interface Queries {
@@ -7,7 +7,7 @@ module GraphQL {
   }
 }
 
-type GraphQL = (...models: Model[]) => Base.GraphQLSchema;
+type GraphQL = (...models: Array<typeof Model>) => Base.GraphQLSchema;
 
 const GraphQL: GraphQL = (...models) => {
   const queries: GraphQL.Queries = {};

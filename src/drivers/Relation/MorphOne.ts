@@ -1,4 +1,4 @@
-import { Model } from "../../index";
+import * as Model from "../../index";
 import Driver from "../Driver";
 import Relation from "../Relation/MorphBase";
 

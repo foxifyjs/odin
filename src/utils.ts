@@ -34,6 +34,31 @@ export function mixins(...baseCtors: any[]) {
 }
 
 /**
+ * Adds the given mixin to the class
+ * @param {*} baseCtor
+ * @returns {Function}
+ */
+export function use<
+  T extends { new(...args: any[]): {} } = any,
+  P extends { new(...args: any[]): {} } = any
+  >(derivedCtor: T, baseCtor: P): T & P {
+  // static methods
+  Object.getOwnPropertyNames(baseCtor).forEach((name) => {
+    if (!exports.array.contains(["length", "constructor", "prototype", "name"], name)
+      && !(derivedCtor as any)[name])
+      (derivedCtor as any)[name] = (baseCtor as any)[name];
+  });
+
+  // instance methods
+  Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
+    if (name !== "constructor" && !derivedCtor.prototype[name])
+      derivedCtor.prototype[name] = baseCtor.prototype[name];
+  });
+
+  return derivedCtor as any;
+}
+
+/**
  * Adds the getter/setter to the given object
  * @param {object} obj
  * @param {("get" | "set")} method

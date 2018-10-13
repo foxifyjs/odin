@@ -1,26 +1,11 @@
 import { Base as Driver } from "../drivers";
 import Relation from "../drivers/Relation/Base";
-import ModelConstructor, { Model } from "../index";
+import * as Model from "../index";
 import * as utils from "../utils";
 import Query from "./Query";
 
 interface QueryBuilder<T = any> {
-  /******************************* With Trashed *******************************/
-
-  withTrashed(): Query<T>;
-
-  /****************************** With Relations ******************************/
-
-  with(...relations: string[]): Query<T>;
-
-  /*********************************** Joins **********************************/
-
-  join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string): Query<T>;
-
   /******************************* Where Clauses ******************************/
-
-  where(field: string, value: any): Query<T>;
-  where(field: string, operator: Driver.Operator, value: any): Query<T>;
 
   whereIn(field: string, values: any[]): Query<T>;
 
@@ -60,12 +45,6 @@ interface QueryBuilder<T = any> {
   first(): Promise<Model<T>>;
   first(callback: Driver.Callback<Model<T>>): void;
 
-  find(ids: Driver.Id | Driver.Id[]): Promise<Model<T>>;
-  find(ids: Driver.Id | Driver.Id[], callback: Driver.Callback<Model<T>>): void;
-
-  findBy(field: string, values: any | any[]): Promise<Model<T>>;
-  findBy(field: string, values: any | any[], callback: Driver.Callback<Model<T>>): void;
-
   value(field: string): Promise<any>;
   value(field: string, callback: Driver.Callback<any>): void;
 
@@ -77,60 +56,29 @@ interface QueryBuilder<T = any> {
 
   min(field: string): Promise<any>;
   min(field: string, callback: Driver.Callback<any>): void;
-
-  /********************************** Inserts *********************************/
-
-  insert(items: T[]): Promise<number>;
-  insert(items: T[], callback: Driver.Callback<number>): void;
-
-  create(item: T): Promise<Model<T>>;
-  create(item: T, callback: Driver.Callback<Model<T>>): void;
-
-  // /********************************** Updates *********************************/
-
-  // save(): Promise<Model<T>>;
-  // save(callback: Driver.Callback<Model<T>>): void;
-
-  /********************************** Deletes *********************************/
-
-  destroy(ids: Driver.Id | Driver.Id[]): Promise<number>;
-  destroy(ids: Driver.Id | Driver.Id[], callback: Driver.Callback<number>): void;
-}
-
-export interface QueryInstance<T = any> {
-  /********************************** Updates *********************************/
-
-  save(): Promise<Model<T>>;
-  save(callback: Driver.Callback<Model<T>>): void;
-
-  /********************************* Restoring ********************************/
-
-  restore(): Promise<boolean>;
-  restore(callback: Driver.Callback<boolean>): void;
 }
 
 class QueryBuilder<T = any> {
-  public static connection: string;
   public static _table: string;
   public static softDelete: boolean;
   public static DELETED_AT: string;
 
-  private _isNew!: boolean;
+  public attributes!: Model.Document;
 
-  public attributes!: ModelConstructor.Document;
-
-  public static query(relations?: Relation[]) {
-    return new Query(this as any, this._table, relations);
+  public static query<T>(relations?: Relation[]) {
+    return new Query<T>(this as any, this._table, relations);
   }
 
   /******************************* With Trashed *******************************/
 
+  public static withTrashed<T>(): Query<T>;
   public static withTrashed() {
     return this.query().withTrashed();
   }
 
   /****************************** With Relations ******************************/
 
+  public static with<T>(...relations: string[]): Query<T>;
   public static with(...relations: string[]) {
     if (relations.length === 0)
       throw new TypeError("Expected at least one 'relation', got none");
@@ -152,12 +100,16 @@ class QueryBuilder<T = any> {
 
   /*********************************** Joins **********************************/
 
-  public static join(table: string | ModelConstructor, query?: Driver.JoinQuery, as?: string) {
+  public static join<T>(table: string | typeof Model, query?: Driver.JoinQuery<T>, as?: string):
+    Query<T>;
+  public static join(table: string | typeof Model, query?: Driver.JoinQuery, as?: string) {
     return this.query().join(table, query, as);
   }
 
   /******************************* Where Clauses ******************************/
 
+  public static where<T>(field: string, value: any): Query<T>;
+  public static where<T>(field: string, operator: Driver.Operator, value: any): Query<T>;
   public static where(field: string, operator: Driver.Operator | any, value?: any) {
     return this.query().where(field, operator, value);
   }
@@ -234,14 +186,19 @@ class QueryBuilder<T = any> {
     return this.query().first(callback as any);
   }
 
+  public static find<T>(ids: Driver.Id | Driver.Id[]): Promise<Model<T>>;
+  public static find<T>(ids: Driver.Id | Driver.Id[], callback: Driver.Callback<Model<T>>): void;
   public static find(ids: Driver.Id | Driver.Id[], callback?: Driver.Callback<any>) {
-    return this.findBy("id", ids, callback);
+    return this.findBy("id", ids, callback as any) as any;
   }
 
+  public static findBy<T>(field: string, values: any | any[]): Promise<Model<T>>;
+  public static findBy<T>(field: string, values: any | any[], callback: Driver.Callback<Model<T>>):
+   void;
   public static findBy(field: string, value: any | any[], callback?: Driver.Callback<any>) {
     if (Array.isArray(value)) return this.query().whereIn(field, value).first(callback as any);
 
-    return this.query().where(field, value).first(callback as any);
+    return this.query().where(field, value).first(callback as any) as any;
   }
 
   public static value(field: string, callback?: Driver.Callback<any>) {
@@ -262,10 +219,14 @@ class QueryBuilder<T = any> {
 
   /********************************** Inserts *********************************/
 
+  public static insert<T>(items: T[]): Promise<number>;
+  public static insert<T>(items: T[], callback: Driver.Callback<number>): void;
   public static insert(items: any[], callback?: Driver.Callback<number>) {
-    return this.query().insert(items, callback as any);
+    return this.query().insert(items, callback as any) as any;
   }
 
+  public static create<T>(item: T): Promise<Model<T>>;
+  public static create<T>(item: T, callback: Driver.Callback<Model<T>>): void;
   public static async create(item: any, callback?: Driver.Callback<any>) {
     if (callback)
       return this.query().insertGetId(item, (err, res) => {
@@ -279,37 +240,39 @@ class QueryBuilder<T = any> {
 
   /********************************** Updates *********************************/
 
-  public save(): Promise<any>;
-  public save(callback: Driver.Callback<any>): void;
-  public async save(callback?: Driver.Callback<any>) {
+  public save(): Promise<T>;
+  public save(callback: Driver.Callback<T>): void;
+  public async save(callback?: Driver.Callback<T>) {
     const queryBuilder = this.constructor as typeof QueryBuilder;
 
-    if (this._isNew)
-      return queryBuilder.create(this.attributes, callback);
+    if ((this as any)._isNew)
+      return queryBuilder.create(this.attributes, callback as any);
 
     const query = queryBuilder.where("id", this.attributes.id);
 
     if (callback)
       return query.update(this.attributes, (err, res) => {
-        if (err) return callback(err, res);
+        if (err) return callback(err, res as any);
 
-        queryBuilder.find(this.attributes.id as Driver.Id, callback);
+        queryBuilder.find(this.attributes.id as Driver.Id, callback as any);
       });
 
     await query.update(this.attributes);
 
-    return await queryBuilder.find(this.attributes.id as Driver.Id);
+    return await queryBuilder.find(this.attributes.id as Driver.Id) as any;
   }
 
   /********************************** Deletes *********************************/
 
+  public static destroy(ids: Driver.Id | Driver.Id[]): Promise<number>;
+  public static destroy(ids: Driver.Id | Driver.Id[], callback: Driver.Callback<number>): void;
   public static destroy(ids: Driver.Id | Driver.Id[], callback?: Driver.Callback<number>) {
     let query = this.query();
 
     if (Array.isArray(ids)) query = query.whereIn("id", ids);
     else query = query.where("id", ids);
 
-    return query.delete(callback as any);
+    return query.delete(callback as any) as any;
   }
 
   /********************************* Restoring ********************************/
@@ -319,7 +282,7 @@ class QueryBuilder<T = any> {
   public async restore(callback?: Driver.Callback<boolean>) {
     const id = this.attributes.id;
 
-    if (this._isNew || !id) return false;
+    if ((this as any)._isNew || !id) return false;
 
     const queryBuilder = (this.constructor as typeof QueryBuilder).where("id", id);
 

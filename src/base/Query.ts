@@ -2,14 +2,14 @@ import * as async from "async";
 import * as DB from "../DB";
 import { Base as Driver } from "../drivers";
 import Relation from "../drivers/Relation/Base";
-import ModelConstructor, { Model } from "../index";
+import * as Model from "../index";
 import * as utils from "../utils";
 
 class Query<T = any, D extends Driver<T> = any> extends DB<T, D, "query"> {
-  protected readonly _model: ModelConstructor;
+  protected readonly _model: typeof Model;
   protected _withTrashed = false;
 
-  constructor(model: ModelConstructor, table: string, relations: Relation[] = []) {
+  constructor(model: typeof Model, table: string, relations: Relation[] = []) {
     super(model.connection);
 
     this.table(table);
@@ -36,8 +36,8 @@ class Query<T = any, D extends Driver<T> = any> extends DB<T, D, "query"> {
 
   /*********************************** Joins **********************************/
 
-  public join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string): this;
-  public join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string) {
+  public join(table: string | typeof Model, query?: Driver.JoinQuery<T>, as?: string): this;
+  public join(table: string | typeof Model, query?: Driver.JoinQuery<T>, as?: string) {
     if (!utils.string.isString(table)) {
       const model = table;
       table = model.toString();
@@ -212,7 +212,7 @@ class Query<T = any, D extends Driver<T> = any> extends DB<T, D, "query"> {
     const model = this._model;
 
     try {
-      item = model.validate<T>(item);
+      item = model.validate<T>(item) as any;
     } catch (err) {
       if (callback) return callback(err, undefined as any);
 
@@ -228,7 +228,7 @@ class Query<T = any, D extends Driver<T> = any> extends DB<T, D, "query"> {
   public update(update: T, callback: Driver.Callback<number>): void;
   public update(update: T, callback?: Driver.Callback<number>) {
     try {
-      update = this._model.validate<T>(update, true);
+      update = this._model.validate<T>(update, true) as any;
     } catch (err) {
       if (callback) return callback(err, undefined as any);
 

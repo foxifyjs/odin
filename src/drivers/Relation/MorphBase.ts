@@ -1,12 +1,12 @@
 import Query from "../../base/Query";
-import ModelConstructor, { Model } from "../../index";
+import * as Model from "../../index";
 import * as utils from "../../utils";
 import Relation from "../Relation/Base";
 
 abstract class MorphBase<T = any, A = undefined> extends Relation<T, A> {
   constructor(
     model: Model,
-    relation: ModelConstructor,
+    relation: typeof Model,
     localKey: string = "id",
     foreignKey: string = `${utils.makeMorphType(relation.toString())}_id`,
     public readonly type: string = utils.makeMorphType(relation.toString()),

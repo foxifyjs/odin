@@ -1,6 +1,6 @@
 import * as async from "async";
 import Query from "../../base/Query";
-import ModelConstructor, { Model } from "../../index";
+import * as Model from "../../index";
 import * as utils from "../../utils";
 import Driver from "../Driver";
 
@@ -9,7 +9,7 @@ abstract class Relation<T = any, A = undefined> {
 
   constructor(
     public readonly model: Model,
-    public readonly relation: ModelConstructor,
+    public readonly relation: typeof Model,
     public readonly localKey: string,
     public readonly foreignKey: string,
     caller: (...args: any[]) => any
@@ -18,7 +18,7 @@ abstract class Relation<T = any, A = undefined> {
   }
 
   protected _query(relations?: string[]): Query {
-    let query: ModelConstructor | Query = this.relation;
+    let query: typeof Model | Query = this.relation;
 
     if (relations) query = query.with(...relations);
 
@@ -39,7 +39,7 @@ abstract class Relation<T = any, A = undefined> {
 
   /*********************************** Joins **********************************/
 
-  public join(table: string | ModelConstructor, query?: Driver.JoinQuery<T>, as?: string): Query<T>;
+  public join(table: string | typeof Model, query?: Driver.JoinQuery<T>, as?: string): Query<T>;
   public join() {
     const query = this._query();
 
