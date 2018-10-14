@@ -2,42 +2,59 @@ import Base from "../Base";
 import * as drivers from "../drivers";
 import Relation from "../drivers/Relation/Base";
 import * as Model from "../index";
+import * as utils from "../utils";
 
-class Relational<T = any> extends Base<T> {
-  public hasMany(relation: typeof Model, localKey?: string, foreignKey?: string): Relation<T>;
-  public hasMany(relation: typeof Model, localKey?: string, foreignKey?: string): Relation {
-    const model = (this as any) as Model;
+class Relational extends Base {
+  public hasMany<T>(
+    relation: string | typeof Model,
+    localKey?: string,
+    foreignKey?: string
+  ): Relation<T> {
+    if (utils.string.isString(relation))
+      relation = this.constructor.models[relation] as typeof Model;
 
-    const HasMany: any = drivers[model.constructor.driver].Relation.HasMany;
+    const HasMany: any = drivers[this.constructor.driver].Relation.HasMany;
 
-    return new HasMany(model, relation, localKey, foreignKey, this.hasMany);
+    return new HasMany(this, relation, localKey, foreignKey, this.hasMany);
   }
 
-  public hasOne(relation: typeof Model, localKey?: string, foreignKey?: string): Relation<T>;
-  public hasOne(relation: typeof Model, localKey?: string, foreignKey?: string): Relation {
-    const model = (this as any) as Model;
+  public hasOne<T>(
+    relation: string | typeof Model,
+    localKey?: string,
+    foreignKey?: string
+  ): Relation<T> {
+    if (utils.string.isString(relation))
+      relation = this.constructor.models[relation] as typeof Model;
 
-    const HasOne: any = drivers[model.constructor.driver].Relation.HasOne;
+    const HasOne: any = drivers[this.constructor.driver].Relation.HasOne;
 
-    return new HasOne(model, relation, localKey, foreignKey, this.hasOne);
+    return new HasOne(this, relation, localKey, foreignKey, this.hasOne);
   }
 
-  public morphMany(relation: typeof Model, localKey?: string, type?: string): Relation<T>;
-  public morphMany(relation: typeof Model, localKey?: string, type?: string): Relation {
-    const model = (this as any) as Model;
+  public morphMany<T>(
+    relation: string | typeof Model,
+    localKey?: string,
+    type?: string
+  ): Relation<T> {
+    if (utils.string.isString(relation))
+      relation = this.constructor.models[relation] as typeof Model;
 
-    const MorphMany: any = drivers[model.constructor.driver].Relation.MorphMany;
+    const MorphMany: any = drivers[this.constructor.driver].Relation.MorphMany;
 
-    return new MorphMany(model, relation, localKey, undefined, type, this.morphMany);
+    return new MorphMany(this, relation, localKey, undefined, type, this.morphMany);
   }
 
-  public morphOne(relation: typeof Model, localKey?: string, type?: string): Relation<T>;
-  public morphOne(relation: typeof Model, localKey?: string, type?: string): Relation {
-    const model = (this as any) as Model;
+  public morphOne<T>(
+    relation: string | typeof Model,
+    localKey?: string,
+    type?: string
+  ): Relation<T> {
+    if (utils.string.isString(relation))
+      relation = this.constructor.models[relation] as typeof Model;
 
-    const MorphOne: any = drivers[model.constructor.driver].Relation.MorphOne;
+    const MorphOne: any = drivers[this.constructor.driver].Relation.MorphOne;
 
-    return new MorphOne(model, relation, localKey, undefined, type, this.morphOne);
+    return new MorphOne(this, relation, localKey, undefined, type, this.morphOne);
   }
 }
 

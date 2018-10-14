@@ -10,13 +10,11 @@ import * as Types from "./types";
 import TypeAny from "./types/Any";
 import * as utils from "./utils";
 
-const MODELS: { [name: string]: Odin | undefined } = {};
-
-interface Model<T = any> extends QueryBuilder<T>, Relational<T>, GraphQLInstance<T> {
+interface Model<T = any> extends QueryBuilder<T>, Relational, GraphQLInstance<T> {
 }
 
 // @utils.mixins(QueryBuilder, Relational, GraphQLInstance)
-class Model<T = any> extends Base<T> implements QueryBuilder<T>, Relational<T>, GraphQLInstance {
+class Model<T = any> extends Base<T> implements QueryBuilder<T>, Relational, GraphQLInstance {
   public static DB = DB;
   public static GraphQL = GraphQL;
   public static Types = Types;
@@ -64,18 +62,6 @@ class Model<T = any> extends Base<T> implements QueryBuilder<T>, Relational<T>, 
 
   static get driver() {
     return getConnection(this.connection).driver;
-  }
-
-  static get models() {
-    return MODELS;
-  }
-
-  public static register = (...models: Odin[]) => {
-    models.forEach((model) => {
-      if (MODELS[model.name]) throw new Error(`Model "${model.name}" already exists`);
-
-      MODELS[model.name] = model;
-    });
   }
 
   public static toString() {
