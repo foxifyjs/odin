@@ -42,10 +42,16 @@ interface Odin<T = any> extends Model<T> {
 
 const Odin = utils.use(
   utils.use(
-    utils.use(Model, QueryBuilder),
+    utils.use(
+      Model,
+      QueryBuilder
+    ),
     Relational
   ),
   GraphQLInstance
 );
+
+class TST<T = any> extends Odin<T> {
+}
 
 export = Odin;

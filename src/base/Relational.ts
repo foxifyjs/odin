@@ -1,18 +1,10 @@
+import Base from "../Base";
 import * as drivers from "../drivers";
 import Relation from "../drivers/Relation/Base";
 import * as Model from "../index";
 
-interface Relational {
-  hasMany(relation: typeof Model, localKey?: string, foreignKey?: string): Relation;
-
-  hasOne(relation: typeof Model, localKey?: string, foreignKey?: string): Relation;
-
-  morphMany(relation: typeof Model, localKey?: string, type?: string): Relation;
-
-  morphOne(relation: typeof Model, localKey?: string, type?: string): Relation;
-}
-
-class Relational {
+class Relational<T = any> extends Base<T> {
+  public hasMany(relation: typeof Model, localKey?: string, foreignKey?: string): Relation<T>;
   public hasMany(relation: typeof Model, localKey?: string, foreignKey?: string): Relation {
     const model = (this as any) as Model;
 
@@ -21,6 +13,7 @@ class Relational {
     return new HasMany(model, relation, localKey, foreignKey, this.hasMany);
   }
 
+  public hasOne(relation: typeof Model, localKey?: string, foreignKey?: string): Relation<T>;
   public hasOne(relation: typeof Model, localKey?: string, foreignKey?: string): Relation {
     const model = (this as any) as Model;
 
@@ -29,6 +22,7 @@ class Relational {
     return new HasOne(model, relation, localKey, foreignKey, this.hasOne);
   }
 
+  public morphMany(relation: typeof Model, localKey?: string, type?: string): Relation<T>;
   public morphMany(relation: typeof Model, localKey?: string, type?: string): Relation {
     const model = (this as any) as Model;
 
@@ -37,6 +31,7 @@ class Relational {
     return new MorphMany(model, relation, localKey, undefined, type, this.morphMany);
   }
 
+  public morphOne(relation: typeof Model, localKey?: string, type?: string): Relation<T>;
   public morphOne(relation: typeof Model, localKey?: string, type?: string): Relation {
     const model = (this as any) as Model;
 

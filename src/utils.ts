@@ -33,15 +33,19 @@ export function mixins(...baseCtors: any[]) {
   };
 }
 
+export interface ClassInterface {
+  new(...args: any[]): any;
+}
+
 /**
  * Adds the given mixin to the class
  * @param {*} baseCtor
  * @returns {Function}
  */
 export function use<
-  T extends { new(...args: any[]): {} } = any,
-  P extends { new(...args: any[]): {} } = any
-  >(derivedCtor: T, baseCtor: P): T & P {
+  T extends ClassInterface = any,
+  P extends ClassInterface = any
+  >(derivedCtor: T, baseCtor: P): ClassInterface & T & P {
   // static methods
   Object.getOwnPropertyNames(baseCtor).forEach((name) => {
     if (!exports.array.contains(["length", "constructor", "prototype", "name"], name)

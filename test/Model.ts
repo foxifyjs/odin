@@ -1,4 +1,4 @@
-import Odin from "../src";
+import * as Odin from "../src";
 import * as utils from "../src/utils";
 
 declare global {

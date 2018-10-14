@@ -1,4 +1,5 @@
-import * as Base from "graphql";
+import * as GraphQLBase from "graphql";
+import Base from "../Base";
 import Query from "../base/Query";
 import * as DB from "../DB";
 import * as Model from "../index";
@@ -27,14 +28,14 @@ const _schema = (model: string, schema: Model.Schema) => {
     const newSchema = _schema(model, type);
 
     fields[key] = {
-      type: new Base.GraphQLObjectType({
+      type: new GraphQLBase.GraphQLObjectType({
         name: `${model}_${key}`,
         fields: newSchema.fields,
       }),
     };
 
     args[key] = {
-      type: new Base.GraphQLInputObjectType({
+      type: new GraphQLBase.GraphQLInputObjectType({
         name: `${model}_${key}_input`,
         fields: newSchema.args,
       }),
@@ -85,7 +86,7 @@ const _orderBy = (model: string, schema: Model.Schema) => {
     return values;
   };
 
-  return new Base.GraphQLEnumType({
+  return new GraphQLBase.GraphQLEnumType({
     name: `${model}OrderByInput`,
     values: getValues(schema),
   });
@@ -116,44 +117,34 @@ const _encapsulate = async (fn: () => Promise<any>) => {
 module GraphQL {
   export interface Schema {
     [key: string]: {
-      type: Base.GraphQLOutputType,
+      type: GraphQLBase.GraphQLOutputType,
     };
   }
 }
 
-class GraphQL {
-  private static _schema: Model.Schema;
-  private static _table: string;
-  private static timestamps: boolean;
-  // private static softDelete: boolean;
-  private static CREATED_AT: string;
-  private static UPDATED_AT: string;
-  private static DELETED_AT: string;
-  public static DB: Model.DB;
-  public static connection: Model.Connection;
-
+class GraphQL<T = any> extends Base<T> {
   public static toGraphQL(): any {
     const name = this.name;
 
-    const multiple = this._table;
+    const multiple = (this as any)._table;
     const single = utils.string.pluralize(multiple, 1);
 
-    const schema = _schema(name, this._schema);
+    const schema = _schema(name, (this as any)._schema);
     const args = schema.args;
-    const type = new Base.GraphQLObjectType({
+    const type = new GraphQLBase.GraphQLObjectType({
       name,
       fields: {
         id: {
-          type: Base.GraphQLID,
+          type: GraphQLBase.GraphQLID,
         },
         ...schema.fields,
       },
     });
 
     const getDB = () => {
-      const db = this.DB.connection(this.connection).table(this._table);
+      const db = (this as any).DB.connection((this as any).connection).table((this as any)._table);
 
-      if ((this as any).softDelete) return db.whereNull(this.DELETED_AT);
+      if ((this as any).softDelete) return db.whereNull((this as any).DELETED_AT);
 
       return db;
     };
@@ -174,17 +165,17 @@ class GraphQL {
         },
       },
       [multiple]: {
-        type: new Base.GraphQLList(type),
+        type: new GraphQLBase.GraphQLList(type),
         args: {
           ...args,
           skip: {
-            type: Base.GraphQLInt,
+            type: GraphQLBase.GraphQLInt,
           },
           limit: {
-            type: Base.GraphQLInt,
+            type: GraphQLBase.GraphQLInt,
           },
           orderBy: {
-            type: _orderBy(name, this._schema),
+            type: _orderBy(name, (this as any)._schema),
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
@@ -192,7 +183,7 @@ class GraphQL {
 
           let db = getDB();
 
-          if (this.timestamps) db = db.orderBy("created_at", "desc");
+          if ((this as any).timestamps) db = db.orderBy("created_at", "desc");
 
           const query: DB = utils.object.reduce(
             params,
@@ -217,16 +208,16 @@ class GraphQL {
       },
     };
 
-    const queryInputType = new Base.GraphQLInputObjectType({
+    const queryInputType = new GraphQLBase.GraphQLInputObjectType({
       name: `${name}QueryInput`,
       fields: args,
     });
 
-    const inputType = new Base.GraphQLInputObjectType({
+    const inputType = new GraphQLBase.GraphQLInputObjectType({
       name: `${name}Input`,
       fields: utils.object.omit(
         args,
-        ["id", this.CREATED_AT, this.UPDATED_AT, this.DELETED_AT]
+        ["id", (this as any).CREATED_AT, (this as any).UPDATED_AT, (this as any).DELETED_AT]
       ) as any,
     });
 
@@ -235,7 +226,7 @@ class GraphQL {
         type,
         args: {
           data: {
-            type: new Base.GraphQLNonNull(inputType),
+            type: new GraphQLBase.GraphQLNonNull(inputType),
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
@@ -247,10 +238,10 @@ class GraphQL {
         },
       },
       [`insert_${multiple}`]: {
-        type: Base.GraphQLInt,
+        type: GraphQLBase.GraphQLInt,
         args: {
           data: {
-            type: new Base.GraphQLList(new Base.GraphQLNonNull(inputType)),
+            type: new GraphQLBase.GraphQLList(new GraphQLBase.GraphQLNonNull(inputType)),
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => await _encapsulate(
@@ -258,13 +249,13 @@ class GraphQL {
         ),
       },
       [`update_${multiple}`]: {
-        type: Base.GraphQLInt,
+        type: GraphQLBase.GraphQLInt,
         args: {
           query: {
             type: queryInputType,
           },
           data: {
-            type: new Base.GraphQLNonNull(inputType),
+            type: new GraphQLBase.GraphQLNonNull(inputType),
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
@@ -278,7 +269,7 @@ class GraphQL {
         },
       },
       [`delete_${multiple}`]: {
-        type: Base.GraphQLInt,
+        type: GraphQLBase.GraphQLInt,
         args: {
           query: {
             type: queryInputType,
@@ -298,7 +289,7 @@ class GraphQL {
 
     if ((this as any).softDelete)
       mutations[`restore_${multiple}`] = {
-        type: Base.GraphQLInt,
+        type: GraphQLBase.GraphQLInt,
         args: {
           query: {
             type: queryInputType,

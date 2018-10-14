@@ -1,72 +1,13 @@
+import Base from "../Base";
 import { Base as Driver } from "../drivers";
 import Relation from "../drivers/Relation/Base";
 import * as Model from "../index";
 import * as utils from "../utils";
 import Query from "./Query";
 
-interface QueryBuilder<T = any> {
-  /******************************* Where Clauses ******************************/
-
-  whereIn(field: string, values: any[]): Query<T>;
-
-  whereNotIn(field: string, values: any[]): Query<T>;
-
-  whereBetween(field: string, start: any, end: any): Query<T>;
-
-  whereNotBetween(field: string, start: any, end: any): Query<T>;
-
-  whereNull(field: string): Query<T>;
-
-  whereNotNull(field: string): Query<T>;
-
-  /******************** Ordering, Grouping, Limit & Offset ********************/
-
-  orderBy(field: string, order?: Driver.Order): Query<T>;
-
-  skip(offset: number): Query<T>;
-
-  offset(offset: number): Query<T>;
-
-  limit(limit: number): Query<T>;
-
-  take(limit: number): Query<T>;
-
-  /*********************************** Read ***********************************/
-
-  exists(): Promise<boolean>;
-  exists(callback: Driver.Callback<boolean>): void;
-
-  count(): Promise<number>;
-  count(callback: Driver.Callback<number>): void;
-
-  all(): Promise<Array<Model<T>>>;
-  all(callback: Driver.Callback<Array<Model<T>>>): void;
-
-  first(): Promise<Model<T>>;
-  first(callback: Driver.Callback<Model<T>>): void;
-
-  value(field: string): Promise<any>;
-  value(field: string, callback: Driver.Callback<any>): void;
-
-  pluck(field: string): Promise<any>;
-  pluck(field: string, callback: Driver.Callback<any>): void;
-
-  max(field: string): Promise<any>;
-  max(field: string, callback: Driver.Callback<any>): void;
-
-  min(field: string): Promise<any>;
-  min(field: string, callback: Driver.Callback<any>): void;
-}
-
-class QueryBuilder<T = any> {
-  public static _table: string;
-  public static softDelete: boolean;
-  public static DELETED_AT: string;
-
-  public attributes!: Model.Document;
-
+class QueryBuilder<T = any> extends Base<T> {
   public static query<T>(relations?: Relation[]) {
-    return new Query<T>(this as any, this._table, relations);
+    return new Query<T>(this as any, (this as any)._table, relations);
   }
 
   /******************************* With Trashed *******************************/
@@ -114,76 +55,97 @@ class QueryBuilder<T = any> {
     return this.query().where(field, operator, value);
   }
 
-  public static whereLike(field: string, values: any[]) {
+  public static whereLike<T>(field: string, values: any): Query<T>;
+  public static whereLike(field: string, values: any) {
     return this.query().whereLike(field, values);
   }
 
-  public static whereNotLike(field: string, values: any[]) {
+  public static whereNotLike<T>(field: string, values: any): Query<T>;
+  public static whereNotLike(field: string, values: any) {
     return this.query().whereNotLike(field, values);
   }
 
+  public static whereIn<T>(field: string, values: any[]): Query<T>;
   public static whereIn(field: string, values: any[]) {
     return this.query().whereIn(field, values);
   }
 
+  public static whereNotIn<T>(field: string, values: any[]): Query<T>;
   public static whereNotIn(field: string, values: any[]) {
     return this.query().whereNotIn(field, values);
   }
 
+  public static whereBetween<T>(field: string, start: any, end: any): Query<T>;
   public static whereBetween(field: string, start: any, end: any) {
     return this.query().whereBetween(field, start, end);
   }
 
+  public static whereNotBetween<T>(field: string, start: any, end: any): Query<T>;
   public static whereNotBetween(field: string, start: any, end: any) {
     return this.query().whereNotBetween(field, start, end);
   }
 
+  public static whereNull<T>(field: string): Query<T>;
   public static whereNull(field: string) {
     return this.query().whereNull(field);
   }
 
+  public static whereNotNull<T>(field: string): Query<T>;
   public static whereNotNull(field: string) {
     return this.query().whereNotNull(field);
   }
 
   /******************** Ordering, Grouping, Limit & Offset ********************/
 
+  public static orderBy<T>(field: string, order?: Driver.Order): Query<T>;
   public static orderBy(field: string, order?: Driver.Order) {
     return this.query().orderBy(field, order);
   }
 
+  public static skip<T>(offset: number): Query<T>;
   public static skip(offset: number) {
     return this.query().skip(offset);
   }
 
+  public static offset<T>(offset: number): Query<T>;
   public static offset(offset: number) {
     return this.skip(offset);
   }
 
+  public static limit<T>(limit: number): Query<T>;
   public static limit(limit: number) {
     return this.query().limit(limit);
   }
 
+  public static take<T>(limit: number): Query<T>;
   public static take(limit: number) {
     return this.limit(limit);
   }
 
   /*********************************** Read ***********************************/
 
+  public static exists<T>(): Promise<boolean>;
+  public static exists<T>(callback: Driver.Callback<boolean>): void;
   public static exists(callback?: Driver.Callback<boolean>) {
-    return this.query().exists(callback as any);
+    return this.query().exists(callback as any) as any;
   }
 
+  public static count(): Promise<number>;
+  public static count(callback: Driver.Callback<number>): void;
   public static count(callback?: Driver.Callback<number>) {
-    return this.query().count(callback as any);
+    return this.query().count(callback as any) as any;
   }
 
+  public static all<T>(): Promise<Array<Model<T>>>;
+  public static all<T>(callback: Driver.Callback<Array<Model<T>>>): void;
   public static all(callback?: Driver.Callback<any>) {
-    return this.query().get(callback as any);
+    return this.query().get(callback as any) as any;
   }
 
+  public static first<T>(): Promise<Model<T>>;
+  public static first<T>(callback: Driver.Callback<Model<T>>): void;
   public static first(callback?: Driver.Callback<any>) {
-    return this.query().first(callback as any);
+    return this.query().first(callback as any) as any;
   }
 
   public static find<T>(ids: Driver.Id | Driver.Id[]): Promise<Model<T>>;
@@ -194,27 +156,35 @@ class QueryBuilder<T = any> {
 
   public static findBy<T>(field: string, values: any | any[]): Promise<Model<T>>;
   public static findBy<T>(field: string, values: any | any[], callback: Driver.Callback<Model<T>>):
-   void;
+    void;
   public static findBy(field: string, value: any | any[], callback?: Driver.Callback<any>) {
     if (Array.isArray(value)) return this.query().whereIn(field, value).first(callback as any);
 
     return this.query().where(field, value).first(callback as any) as any;
   }
 
+  public static value<T>(field: string): Promise<any>;
+  public static value<T>(field: string, callback: Driver.Callback<any>): void;
   public static value(field: string, callback?: Driver.Callback<any>) {
-    return this.query().value(field, callback as any);
+    return this.query().value(field, callback as any) as any;
   }
 
+  public static pluck<T>(field: string): Promise<any>;
+  public static pluck<T>(field: string, callback: Driver.Callback<any>): void;
   public static pluck(field: string, callback?: Driver.Callback<any>) {
-    return this.value(field, callback);
+    return this.value(field, callback as any) as any;
   }
 
+  public static max<T>(field: string): Promise<any>;
+  public static max<T>(field: string, callback: Driver.Callback<any>): void;
   public static max(field: string, callback?: Driver.Callback<any>) {
-    return this.query().max(field, callback as any);
+    return this.query().max(field, callback as any) as any;
   }
 
+  public static min<T>(field: string): Promise<any>;
+  public static min<T>(field: string, callback: Driver.Callback<any>): void;
   public static min(field: string, callback?: Driver.Callback<any>) {
-    return this.query().min(field, callback as any);
+    return this.query().min(field, callback as any) as any;
   }
 
   /********************************** Inserts *********************************/
@@ -246,20 +216,20 @@ class QueryBuilder<T = any> {
     const queryBuilder = this.constructor as typeof QueryBuilder;
 
     if ((this as any)._isNew)
-      return queryBuilder.create(this.attributes, callback as any);
+      return queryBuilder.create((this as any).attributes, callback as any);
 
-    const query = queryBuilder.where("id", this.attributes.id);
+    const query = queryBuilder.where("id", (this as any).attributes.id);
 
     if (callback)
-      return query.update(this.attributes, (err, res) => {
+      return query.update((this as any).attributes, (err, res) => {
         if (err) return callback(err, res as any);
 
-        queryBuilder.find(this.attributes.id as Driver.Id, callback as any);
+        queryBuilder.find((this as any).attributes.id as Driver.Id, callback as any);
       });
 
-    await query.update(this.attributes);
+    await query.update((this as any).attributes);
 
-    return await queryBuilder.find(this.attributes.id as Driver.Id) as any;
+    return await queryBuilder.find((this as any).attributes.id as Driver.Id) as any;
   }
 
   /********************************** Deletes *********************************/
@@ -280,7 +250,7 @@ class QueryBuilder<T = any> {
   public restore(): Promise<boolean>;
   public restore(callback: Driver.Callback<boolean>): void;
   public async restore(callback?: Driver.Callback<boolean>) {
-    const id = this.attributes.id;
+    const id = (this as any).attributes.id;
 
     if ((this as any)._isNew || !id) return false;
 

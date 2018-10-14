@@ -17,12 +17,12 @@ abstract class Relation<T = any, A = undefined> {
     this.as = utils.getCallerFunctionName(caller);
   }
 
-  protected _query(relations?: string[]): Query {
+  protected _query(relations?: string[]): Query<T> {
     let query: typeof Model | Query = this.relation;
 
     if (relations) query = query.with(...relations);
 
-    return query.where(
+    return (query as Query).where(
       this.foreignKey,
       this.model.getAttribute(this.localKey)
     );

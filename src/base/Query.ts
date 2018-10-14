@@ -36,13 +36,12 @@ class Query<T = any, D extends Driver<T> = any> extends DB<T, D, "query"> {
 
   /*********************************** Joins **********************************/
 
-  public join(table: string | typeof Model, query?: Driver.JoinQuery<T>, as?: string): this;
   public join(table: string | typeof Model, query?: Driver.JoinQuery<T>, as?: string) {
     if (!utils.string.isString(table)) {
       const model = table;
       table = model.toString();
 
-      if (!as) as = table;
+      if (!as) as = table as string;
 
       this.map((item: any) => {
         item[as as string] = item[as as string].map((i: any) => new model(i));
@@ -51,7 +50,7 @@ class Query<T = any, D extends Driver<T> = any> extends DB<T, D, "query"> {
       });
     }
 
-    return super.join(table, query, as);
+    return super.join(table as string, query, as);
   }
 
   /*********************************** Read ***********************************/
