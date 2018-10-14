@@ -51,7 +51,4 @@ const Odin = utils.use(
   GraphQLInstance
 );
 
-class TST<T = any> extends Odin<T> {
-}
-
 export = Odin;
