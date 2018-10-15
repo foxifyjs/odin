@@ -1,7 +1,7 @@
+import * as Model from "..";
 import Base from "../Base";
 import * as drivers from "../drivers";
 import Relation from "../drivers/Relation/Base";
-import * as Model from "../index";
 import * as utils from "../utils";
 
 class Relational extends Base {
