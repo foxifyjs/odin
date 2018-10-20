@@ -31,6 +31,8 @@ module Odin {
     [key: string]: any;
   }
 
+  export type Event = "created";
+
   export type DB = typeof DB;
   export type GraphQL = typeof GraphQL;
   export type Types = typeof Types;

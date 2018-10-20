@@ -1,11 +1,6 @@
-import * as rootPath from "app-root-path";
 import * as callerId from "caller-id";
 
 export * from "prototyped.js/es6/methods";
-
-export const root = {
-  path: rootPath.path,
-};
 
 /**
  * Adds the given mixins to the class

@@ -22,11 +22,12 @@ Odin is an implementation of [**Active Record**](https://en.wikipedia.org/wiki/A
 
 ## Table of Content <!-- omit in toc -->
 
-- [Installation](#installation)
-- [Usage](#usage)
-- [Features](#features)
-- [TODO](#todo)
-- [Support](#support)
+- [Odin](#odin)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Features](#features)
+  - [TODO (RoadMap to version 1.0.0)](#todo-roadmap-to-version-100)
+  - [Support](#support)
 
 ## Installation
 
@@ -65,8 +66,9 @@ User.schema = {
 5. `Schema` validation
 6. `GraphQL Schema` generator (based on model schema)
 
-## TODO
+## TODO (RoadMap to version 1.0.0)
 
+- [x] `Schema` validation
 - [ ] Drivers
   - [x] `MongoDB`
   - [ ] `MySQL`
@@ -75,6 +77,11 @@ User.schema = {
   - [ ] `SQLite`
   - [ ] `Redis`
   - [ ] `Memory`
+- [ ] Model hooks
+  - [x] `created`
+  - [ ] `updated`
+  - [ ] `deleted`
+  - [ ] `restored`
 - [ ] Relationships
   - [x] `hasMany`
   - [x] `hasOne`
@@ -92,12 +99,10 @@ User.schema = {
     - [x] Read operation
     - [x] Update operation
     - [x] Delete operation
-- [x] `Schema` validation
 - [x] `GraphQL` support
-- [ ] Full test coverage
-- [ ] Model hooks
 - [ ] Migrations
 - [ ] Seeding
+- [ ] Tests
 
 ## Support
 

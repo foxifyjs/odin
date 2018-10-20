@@ -1,4 +1,5 @@
 import * as Odin from "../src";
+import Model from "../src/Model";
 import * as utils from "../src/utils";
 
 declare global {
@@ -129,5 +130,21 @@ describe("Testing Model", () => {
 
       done();
     });
+  });
+
+  test("Model.on 'create'", async () => {
+    expect.assertions(3);
+
+    User.on("created", (result) => {
+      expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(item);
+    });
+
+    const item = utils.object.omit(ITEMS[0], ["id"]);
+
+    const result = await User.create(item);
+
+    expect(result).toBeInstanceOf(Odin);
+
+    expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(item);
   });
 });

@@ -9,7 +9,7 @@ class MorphOne<T = any> extends Base {
     return query.join(
       this.relation,
       q => q.on(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
-        .on(`${this.type}_type`, this.model.constructor.filename),
+        .on(`${this.type}_type`, this.model.constructor.name),
       as
     ).driver((q: Driver<T>) => q.pipeline({
       $unwind: { path: `$${as}`, preserveNullAndEmptyArrays: true },

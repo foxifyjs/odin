@@ -4,16 +4,18 @@ import QueryBuilder from "./base/QueryBuilder";
 import Relational from "./base/Relational";
 import connections, { getConnection } from "./connections";
 import * as DB from "./DB";
+import events from "./events";
 import GraphQL from "./GraphQL";
 import GraphQLInstance from "./GraphQL/Model";
 import * as Types from "./types";
 import TypeAny from "./types/Any";
 import * as utils from "./utils";
 
+const EVENTS = ["created"];
+
 interface Model<T = any> extends QueryBuilder<T>, Relational, GraphQLInstance<T> {
 }
 
-// @utils.mixins(QueryBuilder, Relational, GraphQLInstance)
 class Model<T = any> extends Base<T> implements QueryBuilder<T>, Relational, GraphQLInstance {
   public static DB = DB;
   public static GraphQL = GraphQL;
@@ -56,12 +58,16 @@ class Model<T = any> extends Base<T> implements QueryBuilder<T>, Relational, Gra
     return schema;
   }
 
-  static get filename() {
-    return __filename.replace(new RegExp(`(^${utils.root.path}|\.[tj]s$)`, "g"), "");
-  }
-
   static get driver() {
     return getConnection(this.connection).driver;
+  }
+
+  public static on<T>(event: Odin.Event, listener: (item: Odin<T>) => void) {
+    if (!utils.array.contains(EVENTS, event)) throw new TypeError(`Unexpected event "${event}"`);
+
+    events.on(`${this.name}:${event}`, listener);
+
+    return this;
   }
 
   public static toString() {

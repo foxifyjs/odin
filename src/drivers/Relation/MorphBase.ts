@@ -17,7 +17,7 @@ abstract class MorphBase<T = any, A = undefined> extends Relation<T, A> {
 
   protected _query(relations?: string[]): Query {
     return super._query(relations)
-      .where(`${this.type}_type`, this.model.constructor.filename);
+      .where(`${this.type}_type`, this.model.constructor.name);
   }
 }
 

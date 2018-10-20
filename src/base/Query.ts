@@ -1,8 +1,9 @@
 import * as async from "async";
+import * as Model from "..";
 import * as DB from "../DB";
 import { Base as Driver } from "../drivers";
 import Relation from "../drivers/Relation/Base";
-import * as Model from "../index";
+import events from "../events";
 import * as utils from "../utils";
 
 class Query<T = any, D extends Driver<T> = any> extends DB<T, D, "query"> {
@@ -207,7 +208,7 @@ class Query<T = any, D extends Driver<T> = any> extends DB<T, D, "query"> {
 
   public insertGetId(item: T): Promise<Driver.Id>;
   public insertGetId(item: T, callback: Driver.Callback<Driver.Id>): void;
-  public insertGetId(item: T, callback?: Driver.Callback<Driver.Id>) {
+  public async insertGetId(item: T, callback?: Driver.Callback<Driver.Id>) {
     const model = this._model;
 
     try {
@@ -218,7 +219,29 @@ class Query<T = any, D extends Driver<T> = any> extends DB<T, D, "query"> {
       throw err;
     }
 
-    return super.insertGetId.call(this, item, callback);
+    const event = `${model.name}:created`;
+
+    if (events.listenerCount(event) > 0) {
+      if (callback) return super.insertGetId(item, (err, id) => {
+        if (err) return callback(err, id);
+
+        model.find(id, (err, item) => {
+          if (!err) events.emit(event, item);
+        });
+
+        callback(err, id);
+      });
+
+      const id = await super.insertGetId(item);
+
+      model.find(id, (err, item) => {
+        if (!err) events.emit(event, item);
+      });
+
+      return id;
+    }
+
+    return await super.insertGetId.call(this, item, callback);
   }
 
   /********************************** Updates *********************************/
