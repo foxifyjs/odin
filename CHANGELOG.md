@@ -12,6 +12,10 @@
 
 ---
 
+## [v0.1.0](https://github.com/foxifyjs/odin/releases/tag/v0.1.0) - *(2018-10-20)*
+
+- :zap: Added model hook `created`
+
 ## [v0.1.0-beta.16](https://github.com/foxifyjs/odin/releases/tag/v0.1.0-beta.16) - *(2018-10-12)*
 
 - :beetle: Typescript bug fix
