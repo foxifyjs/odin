@@ -40,6 +40,7 @@ module Odin {
 }
 
 interface Odin<T = any> extends Model<T> {
+  [K: string]: any;
 }
 
 const Odin = utils.use(

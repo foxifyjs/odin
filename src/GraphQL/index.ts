@@ -1,5 +1,5 @@
 import * as Base from "graphql";
-import * as Model from "../index";
+import * as Model from "..";
 
 module GraphQL {
   export interface Queries {

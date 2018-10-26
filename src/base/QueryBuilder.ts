@@ -213,9 +213,9 @@ class QueryBuilder<T = any> extends Base<T> {
   public save(): Promise<T>;
   public save(callback: Driver.Callback<T>): void;
   public async save(callback?: Driver.Callback<T>) {
-    const queryBuilder = this.constructor as typeof QueryBuilder;
+    const queryBuilder = this.constructor;
 
-    if ((this as any)._isNew)
+    if (this._isNew)
       return queryBuilder.create((this as any).attributes, callback as any);
 
     const query = queryBuilder.where("id", (this as any).attributes.id);
@@ -252,9 +252,9 @@ class QueryBuilder<T = any> extends Base<T> {
   public async restore(callback?: Driver.Callback<boolean>) {
     const id = (this as any).attributes.id;
 
-    if ((this as any)._isNew || !id) return false;
+    if (this._isNew || !id) return false;
 
-    const queryBuilder = (this.constructor as typeof QueryBuilder).where("id", id);
+    const queryBuilder = this.constructor.where("id", id);
 
     if (callback) return queryBuilder.restore((err, res) => {
       if (err) return callback(err, res as any);

@@ -58,7 +58,7 @@ class Model<T = any> extends Base<T> implements QueryBuilder<T>, Relational, Gra
     return schema;
   }
 
-  static get driver() {
+  public static get driver() {
     return getConnection(this.connection).driver;
   }
 
@@ -132,19 +132,11 @@ class Model<T = any> extends Base<T> implements QueryBuilder<T>, Relational, Gra
     return value;
   }
 
-  private _isNew: boolean = false;
-
   public attributes: Odin.Document = {};
 
   constructor(document: Odin.Document = {}) {
     super();
 
-    if (!document.id) this._isNew = true;
-
-    this._setAttributes(document);
-  }
-
-  private _setAttributes(document: Odin.Document) {
     const schema = this.constructor._schema;
     const getters: string[] = [];
     const setters: string[] = [];
@@ -184,7 +176,7 @@ class Model<T = any> extends Base<T> implements QueryBuilder<T>, Relational, Gra
    * @returns {*}
    */
   public getAttribute(attribute: string) {
-    return attribute.split(".").reduce((prev, curr) => prev[curr], this.attributes);
+    return utils.object.get(this.attributes, attribute);
   }
 
   /**
@@ -198,7 +190,7 @@ class Model<T = any> extends Base<T> implements QueryBuilder<T>, Relational, Gra
 
   public toJSON() {
     return utils.object.mapValues(this.attributes, (value, attr) => {
-      const getter = (this as any)[utils.getGetterName(attr as string)];
+      const getter = (this as any)[utils.getGetterName(attr)];
 
       return (getter ? getter(value) : value);
     });

@@ -8,12 +8,12 @@ interface Base<T= any> {
 
   constructor: typeof Odin;
 
-  readonly name: string;
-
   id?: Driver.Id;
 }
 
 class Base<T= any> {
+  protected _isNew: boolean = false;
+
   static get models() {
     return MODELS;
   }
@@ -26,6 +26,10 @@ class Base<T= any> {
 
       MODELS[model.name] = model;
     });
+  }
+
+  constructor(document: Odin.Document = {}) {
+    if (!document.id) this._isNew = true;
   }
 }
 

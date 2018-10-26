@@ -100,7 +100,7 @@ class Driver<T = any> extends Base<T> {
     if (con.connection)
       return () => new this((con.connection as mongodb.MongoClient).db(con.database));
 
-    const uri = `mongodb://${con.host || "127.0.0.1"}:${con.port || "27017"}`;
+    const uri = `mongodb://${con.host || "127.0.0.1"}:${con.port || "27017"}/admin`;
 
     const server = <mongodb.MongoClient>deasync(mongodb.MongoClient.connect)(uri, {
       useNewUrlParser: true,
