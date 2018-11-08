@@ -1,7 +1,7 @@
 import Query from "../../../base/Query";
 import { MorphMany as Base } from "../../Relation";
 
-class MorphMany<T = any> extends Base {
+class MorphMany<T extends object = {}> extends Base {
   public load(query: Query<T>) {
     const as = this.as;
 

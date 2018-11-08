@@ -39,7 +39,7 @@ module Odin {
   export type connections = typeof connections;
 }
 
-interface Odin<T = any> extends Model<T> {
+interface Odin<T extends object = {}> extends Model<T> {
   [K: string]: any;
 }
 

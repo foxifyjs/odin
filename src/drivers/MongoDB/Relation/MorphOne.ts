@@ -2,7 +2,7 @@ import Query from "../../../base/Query";
 import { MorphOne as Base } from "../../Relation";
 import Driver from "../Driver";
 
-class MorphOne<T = any> extends Base {
+class MorphOne<T extends object = {}> extends Base {
   public load(query: Query<T>) {
     const as = this.as;
 

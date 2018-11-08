@@ -4,8 +4,12 @@ import * as drivers from "../drivers";
 import Relation from "../drivers/Relation/Base";
 import * as utils from "../utils";
 
-class Relational extends Base {
-  public hasMany<T>(
+interface Relational<T extends object = {}> extends Base<T> {
+  constructor: typeof Model;
+}
+
+class Relational<T extends object = {}> extends Base<T> {
+  public hasMany(
     relation: string | typeof Model,
     localKey?: string,
     foreignKey?: string
@@ -18,7 +22,7 @@ class Relational extends Base {
     return new HasMany(this, relation, localKey, foreignKey, this.hasMany);
   }
 
-  public hasOne<T>(
+  public hasOne(
     relation: string | typeof Model,
     localKey?: string,
     foreignKey?: string
@@ -31,7 +35,7 @@ class Relational extends Base {
     return new HasOne(this, relation, localKey, foreignKey, this.hasOne);
   }
 
-  public morphMany<T>(
+  public morphMany(
     relation: string | typeof Model,
     localKey?: string,
     type?: string
@@ -44,7 +48,7 @@ class Relational extends Base {
     return new MorphMany(this, relation, localKey, undefined, type, this.morphMany);
   }
 
-  public morphOne<T>(
+  public morphOne(
     relation: string | typeof Model,
     localKey?: string,
     type?: string

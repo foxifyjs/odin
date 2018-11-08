@@ -6,7 +6,7 @@ import Relation from "../drivers/Relation/Base";
 import events from "../events";
 import * as utils from "../utils";
 
-class Query<T = any, D extends Driver<T> = any> extends DB<T, D, "query"> {
+class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "query"> {
   protected readonly _model: typeof Model;
   protected _withTrashed = false;
 

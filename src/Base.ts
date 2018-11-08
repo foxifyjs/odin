@@ -3,16 +3,16 @@ import { Base as Driver } from "./drivers";
 
 const MODELS: { [name: string]: typeof Odin | undefined } = {};
 
-interface Base<T= any> {
-  new(document?: Odin.Document): Odin<T>;
-
-  constructor: typeof Odin;
+interface Base<T extends object = {}> {
+  [key: string]: any;
 
   id?: Driver.Id;
 }
 
-class Base<T= any> {
-  protected _isNew: boolean = false;
+class Base {
+  protected get _isNew() {
+    return !this.attributes.id;
+  }
 
   static get models() {
     return MODELS;
@@ -26,10 +26,6 @@ class Base<T= any> {
 
       MODELS[model.name] = model;
     });
-  }
-
-  constructor(document: Odin.Document = {}) {
-    if (!document.id) this._isNew = true;
   }
 }
 

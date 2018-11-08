@@ -3,7 +3,7 @@ import * as utils from "../../utils";
 import Driver from "../Driver";
 import Relation from "../Relation/Base";
 
-abstract class HasOne<T = any> extends Relation<T, "HasOne"> {
+abstract class HasOne<T extends object = {}> extends Relation<T, "HasOne"> {
   constructor(
     model: Model,
     relation: typeof Model,

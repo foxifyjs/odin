@@ -2,7 +2,7 @@ import * as Model from "../../index";
 import Driver from "../Driver";
 import Relation from "../Relation/MorphBase";
 
-abstract class MorphOne<T = any> extends Relation<T, "MorphOne"> {
+abstract class MorphOne<T extends object = {}> extends Relation<T, "MorphOne"> {
   public insert(items: T[]): Promise<undefined>;
   public insert(items: T[], callback: Driver.Callback<undefined>): void;
   public async insert(items: T[], callback?: Driver.Callback<undefined>) {

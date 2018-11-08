@@ -4,7 +4,7 @@ import * as Model from "../../index";
 import * as utils from "../../utils";
 import Driver from "../Driver";
 
-abstract class Relation<T = any, A = undefined> {
+abstract class Relation<T extends object = {}, A = undefined> {
   public readonly as: string;
 
   constructor(
@@ -18,11 +18,11 @@ abstract class Relation<T = any, A = undefined> {
   }
 
   protected _query(relations?: string[]): Query<T> {
-    let query: typeof Model | Query = this.relation;
+    let query: typeof Model | Query<T> = this.relation;
 
     if (relations) query = query.with(...relations);
 
-    return (query as Query).where(
+    return (query as Query<T>).where(
       this.foreignKey,
       this.model.getAttribute(this.localKey)
     );

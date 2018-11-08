@@ -13,10 +13,11 @@ import * as utils from "./utils";
 
 const EVENTS = ["created"];
 
-interface Model<T = any> extends QueryBuilder<T>, Relational, GraphQLInstance<T> {
+interface Model<T extends object = {}> extends QueryBuilder<T>, Relational, GraphQLInstance<T> {
 }
 
-class Model<T = any> extends Base<T> implements QueryBuilder<T>, Relational, GraphQLInstance {
+class Model<T extends object = {}> extends Base<T>
+  implements QueryBuilder<T>, Relational, GraphQLInstance {
   public static DB = DB;
   public static GraphQL = GraphQL;
   public static Types = Types;
@@ -35,6 +36,8 @@ class Model<T = any> extends Base<T> implements QueryBuilder<T>, Relational, Gra
   public static CREATED_AT = "created_at";
   public static UPDATED_AT = "updated_at";
   public static DELETED_AT = "deleted_at";
+
+  public static hidden: string[] = [];
 
   private static get _table() {
     return this.table || utils.makeTableName(this.name);
@@ -62,7 +65,7 @@ class Model<T = any> extends Base<T> implements QueryBuilder<T>, Relational, Gra
     return getConnection(this.connection).driver;
   }
 
-  public static on<T>(event: Odin.Event, listener: (item: Odin<T>) => void) {
+  public static on<T extends object>(event: Odin.Event, listener: (item: Odin<T>) => void) {
     if (!utils.array.contains(EVENTS, event)) throw new TypeError(`Unexpected event "${event}"`);
 
     events.on(`${this.name}:${event}`, listener);
@@ -190,6 +193,8 @@ class Model<T = any> extends Base<T> implements QueryBuilder<T>, Relational, Gra
 
   public toJSON() {
     return utils.object.mapValues(this.attributes, (value, attr) => {
+      if (utils.array.contains(this.constructor.hidden, attr)) return undefined;
+
       const getter = (this as any)[utils.getGetterName(attr)];
 
       return (getter ? getter(value) : value);

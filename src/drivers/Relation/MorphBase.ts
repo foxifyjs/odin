@@ -3,7 +3,7 @@ import * as Model from "../../index";
 import * as utils from "../../utils";
 import Relation from "../Relation/Base";
 
-abstract class MorphBase<T = any, A = undefined> extends Relation<T, A> {
+abstract class MorphBase<T extends object = {}, A = undefined> extends Relation<T, A> {
   constructor(
     model: Model,
     relation: typeof Model,
@@ -15,7 +15,7 @@ abstract class MorphBase<T = any, A = undefined> extends Relation<T, A> {
     super(model, relation, localKey, foreignKey, caller);
   }
 
-  protected _query(relations?: string[]): Query {
+  protected _query(relations?: string[]): Query<T> {
     return super._query(relations)
       .where(`${this.type}_type`, this.model.constructor.name);
   }

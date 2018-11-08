@@ -122,7 +122,7 @@ module GraphQL {
   }
 }
 
-class GraphQL<T = any> extends Base<T> {
+class GraphQL<T extends object = {}> extends Base<T> {
   public static toGraphQL(): any {
     const name = this.name;
 
