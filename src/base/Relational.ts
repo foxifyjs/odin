@@ -8,8 +8,8 @@ interface Relational<T extends object = {}> extends Base<T> {
   constructor: typeof Model;
 }
 
-class Relational<T extends object = {}> extends Base<T> {
-  public hasMany(
+class Relational extends Base {
+  public hasMany<T extends Model = any>(
     relation: string | typeof Model,
     localKey?: string,
     foreignKey?: string
@@ -22,7 +22,7 @@ class Relational<T extends object = {}> extends Base<T> {
     return new HasMany(this, relation, localKey, foreignKey, this.hasMany);
   }
 
-  public hasOne(
+  public hasOne<T extends Model = any>(
     relation: string | typeof Model,
     localKey?: string,
     foreignKey?: string
@@ -35,7 +35,7 @@ class Relational<T extends object = {}> extends Base<T> {
     return new HasOne(this, relation, localKey, foreignKey, this.hasOne);
   }
 
-  public morphMany(
+  public morphMany<T extends Model = any>(
     relation: string | typeof Model,
     localKey?: string,
     type?: string
@@ -48,7 +48,7 @@ class Relational<T extends object = {}> extends Base<T> {
     return new MorphMany(this, relation, localKey, undefined, type, this.morphMany);
   }
 
-  public morphOne(
+  public morphOne<T extends Model = any>(
     relation: string | typeof Model,
     localKey?: string,
     type?: string
