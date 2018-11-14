@@ -29,7 +29,7 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
       throw new TypeError("Expected at least one 'relation', got none");
 
     return this.query(relations.map((name) => {
-      let query = (this.prototype as any)[name] as any;
+      let query = (this.prototype as any)[name] as Relation;
 
       if (!utils.function.isFunction(query))
         throw new Error(`Relation '${name}' does not exist on '${this.name}' Model`);
@@ -53,10 +53,11 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
 
   /******************************* Where Clauses ******************************/
 
+  public static where<T extends object>(query: Driver.FilterQuery): Query<T>;
   public static where<T extends object>(field: string, value: any): Query<T>;
   public static where<T extends object>(
     field: string, operator: Driver.Operator, value: any): Query<T>;
-  public static where(field: string, operator: Driver.Operator | any, value?: any) {
+  public static where(field: any, operator?: Driver.Operator | any, value?: any) {
     return this.query().where(field, operator, value);
   }
 

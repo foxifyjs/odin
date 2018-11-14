@@ -20,7 +20,6 @@ class Model<T extends object = {}> extends Base<T>
   implements QueryBuilder<T>, Relational, GraphQLInstance {
   public static DB = DB;
   public static GraphQL = GraphQL;
-  public static Types = Types;
   public static connections = connections;
 
   public static connection: Odin.Connection = "default";
@@ -44,9 +43,8 @@ class Model<T extends object = {}> extends Base<T>
   }
 
   private static get _schema() {
-    // TODO: id
     const schema: Odin.Schema = {
-      id: this.Types.ObjectId,
+      id: this.Types.Id,
       ...this.schema,
     };
 
@@ -59,6 +57,10 @@ class Model<T extends object = {}> extends Base<T>
       schema[this.DELETED_AT] = this.Types.Date;
 
     return schema;
+  }
+
+  public static get Types() {
+    return new Types(this.driver);
   }
 
   public static get driver() {

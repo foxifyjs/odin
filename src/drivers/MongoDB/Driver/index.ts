@@ -1,99 +1,13 @@
 import * as deasync from "deasync";
 import * as mongodb from "mongodb";
-import { connect, Query } from "../../connections";
-import * as utils from "../../utils";
-import Base from "../Driver";
+import { connect, Query } from "../../../connections";
+import * as utils from "../../../utils";
+import Base from "../../Driver";
+import { isID, OPERATORS, prepareKey, prepareValue } from "../utils";
+import Filter from "./Filter";
+import Join from "./Join";
 
 const { ObjectId } = mongodb;
-
-const isID = (id: string) => /(_id$|^id$)/.test(id);
-
-const prepareKey = (id: string) => id === "id" ? "_id" : id;
-
-const prepareValue = (field: string, value: any) => {
-  if (!isID(field)) return value;
-
-  if (Array.isArray(value)) return value.map(v => new ObjectId(v));
-
-  if (!ObjectId.isValid(value)) return value;
-
-  return new ObjectId(value);
-};
-
-const OPERATORS: { [operator: string]: string } = {
-  "<": "lt",
-  "<=": "lte",
-  "=": "eq",
-  "<>": "ne",
-  ">=": "gte",
-  ">": "gt",
-};
-
-module Driver {
-  export interface Filters<T = any> {
-    $and?: Array<mongodb.FilterQuery<T>>;
-    $or?: Array<mongodb.FilterQuery<T>>;
-    [operator: string]: any;
-  }
-}
-
-interface Driver<T = any> extends Base<T> {
-  /*********************************** Joins **********************************/
-
-  /******************************* Where Clauses ******************************/
-
-  /*************** Mapping, Ordering, Grouping, Limit & Offset ****************/
-
-  /*********************************** Read ***********************************/
-
-  exists(): Promise<boolean>;
-  exists(callback: mongodb.MongoCallback<boolean>): void;
-
-  count(): Promise<number>;
-  count(callback: mongodb.MongoCallback<number>): void;
-
-  get(fields?: string[]): Promise<T[]>;
-  get(fields: string[], callback: mongodb.MongoCallback<T[]>): void;
-  get(callback: mongodb.MongoCallback<T[]>): void;
-
-  first(fields?: string[]): Promise<T>;
-  first(fields: string[], callback: mongodb.MongoCallback<T>): void;
-  first(callback: mongodb.MongoCallback<T>): void;
-
-  value(field: string): Promise<any>;
-  value(field: string, callback: mongodb.MongoCallback<any>): void;
-
-  max(field: string): Promise<any>;
-  max(field: string, callback: mongodb.MongoCallback<any>): void;
-
-  min(field: string): Promise<any>;
-  min(field: string, callback: mongodb.MongoCallback<any>): void;
-
-  avg(field: string): Promise<any>;
-  avg(field: string, callback: mongodb.MongoCallback<any>): void;
-
-  /********************************** Inserts *********************************/
-
-  insert(item: T | T[]): Promise<number>;
-  insert(item: T | T[], callback: mongodb.MongoCallback<number>): void;
-
-  insertGetId(item: T): Promise<mongodb.ObjectId>;
-  insertGetId(item: T, callback: mongodb.MongoCallback<mongodb.ObjectId>): void;
-
-  /********************************** Updates *********************************/
-
-  update(update: T): Promise<number>;
-  update(update: T, callback: mongodb.MongoCallback<number>): void;
-
-  increment(field: string, count?: number): Promise<number>;
-  increment(field: string, callback: mongodb.MongoCallback<number>): void;
-  increment(field: string, count: number, callback: mongodb.MongoCallback<number>): void;
-
-  /********************************** Deletes *********************************/
-
-  delete(): Promise<number>;
-  delete(callback: mongodb.MongoCallback<number>): void;
-}
 
 class Driver<T = any> extends Base<T> {
   public static connect(con: connect.Connection) {
@@ -119,22 +33,14 @@ class Driver<T = any> extends Base<T> {
 
   protected _query!: mongodb.Collection;
 
-  protected _filters: Driver.Filters = {
-    $and: [],
-  };
+  protected _filter = new Filter();
 
   private _pipeline: object[] = [];
 
   private _mappers: Array<Base.Mapper<T>> = [];
 
-  protected get _filter() {
-    const filter = {
-      ...this._filters,
-    };
-
-    if (filter.$and && filter.$and.length === 0) delete filter.$and;
-
-    return filter;
+  protected get _filters() {
+    return this._filter.filters;
   }
 
   constructor(query: Query) {
@@ -181,6 +87,18 @@ class Driver<T = any> extends Base<T> {
     );
   }
 
+  protected _resetFilters() {
+    const FILTER = this._filters;
+
+    if (utils.object.size(FILTER) > 0) {
+      this._pipeline.push({ $match: FILTER });
+
+      this._filter = new Filter();
+    }
+
+    return this;
+  }
+
   public table(table: string) {
     if (!(this._query as any).collection)
       throw new Error("Can't change table name in the middle of query");
@@ -204,170 +122,92 @@ class Driver<T = any> extends Base<T> {
 
   public join(
     table: string,
-    query: Base.JoinQuery<T> = q => q.on(utils.makeTableId(table), `${table}.id`),
+    query: Base.JoinQuery<T> = q => q.where(utils.makeTableId(table), `${table}.id`),
     as: string = table
   ) {
-    const LET: { [key: string]: any } = {};
-    const EXPR_MATCH: object[] = [];
-    const MATCH: object[] = [];
+    const join: Join = query(new Join(this._table, table, as)) as any;
 
-    const QUERY = {
-      on: (field: any, operator: any, value?: any) => {
-        field = prepareKey(field);
+    this._resetFilters();
 
-        if (value === undefined) {
-          value = operator;
-          operator = "=";
-        }
-
-        if (utils.string.isString(value) && new RegExp(`^${this._table}\..+`).test(value)) {
-          const keys = utils.array.tail(value.split("."));
-
-          keys.push(prepareKey(keys.pop() as string));
-
-          const key = keys.join(".");
-          const pivotKey = `pivot_${key}`;
-
-          LET[pivotKey] = `$${key}`;
-
-          EXPR_MATCH.push({
-            [`$${OPERATORS[operator]}`]: [`$${field}`, `$$${pivotKey}`],
-          });
-
-          return QUERY;
-        }
-
-        value = prepareValue(field, value);
-
-        MATCH.push({
-          [field]: {
-            [`$${OPERATORS[operator]}`]: value,
-          },
-        });
-
-        return QUERY;
-      },
-    };
-
-    query(QUERY);
-
-    const PIPELINE: object[] = [];
-
-    if (EXPR_MATCH.length > 0) PIPELINE.push({
-      $match: {
-        $expr: {
-          $and: EXPR_MATCH,
-        },
-      },
-    });
-
-    if (MATCH.length > 0) PIPELINE.push({
-      $match: {
-        $and: MATCH,
-      },
-    });
-
-    return this.pipeline({
-      $lookup: { as, from: table, let: LET, pipeline: PIPELINE },
-    });
-  }
-
-  /******************************* Where Clauses ******************************/
-
-  private _push_filter(operator: "and" | "or", value: any) {
-    const filters = { ...this._filters };
-
-    if (operator === "and" && filters.$or) {
-      filters.$and = [this._filters];
-      delete filters.$or;
-    } else if (operator === "or" && filters.$and) {
-      filters.$or = [this._filters];
-      delete filters.$and;
-    }
-
-    filters[`$${operator}`].push(value);
-
-    this._filters = filters;
+    this._pipeline.push(join.pipeline);
 
     return this;
   }
 
-  private _where(field: string, operator: string, value: any) {
-    field = prepareKey(field);
-    value = prepareValue(field, value);
+  /******************************* Where Clauses ******************************/
 
-    return this._push_filter("and", {
-      [field]: {
-        [`$${operator}`]: value,
-      },
-    });
+  public where(query: Base.FilterQuery): this;
+  public where(field: string, value: any): this;
+  public where(field: string, operator: Base.Operator, value: any): this;
+  public where() {
+    this._filter = this._filter.where.apply(this._filter, arguments);
+
+    return this;
   }
 
-  private _or_where(field: string, operator: string, value: any) {
-    field = prepareKey(field);
-    value = prepareValue(field, value);
+  public orWhere(query: Base.FilterQuery): this;
+  public orWhere(field: string, value: any): this;
+  public orWhere(field: string, operator: Base.Operator, value: any): this;
+  public orWhere() {
+    this._filter = this._filter.orWhere.apply(this._filter, arguments);
 
-    return this._push_filter("or", {
-      [field]: {
-        [`$${operator}`]: value,
-      },
-    });
+    return this;
   }
 
-  public where(field: string, operator: Base.Operator | any, value?: any) {
-    if (value === undefined) {
-      value = operator;
-      operator = "=";
-    }
+  public whereLike(field: string, value: any): this;
+  public whereLike() {
+    this._filter = this._filter.whereLike.apply(this._filter, arguments);
 
-    return this._where(field, OPERATORS[operator], value);
+    return this;
   }
 
-  public orWhere(field: string, operator: Base.Operator | any, value?: any) {
-    if (value === undefined) {
-      value = operator;
-      operator = "=";
-    }
+  public whereNotLike(field: string, value: any): this;
+  public whereNotLike() {
+    this._filter = this._filter.whereNotLike.apply(this._filter, arguments);
 
-    return this._or_where(field, OPERATORS[operator], value);
+    return this;
   }
 
-  public whereLike(field: string, value: any) {
-    if (!(value instanceof RegExp)) value = new RegExp(value, "i");
+  public whereIn(field: string, values: any[]): this;
+  public whereIn() {
+    this._filter = this._filter.whereIn.apply(this._filter, arguments);
 
-    return this._where(field, "regex", value);
+    return this;
   }
 
-  public whereNotLike(field: string, value: any) {
-    if (!(value instanceof RegExp)) value = new RegExp(value, "i");
+  public whereNotIn(field: string, values: any[]): this;
+  public whereNotIn() {
+    this._filter = this._filter.whereNotIn.apply(this._filter, arguments);
 
-    return this._where(field, "not", value);
+    return this;
   }
 
-  public whereIn(field: string, values: any[]) {
-    return this._where(field, "in", values);
+  public whereBetween(field: string, start: any, end: any): this;
+  public whereBetween() {
+    this._filter = this._filter.whereBetween.apply(this._filter, arguments);
+
+    return this;
   }
 
-  public whereNotIn(field: string, values: any[]) {
-    return this._where(field, "nin", values);
+  public whereNotBetween(field: string, start: any, end: any): this;
+  public whereNotBetween() {
+    this._filter = this._filter.whereNotBetween.apply(this._filter, arguments);
+
+    return this;
   }
 
-  public whereBetween(field: string, start: any, end: any) {
-    return this._where(field, "gte", start)
-      ._where(field, "lte", end);
+  public whereNull(field: string): this;
+  public whereNull() {
+    this._filter = this._filter.whereNull.apply(this._filter, arguments);
+
+    return this;
   }
 
-  public whereNotBetween(field: string, start: any, end: any) {
-    return this._where(field, "lt", start)
-      ._or_where(field, "gt", end);
-  }
+  public whereNotNull(field: string): this;
+  public whereNotNull() {
+    this._filter = this._filter.whereNotNull.apply(this._filter, arguments);
 
-  public whereNull(field: string) {
-    return this._where(field, "eq", null);
-  }
-
-  public whereNotNull(field: string) {
-    return this._where(field, "ne", null);
+    return this;
   }
 
   /*************** Mapping, Ordering, Grouping, Limit & Offset ****************/
@@ -429,7 +269,7 @@ class Driver<T = any> extends Base<T> {
       (query: any, mapper) => query.map(mapper),
       this._query.aggregate(
         [
-          { $match: this._filter },
+          { $match: this._filters },
           ...this._pipeline,
         ],
         options
@@ -437,16 +277,23 @@ class Driver<T = any> extends Base<T> {
     ) as mongodb.AggregationCursor;
   }
 
+  public exists(): Promise<boolean>;
+  public exists(callback: mongodb.MongoCallback<boolean>): void;
   public async exists(callback?: mongodb.MongoCallback<boolean>) {
     if (callback) return this.count((err, res) => callback(err, res !== 0));
 
     return (await this.count()) !== 0;
   }
 
+  public count(): Promise<number>;
+  public count(callback: mongodb.MongoCallback<number>): void;
   public count(callback?: mongodb.MongoCallback<number>): Promise<number> | void {
-    return this._query.countDocuments(this._filter, callback as any);
+    return this._query.countDocuments(this._filters, callback as any);
   }
 
+  public get(fields?: string[]): Promise<T[]>;
+  public get(fields: string[], callback: mongodb.MongoCallback<T[]>): void;
+  public get(callback: mongodb.MongoCallback<T[]>): void;
   public get(
     fields?: string[] | mongodb.MongoCallback<T[]>,
     callback?: mongodb.MongoCallback<T[]>
@@ -467,6 +314,9 @@ class Driver<T = any> extends Base<T> {
       .toArray(callback as any);
   }
 
+  public first(fields?: string[]): Promise<T>;
+  public first(fields: string[], callback: mongodb.MongoCallback<T>): void;
+  public first(callback: mongodb.MongoCallback<T>): void;
   public async first(
     fields?: string[] | mongodb.MongoCallback<T>,
     callback?: mongodb.MongoCallback<T>
@@ -493,6 +343,8 @@ class Driver<T = any> extends Base<T> {
     return (await this._aggregate().toArray())[0];
   }
 
+  public value(field: string): Promise<any>;
+  public value(field: string, callback: mongodb.MongoCallback<any>): void;
   public value(field: string, callback?: mongodb.MongoCallback<any>) {
     field = prepareKey(field);
 
@@ -510,6 +362,8 @@ class Driver<T = any> extends Base<T> {
       .toArray(callback as any) as any;
   }
 
+  public max(field: string): Promise<any>;
+  public max(field: string, callback: mongodb.MongoCallback<any>): void;
   public async max(field: string, callback?: mongodb.MongoCallback<any>) {
     const query = this.pipeline({ $group: { _id: null, max: { $max: `$${field}` } } })
       ._aggregate();
@@ -524,6 +378,8 @@ class Driver<T = any> extends Base<T> {
     return (await query.toArray())[0].max;
   }
 
+  public min(field: string): Promise<any>;
+  public min(field: string, callback: mongodb.MongoCallback<any>): void;
   public async min(field: string, callback?: mongodb.MongoCallback<any>) {
     const query = this.pipeline({ $group: { _id: null, min: { $min: `$${field}` } } })
       ._aggregate();
@@ -538,6 +394,8 @@ class Driver<T = any> extends Base<T> {
     return (await query.toArray())[0].min;
   }
 
+  public avg(field: string): Promise<any>;
+  public avg(field: string, callback: mongodb.MongoCallback<any>): void;
   public async avg(field: string, callback?: mongodb.MongoCallback<any>) {
     const query = this.pipeline({ $group: { _id: null, avg: { $avg: `$${field}` } } })
       ._aggregate();
@@ -554,6 +412,8 @@ class Driver<T = any> extends Base<T> {
 
   /********************************** Inserts *********************************/
 
+  public insert(item: T | T[]): Promise<number>;
+  public insert(item: T | T[], callback: mongodb.MongoCallback<number>): void;
   public async insert(item: T | T[], callback?: mongodb.MongoCallback<number>) {
     item = this._prepareToStore(item);
 
@@ -570,13 +430,15 @@ class Driver<T = any> extends Base<T> {
     return (await this._query.insertOne(item)).insertedCount;
   }
 
-  public async insertGetId(item: T, callback?: mongodb.MongoCallback<mongodb.ObjectId>) {
+  public insertGetId(item: T): Promise<string>;
+  public insertGetId(item: T, callback: mongodb.MongoCallback<string>): void;
+  public async insertGetId(item: T, callback?: mongodb.MongoCallback<string>) {
     item = this._prepareToStore(item);
 
     if (callback)
-      return this._query.insertOne(item, (err, res) => callback(err, res.insertedId));
+      return this._query.insertOne(item, (err, res) => callback(err, res.insertedId.toString()));
 
-    return (await this._query.insertOne(item)).insertedId;
+    return (await this._query.insertOne(item)).insertedId.toString();
   }
 
   /********************************** Updates *********************************/
@@ -586,11 +448,13 @@ class Driver<T = any> extends Base<T> {
     callback?: mongodb.MongoCallback<mongodb.UpdateWriteOpResult>
   ): Promise<mongodb.UpdateWriteOpResult> {
     if (callback)
-      return this._query.updateMany(this._filter, update, callback) as any;
+      return this._query.updateMany(this._filters, update, callback) as any;
 
-    return await this._query.updateMany(this._filter, update);
+    return await this._query.updateMany(this._filters, update);
   }
 
+  public update(update: T): Promise<number>;
+  public update(update: T, callback: mongodb.MongoCallback<number>): void;
   public async update(update: T, callback?: mongodb.MongoCallback<number>) {
     const _update = {
       $set: this._prepareToStore(update),
@@ -602,6 +466,9 @@ class Driver<T = any> extends Base<T> {
     return (await this._update(_update)).modifiedCount;
   }
 
+  public increment(field: string, count?: number): Promise<number>;
+  public increment(field: string, callback: mongodb.MongoCallback<number>): void;
+  public increment(field: string, count: number, callback: mongodb.MongoCallback<number>): void;
   public async increment(
     field: string,
     count?: number | mongodb.MongoCallback<number>,
@@ -627,14 +494,16 @@ class Driver<T = any> extends Base<T> {
 
   /********************************** Deletes *********************************/
 
+  public delete(): Promise<number>;
+  public delete(callback: mongodb.MongoCallback<number>): void;
   public async delete(callback?: mongodb.MongoCallback<number>) {
     if (callback)
       return this._query.deleteMany(
-        this._filter,
+        this._filters,
         (err, res: any) => callback(err, res.deletedCount)
       );
 
-    return (await this._query.deleteMany(this._filter)).deletedCount;
+    return (await this._query.deleteMany(this._filters)).deletedCount;
   }
 }
 

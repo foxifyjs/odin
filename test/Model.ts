@@ -31,15 +31,15 @@ const ITEMS = [
   },
 ];
 
-beforeAll((done) => {
-  Odin.connections({
-    default: {
-      driver: "MongoDB",
-      database: global.__MONGO_DB_NAME__,
-      connection: global.__MONGO_CONNECTION__,
-    },
-  });
+Odin.connections({
+  default: {
+    driver: "MongoDB",
+    database: global.__MONGO_DB_NAME__,
+    connection: global.__MONGO_CONNECTION__,
+  },
+});
 
+beforeAll((done) => {
   Odin.DB.table(TABLE).insert(ITEMS, (err) => {
     if (err) throw err;
 
@@ -77,11 +77,11 @@ afterAll((done) => {
 
 class User extends Odin {
   public static schema = {
-    username: Odin.Types.String.alphanum.min(3).required,
-    email: Odin.Types.String.email.required,
+    username: User.Types.String.alphanum.min(3).required,
+    email: User.Types.String.email.required,
     name: {
-      first: Odin.Types.String.min(3).required,
-      last: Odin.Types.String.min(3),
+      first: User.Types.String.min(3).required,
+      last: User.Types.String.min(3),
     },
   };
 }

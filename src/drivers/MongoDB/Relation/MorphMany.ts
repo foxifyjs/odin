@@ -7,8 +7,8 @@ class MorphMany<T extends object = {}> extends Base {
 
     return query.join(
       this.relation,
-      q => q.on(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
-        .on(`${this.type}_type`, this.model.constructor.name),
+      q => q.where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
+        .where(`${this.type}_type`, this.model.constructor.name),
       as
     );
   }

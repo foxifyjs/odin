@@ -9,6 +9,8 @@ class TypeObject extends TypeAny {
 
     return "Must be a object";
   }
+
+  /********** TESTS **********/
 }
 
 export default TypeObject;

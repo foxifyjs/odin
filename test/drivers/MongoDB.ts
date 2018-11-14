@@ -422,7 +422,7 @@ describe("`MongoDB` driver", () => {
     expect(joinResult.length).toBe(JOIN_ITEMS.length);
 
     const result = await DB.table(TABLE).orderBy("num")
-      .join(JOIN_TABLE, q => q.on("for_name", `${TABLE}.name`))
+      .join(JOIN_TABLE, q => q.where("for_name", `${TABLE}.name`))
       .get();
 
     expect(result).toEqual(

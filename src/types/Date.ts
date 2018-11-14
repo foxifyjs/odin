@@ -10,12 +10,20 @@ class TypeDate extends TypeAny {
     return "Must be a date";
   }
 
-  public min(d: Date) {
-    return this._test((v: Date) => v < d ? `Must be at least ${d}` : null);
+  public min(date: Date | (() => Date)) {
+    if (utils.date.isDate(date)) date = () => date as Date;
+
+    return this._test((v: Date) => v < (date as (() => Date))()
+      ? `Must be at least ${date}`
+      : null);
   }
 
-  public max(d: Date) {
-    return this._test((v: Date) => v > d ? `Must be at most ${d}` : null);
+  public max(date: Date | (() => Date)) {
+    if (utils.date.isDate(date)) date = () => date as Date;
+
+    return this._test((v: Date) => v > (date as (() => Date))()
+      ? `Must be at most ${date}`
+      : null);
   }
 }
 

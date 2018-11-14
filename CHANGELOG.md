@@ -12,6 +12,12 @@
 
 ---
 
+## [v0.2.0](https://github.com/foxifyjs/odin/releases/tag/v0.2.0) - *(2018-11-14)*
+
+- :zap: Added more advanced filtering ability to queries and joins
+- :zap: Added `numeral` to `String` schema type
+- :zap: Added `enum` to `String` schema type
+
 ## [v0.1.0](https://github.com/foxifyjs/odin/releases/tag/v0.1.0) - *(2018-10-20)*
 
 - :zap: Added model hook `created`

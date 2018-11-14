@@ -6,6 +6,7 @@
   ],
   "jsRules": {},
   "rules": {
+    "max-line-length": [true, 120],
     "quotemark": [
       true,
       "double"

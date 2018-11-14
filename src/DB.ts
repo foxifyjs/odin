@@ -56,6 +56,7 @@ class DB<T = any, D extends Driver<T> = any, A = undefined> {
 
   /******************************* Where Clauses ******************************/
 
+  public where(query: Driver.FilterQuery): this;
   public where(field: string, value: any): this;
   public where(field: string, operator: Driver.Operator, value: any): this;
   public where() {
@@ -66,6 +67,7 @@ class DB<T = any, D extends Driver<T> = any, A = undefined> {
     return this;
   }
 
+  public orWhere(query: Driver.FilterQuery): this;
   public orWhere(field: string, value: any): this;
   public orWhere(field: string, operator: Driver.Operator, value: any): this;
   public orWhere() {

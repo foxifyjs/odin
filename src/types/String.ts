@@ -28,6 +28,11 @@ class TypeString extends TypeAny {
       ? `Must only contain a-z, A-Z, 0-9` : null);
   }
 
+  get numeral() {
+    return this._test((v: string) => !/^[0-9]*$/.test(v)
+      ? `Must only contain numbers` : null);
+  }
+
   get ip() {
     return this._test((v: string) => !(ipv4Regex.test(v) || ipv6Regex.test(v))
       ? `Must be an ipv4 or ipv6` : null);
@@ -79,6 +84,18 @@ class TypeString extends TypeAny {
     if (!(r instanceof RegExp)) throw new TypeError("'r' must be a regex");
 
     return this._test((v: string) => !r.test(v) ? `Must match ${r}` : null);
+  }
+
+  public enum(enums: string[]) {
+    enums.forEach((str) => {
+      if (!utils.string.isString(str)) throw new TypeError("'enums' must be an string array");
+    });
+
+    const TYPE = JSON.stringify(enums);
+
+    return this._test(
+      (v: string) => !utils.array.contains(enums, v) ? `Must be one of ${TYPE}` : null
+    );
   }
 
   /********** CASTS **********/

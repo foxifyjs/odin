@@ -1,28 +1,53 @@
-import * as mongodb from "mongodb";
 import * as connections from "../connections";
 
-module Driver {
+namespace Driver {
   export type Callback<T = any> = (error: Error, result: T) => void;
 
   export type Operator = "<" | "<=" | "=" | "<>" | ">=" | ">";
 
   export type Order = "asc" | "desc";
 
-  export type Id = number | mongodb.ObjectId;
+  export type Id = number | string;
+
+  export interface Filter {
+    where(query: FilterQuery): this;
+    where(field: string, value: any): this;
+    where(field: string, operator: Driver.Operator, value: any): this;
+
+    orWhere(query: FilterQuery): this;
+    orWhere(field: string, value: any): this;
+    orWhere(field: string, operator: Driver.Operator, value: any): this;
+
+    whereLike(field: string, value: any): this;
+
+    whereNotLike(field: string, value: any): this;
+
+    whereIn(field: string, values: any[]): this;
+
+    whereNotIn(field: string, values: any[]): this;
+
+    whereBetween(field: string, start: any, end: any): this;
+
+    whereNotBetween(field: string, start: any, end: any): this;
+
+    whereNull(field: string): this;
+
+    whereNotNull(field: string): this;
+  }
+
+  export type FilterQuery = (query: Filter) => Filter;
+
+  export interface Join<T = any> extends Filter {
+    join(table: string, query?: Driver.JoinQuery<T>, as?: string): this;
+  }
+
+  export type JoinQuery<T = any> = (query: Join<T>) => Join<T>;
 
   export interface GroupQueryObject<T = any> {
     having: (field: string, operator: Operator | any, value?: any) => GroupQueryObject<T>;
   }
 
   export type GroupQuery<T = any> = (query: GroupQueryObject<T>) => void;
-
-  export interface JoinQueryObject<T = any> {
-    on: (field: string, operator: Operator | any, value?: any) => JoinQueryObject<T>;
-  }
-
-  export type JoinQuery<T = any> = (query: JoinQueryObject<T>) => void;
-
-  export type WhereQuery<T = any> = (query: Driver<T>) => Driver<T>;
 
   export type Mapper<T = any> = (item: T, index: number, items: T[]) => any;
 }
@@ -44,11 +69,11 @@ abstract class Driver<T = any> {
 
   /******************************* Where Clauses ******************************/
 
-  // abstract where(query: Driver.WhereQuery): this;
+  public abstract where(query: Driver.FilterQuery): this;
   public abstract where(field: string, value: any): this;
   public abstract where(field: string, operator: Driver.Operator, value: any): this;
 
-  // abstract orWhere(query: Driver.WhereQuery): this;
+  public abstract orWhere(query: Driver.FilterQuery): this;
   public abstract orWhere(field: string, value: any): this;
   public abstract orWhere(field: string, operator: Driver.Operator, value: any): this;
 
