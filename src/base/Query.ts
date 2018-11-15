@@ -45,7 +45,10 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
       if (!as) as = table as string;
 
       this.map((item: any) => {
-        item[as as string] = item[as as string].map((i: any) => new model(i));
+        const joined = item[as as string];
+
+        if (Array.isArray(joined)) item[as as string] = joined.map((i: any) => new model(i));
+        else item[as as string] = new model(joined);
 
         return item;
       });
