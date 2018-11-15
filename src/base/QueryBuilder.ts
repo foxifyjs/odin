@@ -142,9 +142,9 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
     return this.query().count(callback as any) as any;
   }
 
-  public static all<T extends object>(): Promise<Array<Model<T>>>;
-  public static all<T extends object>(callback: Driver.Callback<Array<Model<T>>>): void;
-  public static all(callback?: Driver.Callback<any>) {
+  public static get<T extends object>(): Promise<Array<Model<T>>>;
+  public static get<T extends object>(callback: Driver.Callback<Array<Model<T>>>): void;
+  public static get(callback?: Driver.Callback<any>) {
     return this.query().get(callback as any) as any;
   }
 
