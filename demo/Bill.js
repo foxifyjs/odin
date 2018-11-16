@@ -1,18 +1,14 @@
-const Model = require("../dist/index");
-
-const {
-    Types
-} = Model;
+const Model = require("../dist");
 
 class Bill extends Model {
     user() {
-        return this.hasOne(Model.models.User);
+        return this.hasOne("User");
     }
 }
 
 Bill.schema = {
-    user_id: Types.ObjectId.required,
-    bill: Types.Number.positive.required,
+    user_id: Bill.Types.Id.required,
+    bill: Bill.Types.Number.positive.required,
 };
 
 Model.register(Bill);

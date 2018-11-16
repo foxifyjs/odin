@@ -1,6 +1,6 @@
 {
   "name": "@foxify/odin",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Active Record Model",
   "author": "Ardalan Amini <ardalanamini22@gmail.com> [https://github.com/ardalanamini]",
   "contributors": [
@@ -43,7 +43,7 @@
     "@types/graphql": "^0.13.4",
     "@types/graphql-iso-date": "^3.3.1",
     "@types/mongodb": "^3.1.14",
-    "@types/node": "^10.12.7",
+    "@types/node": "^10.12.9",
     "async": "^2.6.1",
     "caller-id": "^0.1.0",
     "deasync": "^0.1.14",
@@ -67,7 +67,7 @@
     "rimraf": "^2.6.2",
     "ts-jest": "^23.10.4",
     "tslint": "^5.11.0",
-    "tslint-config-airbnb": "^5.11.0",
+    "tslint-config-airbnb": "^5.11.1",
     "typescript": "^3.1.6",
     "uglify-es": "^3.3.9"
   },

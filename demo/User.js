@@ -1,22 +1,18 @@
-const Model = require("../dist/index");
-
-const {
-    Types
-} = Model;
+const Model = require("../dist");
 
 class User extends Model {
     bills() {
-        return this.hasMany(Model.models.Bill);
+        return this.hasMany("Bill");
     }
 }
 
 User.schema = {
     name: {
-        first: Types.String.min(3).required,
-        last: Types.String.min(3),
+        first: User.Types.String.min(3).required,
+        last: User.Types.String.min(3),
     },
-    username: Types.String.token.required,
-    email: Types.String.email.required,
+    username: User.Types.String.token.required,
+    email: User.Types.String.email.required,
 };
 
 Model.register(User);

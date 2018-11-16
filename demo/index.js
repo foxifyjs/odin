@@ -3,8 +3,6 @@ const env = require("dotenv").load({
 }).parsed;
 
 const Model = require("../dist/index");
-const User = require("./User");
-const Bill = require("./Bill");
 
 const time = () => new Date().getTime();
 
@@ -20,6 +18,9 @@ Model.connections({
         password: env.PASSWORD
     }
 })
+
+const User = require("./User");
+const Bill = require("./Bill");
 
 const end = time();
 

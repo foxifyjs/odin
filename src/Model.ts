@@ -9,6 +9,9 @@ import GraphQL from "./GraphQL";
 import GraphQLInstance from "./GraphQL/Model";
 import * as Types from "./types";
 import TypeAny from "./types/Any";
+import TypeArray from "./types/Array";
+import TypeDate from "./types/Date";
+import TypeObjectId from "./types/ObjectId";
 import * as utils from "./utils";
 
 const EVENTS = ["created"];
@@ -79,6 +82,60 @@ class Model<T extends object = {}> extends Base<T>
     return this._table;
   }
 
+  public static toJsonSchema() {
+    const jsonSchemaGenerator = (schema: Odin.Schema) => {
+      const value: { [key: string]: any } = {};
+      const required: string[] = [];
+
+      for (const key in schema) {
+        const type = schema[key];
+
+        if (type instanceof TypeAny) {
+          // Type
+
+          let schemaType: string = (type as any)._type.toLowerCase();
+
+          if (
+            type instanceof TypeObjectId
+            || type instanceof TypeDate
+          ) schemaType = "string";
+
+          value[key] = {
+            type: schemaType,
+          };
+
+          if (type instanceof TypeArray) value[key].items = {
+            type: (type.ofType as any)._type.toLowerCase(),
+          };
+
+          if ((type as any)._required) required.push(key);
+
+          continue;
+        }
+
+        // Object
+
+        const generated = jsonSchemaGenerator(type);
+
+        if (utils.object.size(generated) === 1) continue;
+
+        value[key] = {
+          type: "object",
+          properties: generated,
+        };
+
+        if (generated.required.length) required.push(key);
+      }
+
+      return {
+        ...value,
+        required,
+      };
+    };
+
+    return jsonSchemaGenerator(this.schema);
+  }
+
   public static validate<T = object>(document: T, updating: boolean = false) {
     const validator = (schema: Odin.Schema, doc: T) => {
       const value: { [key: string]: any } = {};
@@ -128,7 +185,14 @@ class Model<T extends object = {}> extends Base<T>
       if (utils.object.size(validation.errors) === 0) validation.errors = null;
     }
 
-    if (validation.errors) throw validation.errors;
+    if (validation.errors) {
+      const error = new Error("Unprocessable Entity") as any;
+
+      error.errors = validation.errors;
+      error.code = 422;
+
+      throw error;
+    }
 
     const value = validation.value;
 

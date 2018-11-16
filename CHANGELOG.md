@@ -12,6 +12,11 @@
 
 ---
 
+## [v0.3.0](https://github.com/foxifyjs/odin/releases/tag/v0.3.0) - *(2018-11-16)*
+
+- :zap: Added `toJsonSchema` static method to Model so you can easily use it with `Foxify` router schema option
+- :star2: Improved throwing validation error for `Foxify` usage
+
 ## [v0.2.0](https://github.com/foxifyjs/odin/releases/tag/v0.2.0) - *(2018-11-14)*
 
 - :zap: Added more advanced filtering ability to queries and joins
