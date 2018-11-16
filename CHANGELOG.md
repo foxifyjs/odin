@@ -12,6 +12,11 @@
 
 ---
 
+## [v0.4.0](https://github.com/foxifyjs/odin/releases/tag/v0.4.0) - *(2018-11-16)*
+
+- :zap: Added `morphOne` relation
+- :star2: Improved `toJsonSchema` functionality
+
 ## [v0.3.0](https://github.com/foxifyjs/odin/releases/tag/v0.3.0) - *(2018-11-16)*
 
 - :zap: Added `toJsonSchema` static method to Model so you can easily use it with `Foxify` router schema option

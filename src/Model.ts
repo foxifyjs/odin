@@ -148,6 +148,24 @@ class Model<T extends object = {}> extends Base<T>
 
     const jsonSchema = jsonSchemaGenerator(this.schema);
 
+    if (this.timestamps) {
+      jsonSchema.properties[this.CREATED_AT] = {
+        type: "string",
+      };
+
+      jsonSchema.properties[this.UPDATED_AT] = {
+        type: "string",
+      };
+
+      jsonSchema.required.push(this.CREATED_AT);
+    }
+
+    if (this.softDelete) {
+      jsonSchema.properties[this.DELETED_AT] = {
+        type: "string",
+      };
+    }
+
     for (const key of Object.getOwnPropertyNames(this.prototype)) {
       if (key === "constructor") continue;
 
@@ -163,6 +181,9 @@ class Model<T extends object = {}> extends Base<T>
 
         jsonSchema.properties[key] = {
           type: "array",
+          items: {
+            type: "object",
+          },
         };
       }
     }

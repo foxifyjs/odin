@@ -83,6 +83,7 @@ User.schema = {
   - [ ] `deleted`
   - [ ] `restored`
 - [ ] Relationships
+  - [x] `embedMany`
   - [x] `hasMany`
   - [x] `hasOne`
   - [ ] `hasManyThrough`

@@ -9,6 +9,19 @@ interface Relational<T extends object = {}> extends Base<T> {
 }
 
 class Relational extends Base {
+  public embedMany<T extends Model = any>(
+    relation: string | typeof Model,
+    localKey?: string,
+    foreignKey?: string
+  ): Relation<T> {
+    if (utils.string.isString(relation))
+      relation = this.constructor.models[relation] as typeof Model;
+
+    const EmbedMany: any = drivers[this.constructor.driver].Relation.EmbedMany;
+
+    return new EmbedMany(this, relation, localKey, foreignKey, this.embedMany);
+  }
+
   public hasMany<T extends Model = any>(
     relation: string | typeof Model,
     localKey?: string,

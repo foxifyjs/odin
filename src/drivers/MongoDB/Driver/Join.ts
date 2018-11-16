@@ -112,6 +112,20 @@ class Join<T = any> extends Filter {
 
     return this;
   }
+
+  /******************************* Where Clauses ******************************/
+
+  public whereIn(field: string, embeddedField: string): this;
+  public whereIn(field: string, values: any[]): this;
+  public whereIn(field: string, values: any) {
+    return super.whereIn(field, values);
+  }
+
+  public whereNotIn(field: string, embeddedField: string): this;
+  public whereNotIn(field: string, values: any[]): this;
+  public whereNotIn(field: string, values: any) {
+    return super.whereNotIn(field, values);
+  }
 }
 
 export default Join;

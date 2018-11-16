@@ -39,6 +39,12 @@ namespace Driver {
 
   export interface Join<T = any> extends Filter {
     join(table: string, query?: Driver.JoinQuery<T>, as?: string): this;
+
+    whereIn(field: string, embeddedField: string): this;
+    whereIn(field: string, values: any[]): this;
+
+    whereNotIn(field: string, embeddedField: string): this;
+    whereNotIn(field: string, values: any[]): this;
   }
 
   export type JoinQuery<T = any> = (query: Join<T>) => Join<T>;
