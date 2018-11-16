@@ -160,11 +160,9 @@ class Model<T extends object = {}> extends Base<T>
       jsonSchema.required.push(this.CREATED_AT);
     }
 
-    if (this.softDelete) {
-      jsonSchema.properties[this.DELETED_AT] = {
-        type: "string",
-      };
-    }
+    if (this.softDelete) jsonSchema.properties[this.DELETED_AT] = {
+      type: "string",
+    };
 
     for (const key of Object.getOwnPropertyNames(this.prototype)) {
       if (key === "constructor") continue;
