@@ -19,8 +19,8 @@ Model.connections({
     }
 })
 
-const User = require("./User");
 const Bill = require("./Bill");
+const User = require("./User");
 
 const end = time();
 

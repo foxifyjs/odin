@@ -4,6 +4,9 @@ import QueryBuilder from "./base/QueryBuilder";
 import Relational from "./base/Relational";
 import connections, { getConnection } from "./connections";
 import * as DB from "./DB";
+import Relation from "./drivers/Relation/Base";
+import HasOne from "./drivers/Relation/HasOne";
+import MorphOne from "./drivers/Relation/MorphOne";
 import events from "./events";
 import GraphQL from "./GraphQL";
 import GraphQLInstance from "./GraphQL/Model";
@@ -83,11 +86,17 @@ class Model<T extends object = {}> extends Base<T>
   }
 
   public static toJsonSchema() {
-    const jsonSchemaGenerator = (schema: Odin.Schema) => {
-      const value: { [key: string]: any } = {};
+    const hidden = this.hidden;
+
+    const jsonSchemaGenerator = (schema: Odin.Schema, ancestors: string[] = []) => {
+      const properties: { [key: string]: any } = {};
       const required: string[] = [];
 
       for (const key in schema) {
+        const hide = ancestors.concat([key]).join(".");
+
+        if (utils.array.contains(hidden, hide)) continue;
+
         const type = schema[key];
 
         if (type instanceof TypeAny) {
@@ -100,11 +109,11 @@ class Model<T extends object = {}> extends Base<T>
             || type instanceof TypeDate
           ) schemaType = "string";
 
-          value[key] = {
+          properties[key] = {
             type: schemaType,
           };
 
-          if (type instanceof TypeArray) value[key].items = {
+          if (type instanceof TypeArray) properties[key].items = {
             type: (type.ofType as any)._type.toLowerCase(),
           };
 
@@ -115,25 +124,50 @@ class Model<T extends object = {}> extends Base<T>
 
         // Object
 
-        const generated = jsonSchemaGenerator(type);
+        const generated = jsonSchemaGenerator(type, ancestors.concat([key]));
 
-        if (utils.object.size(generated) === 1) continue;
+        if (utils.object.size(generated.properties) === 0) {
+          properties[key] = {
+            type: "object",
+          };
 
-        value[key] = {
-          type: "object",
-          properties: generated,
-        };
+          continue;
+        }
+
+        properties[key] = generated;
 
         if (generated.required.length) required.push(key);
       }
 
       return {
-        ...value,
+        properties,
         required,
+        type: "object",
       };
     };
 
-    return jsonSchemaGenerator(this.schema);
+    const jsonSchema = jsonSchemaGenerator(this.schema);
+
+    for (const key of Object.getOwnPropertyNames(this.prototype)) {
+      if (key === "constructor") continue;
+
+      const proto = this.prototype[key]();
+      if (proto instanceof Relation) {
+        if (proto instanceof HasOne || proto instanceof MorphOne) {
+          jsonSchema.properties[key] = {
+            type: "object",
+          };
+
+          continue;
+        }
+
+        jsonSchema.properties[key] = {
+          type: "array",
+        };
+      }
+    }
+
+    return jsonSchema;
   }
 
   public static validate<T = object>(document: T, updating: boolean = false) {
@@ -258,8 +292,10 @@ class Model<T extends object = {}> extends Base<T>
   }
 
   public toJSON() {
+    const hidden = this.constructor.hidden;
+
     return utils.object.mapValues(this.attributes, (value, attr) => {
-      if (utils.array.contains(this.constructor.hidden, attr)) return undefined;
+      if (utils.array.contains(hidden, attr)) return undefined;
 
       const getter = (this as any)[utils.getGetterName(attr)];
 

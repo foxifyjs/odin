@@ -15,6 +15,8 @@ User.schema = {
     email: User.Types.String.email.required,
 };
 
+User.hidden = ["email"]
+
 Model.register(User);
 
 module.exports = User;
