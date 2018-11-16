@@ -113,9 +113,18 @@ class Model<T extends object = {}> extends Base<T>
             type: schemaType,
           };
 
-          if (type instanceof TypeArray) properties[key].items = {
-            type: (type.ofType as any)._type.toLowerCase(),
-          };
+          if (type instanceof TypeArray) {
+            let ofSchemaType: string = (type.ofType as any)._type.toLowerCase();
+
+            if (
+              type.ofType instanceof TypeObjectId
+              || type.ofType instanceof TypeDate
+            ) ofSchemaType = "string";
+
+            properties[key].items = {
+              type: ofSchemaType,
+            };
+          }
 
           if ((type as any)._required) required.push(key);
 
