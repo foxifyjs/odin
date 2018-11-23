@@ -1,7 +1,8 @@
-import Query from "../../../base/Query";
-import { MorphMany as Base } from "../../Relation";
+import * as Odin from "..";
+import Query from "../base/Query";
+import Relation from "./MorphBase";
 
-class MorphMany<T extends object = {}> extends Base {
+class MorphMany<T extends Odin = Odin> extends Relation<T> {
   public load(query: Query<T>) {
     const as = this.as;
 

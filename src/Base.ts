@@ -1,20 +1,22 @@
 import * as Odin from ".";
-import { Base as Driver } from "./drivers";
+import * as DB from "./DB";
 
 const MODELS: { [name: string]: typeof Odin | undefined } = {};
 
 interface Base<T extends object = {}> {
-  [key: string]: any;
+  id?: DB.Id;
 
-  id?: Driver.Id;
+  [key: string]: any;
 }
 
 class Base {
+  public static _relations: string[] = [];
+
   protected get _isNew() {
     return !this.attributes.id;
   }
 
-  static get models() {
+  public static get models() {
     return MODELS;
   }
 
@@ -26,6 +28,10 @@ class Base {
 
       MODELS[model.name] = model;
     });
+  }
+
+  public static relation = (target: any, relation: string) => {
+    target.constructor._relations = target.constructor._relations.concat([relation]);
   }
 }
 

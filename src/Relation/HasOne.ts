@@ -1,22 +1,35 @@
-import * as Model from "../../index";
-import * as utils from "../../utils";
-import Driver from "../Driver";
-import Relation from "../Relation/Base";
+import * as Odin from "..";
+import Query from "../base/Query";
+import * as DB from "../DB";
+import { makeTableId } from "../utils";
+import Relation from "./Base";
 
-abstract class HasOne<T extends object = {}> extends Relation<T, "HasOne"> {
+class HasOne<T extends Odin = Odin> extends Relation<T, "HasOne"> {
   constructor(
-    model: Model,
-    relation: typeof Model,
-    localKey: string = utils.makeTableId(relation.toString()),
+    model: Odin,
+    relation: typeof Odin,
+    localKey: string = makeTableId(relation.toString()),
     foreignKey: string = "id",
     caller: (...args: any[]) => any
   ) {
     super(model, relation, localKey, foreignKey, caller);
   }
 
+  public load(query: Query<T>) {
+    const as = this.as;
+
+    return query.join(
+      this.relation,
+      q => q.where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`),
+      as
+    ).pipeline({
+      $unwind: { path: `$${as}`, preserveNullAndEmptyArrays: true },
+    });
+  }
+
   public insert(items: T[]): Promise<undefined>;
-  public insert(items: T[], callback: Driver.Callback<undefined>): void;
-  public async insert(items: T[], callback?: Driver.Callback<undefined>) {
+  public insert(items: T[], callback: DB.Callback<undefined>): void;
+  public async insert(items: T[], callback?: DB.Callback<undefined>) {
     const error = new TypeError("'hasOne' relation can't insert multiple items");
 
     if (callback)
@@ -25,9 +38,9 @@ abstract class HasOne<T extends object = {}> extends Relation<T, "HasOne"> {
     throw error;
   }
 
-  public create(item: T): Promise<Model<T>>;
-  public create(item: T, callback: Driver.Callback<Model<T>>): void;
-  public async create(item: T, callback?: Driver.Callback<Model<T>>) {
+  public create(item: T["schema"]): Promise<T>;
+  public create(item: T["schema"], callback: DB.Callback<T>): void;
+  public async create(item: T["schema"], callback?: DB.Callback<T>) {
     const error = new TypeError(`This item already has one ${this.as}`);
 
     if (callback)
@@ -45,9 +58,9 @@ abstract class HasOne<T extends object = {}> extends Relation<T, "HasOne"> {
     return await super.create(item);
   }
 
-  public save(model: Model<T>): Promise<Model<T>>;
-  public save(model: Model<T>, callback: Driver.Callback<Model<T>>): void;
-  public async save(item: Model<T>, callback?: Driver.Callback<Model<T>>) {
+  public save(model: T): Promise<T>;
+  public save(model: T, callback: DB.Callback<T>): void;
+  public async save(item: T, callback?: DB.Callback<T>) {
     const error = new TypeError(`This item already has one ${this.as}`);
     const id = item.getAttribute("id");
 

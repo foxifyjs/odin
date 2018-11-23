@@ -59,48 +59,41 @@ User.schema = {
 
 ## Features
 
-1. Cross DB
-2. Written in `ES6`
-3. `TypeScript` ready
-4. `Active Record` pattern
-5. `Schema` validation
-6. `GraphQL Schema` generator (based on model schema)
+1. Written in `ES6`
+2. `TypeScript` ready
+3. `Active Record` pattern
+4. `Schema` validation
+5. `GraphQL Schema` generator (based on model schema)
+6. `JSON Schema` generator (based on model schema)
 
 ## TODO (RoadMap to version 1.0.0)
 
 - [x] `Schema` validation
-- [ ] Drivers
-  - [x] `MongoDB`
-  - [ ] `MySQL`
-  - [ ] `MariaDB`
-  - [ ] `PostgreSQL`
-  - [ ] `SQLite`
-  - [ ] `Redis`
-  - [ ] `Memory`
-- [ ] Model hooks
-  - [x] `created`
-  - [ ] `updated`
-  - [ ] `deleted`
-  - [ ] `restored`
-- [ ] Relationships
-  - [x] `embedMany`
-  - [x] `hasMany`
-  - [x] `hasOne`
-  - [ ] `hasManyThrough`
-  - [ ] `hasOneThrough`
-  - [ ] `Polymorphic`
-    - [x] `morphMany`
-    - [x] `morphOne`
-    - [ ] `morphTo`
-    - [ ] `morphManyThrough`
-    - [ ] `morphOneThrough`
-    - [ ] `morphToThrough`
-  - [x] CRUD operations
-    - [x] Create operation
-    - [x] Read operation
-    - [x] Update operation
-    - [x] Delete operation
-- [x] `GraphQL` support
+- [ ] Model
+  - [ ] Hooks
+    - [x] `created`
+    - [ ] `updated`
+    - [ ] `deleted`
+    - [ ] `restored`
+  - [ ] Relationships
+    - [x] `embedMany`
+    - [x] `hasMany`
+    - [x] `hasOne`
+    - [ ] `hasManyThrough`
+    - [ ] `hasOneThrough`
+    - [ ] `Polymorphic`
+      - [x] `morphMany`
+      - [x] `morphOne`
+      - [ ] `morphTo`
+      - [ ] `morphManyThrough`
+      - [ ] `morphOneThrough`
+      - [ ] `morphToThrough`
+    - [x] CRUD operations
+      - [x] Create operation
+      - [x] Read operation
+      - [x] Update operation
+      - [x] Delete operation
+  - [x] `GraphQL` support
 - [ ] Migrations
 - [ ] Seeding
 - [ ] Tests

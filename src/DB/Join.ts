@@ -1,6 +1,5 @@
-import { array, makeTableId, object, string } from "../../../utils";
-import Driver from "../../Driver";
-import { OPERATORS, prepareKey } from "../utils";
+import * as DB from ".";
+import { array, makeTableId, object, OPERATORS, prepareKey, string } from "../utils";
 import Filter from "./Filter";
 
 class Join<T = any> extends Filter {
@@ -38,13 +37,11 @@ class Join<T = any> extends Filter {
   protected _resetFilters() {
     const FILTER = this.filters;
 
-    if (object.size(FILTER) > 0) {
-      this._pipeline.push({ $match: FILTER });
+    if (object.size(FILTER) > 0) this._pipeline.push({ $match: FILTER });
 
-      this._filters = {
-        $and: [],
-      };
-    }
+    this._filters = {
+      $and: [],
+    };
 
     return this;
   }
@@ -101,7 +98,7 @@ class Join<T = any> extends Filter {
 
   public join(
     table: string,
-    query: Driver.JoinQuery<T> = q => q.where(makeTableId(table), `${table}.id`),
+    query: DB.JoinQuery<T> = q => q.where(makeTableId(table), `${table}.id`),
     as: string = table
   ) {
     const join: Join = query(new Join(this._table, table, as)) as any;

@@ -1,24 +1,24 @@
 import * as async from "async";
-import Query from "../../base/Query";
-import * as Model from "../../index";
-import * as utils from "../../utils";
-import Driver from "../Driver";
+import * as Odin from "..";
+import Query from "../base/Query";
+import * as DB from "../DB";
+import { getCallerFunctionName } from "../utils";
 
-abstract class Relation<T extends object = {}, A = undefined> {
+abstract class Relation<T extends Odin = Odin, A = undefined> {
   public readonly as: string;
 
   constructor(
-    public readonly model: Model,
-    public readonly relation: typeof Model,
+    public readonly model: Odin,
+    public readonly relation: typeof Odin,
     public readonly localKey: string,
     public readonly foreignKey: string,
     caller: (...args: any[]) => any
   ) {
-    this.as = utils.getCallerFunctionName(caller);
+    this.as = getCallerFunctionName(caller);
   }
 
   protected _query(relations?: string[]): Query<T> {
-    let query: typeof Model | Query<T> = this.relation;
+    let query: typeof Odin | Query<T> = this.relation;
 
     if (relations) query = query.with(...relations);
 
@@ -39,7 +39,7 @@ abstract class Relation<T extends object = {}, A = undefined> {
 
   /*********************************** Joins **********************************/
 
-  public join(table: string | typeof Model, query?: Driver.JoinQuery<T>, as?: string): Query<T>;
+  public join(table: string | typeof Odin, query?: DB.JoinQuery<T>, as?: string): Query<T>;
   public join() {
     const query = this._query();
 
@@ -49,7 +49,7 @@ abstract class Relation<T extends object = {}, A = undefined> {
   /******************************* Where Clauses ******************************/
 
   public where(field: string, value: any): Query<T>;
-  public where(field: string, operator: Driver.Operator, value: any): Query<T>;
+  public where(field: string, operator: DB.Operator, value: any): Query<T>;
   public where() {
     const query = this._query();
 
@@ -100,7 +100,7 @@ abstract class Relation<T extends object = {}, A = undefined> {
 
   /******************** Ordering, Grouping, Limit & Offset ********************/
 
-  public orderBy(field: string, order?: Driver.Order): Query<T>;
+  public orderBy(field: string, order?: DB.Order): Query<T>;
   public orderBy() {
     const query = this._query();
 
@@ -134,7 +134,7 @@ abstract class Relation<T extends object = {}, A = undefined> {
   /*********************************** Read ***********************************/
 
   public exists(): Promise<boolean>;
-  public exists(callback: Driver.Callback<boolean>): void;
+  public exists(callback: DB.Callback<boolean>): void;
   public exists() {
     const query = this._query();
 
@@ -142,23 +142,23 @@ abstract class Relation<T extends object = {}, A = undefined> {
   }
 
   public count(): Promise<number>;
-  public count(callback: Driver.Callback<number>): void;
+  public count(callback: DB.Callback<number>): void;
   public count() {
     const query = this._query();
 
     return query.count.apply(query, arguments);
   }
 
-  public get(): Promise<Array<Model<T>>>;
-  public get(callback: Driver.Callback<Array<Model<T>>>): void;
+  public get(): Promise<T[]>;
+  public get(callback: DB.Callback<T[]>): void;
   public get() {
     const query = this._query();
 
     return query.get.apply(query, arguments);
   }
 
-  public first(): Promise<Model<T>>;
-  public first(callback: Driver.Callback<Model<T>>): void;
+  public first(): Promise<T>;
+  public first(callback: DB.Callback<T>): void;
   public first() {
     const query = this._query();
 
@@ -166,7 +166,7 @@ abstract class Relation<T extends object = {}, A = undefined> {
   }
 
   public value(field: string): Promise<any>;
-  public value(field: string, callback: Driver.Callback<any>): void;
+  public value(field: string, callback: DB.Callback<any>): void;
   public value() {
     const query = this._query();
 
@@ -174,13 +174,13 @@ abstract class Relation<T extends object = {}, A = undefined> {
   }
 
   public pluck(field: string): Promise<any>;
-  public pluck(field: string, callback: Driver.Callback<any>): void;
+  public pluck(field: string, callback: DB.Callback<any>): void;
   public pluck() {
     return this.value.apply(this, arguments);
   }
 
   public max(field: string): Promise<any>;
-  public max(field: string, callback: Driver.Callback<any>): void;
+  public max(field: string, callback: DB.Callback<any>): void;
   public max() {
     const query = this._query();
 
@@ -188,7 +188,7 @@ abstract class Relation<T extends object = {}, A = undefined> {
   }
 
   public min(field: string): Promise<any>;
-  public min(field: string, callback: Driver.Callback<any>): void;
+  public min(field: string, callback: DB.Callback<any>): void;
   public min() {
     const query = this._query();
 
@@ -198,8 +198,8 @@ abstract class Relation<T extends object = {}, A = undefined> {
   /********************************** Inserts *********************************/
 
   public insert(items: T[]): Promise<A extends undefined ? number : any>;
-  public insert(items: T[], callback: Driver.Callback<A extends undefined ? number : any>): void;
-  public async insert(items: T[], callback?: Driver.Callback<A extends undefined ? number : any>) {
+  public insert(items: T[], callback: DB.Callback<A extends undefined ? number : any>): void;
+  public async insert(items: T[], callback?: DB.Callback<A extends undefined ? number : any>) {
     const foreignKey = this.foreignKey;
     const localAttribute = this.model.getAttribute(this.localKey);
 
@@ -233,9 +233,9 @@ abstract class Relation<T extends object = {}, A = undefined> {
     return await this._query().insert(items);
   }
 
-  public create(item: T): Promise<Model<T>>;
-  public create(item: T, callback: Driver.Callback<Model<T>>): void;
-  public async create(item: T, callback?: Driver.Callback<Model<T>>) {
+  public create(item: T): Promise<T>;
+  public create(item: T, callback: DB.Callback<T>): void;
+  public async create(item: T, callback?: DB.Callback<T>) {
     item = {
       ...(item as any),
       [this.foreignKey]: this.model.getAttribute(this.localKey),
@@ -251,21 +251,21 @@ abstract class Relation<T extends object = {}, A = undefined> {
     return await this.where("id", await this._query().insertGetId(item)).first();
   }
 
-  public save(model: Model<T>): Promise<Model<T>>;
-  public save(model: Model<T>, callback: Driver.Callback<Model<T>>): void;
-  public save(model: Model<T>, callback?: Driver.Callback<Model<T>>) {
+  public save(model: T): Promise<T>;
+  public save(model: T, callback: DB.Callback<T>): void;
+  public save(model: T, callback?: DB.Callback<T>) {
     model.setAttribute(
       this.foreignKey,
       this.model.getAttribute(this.localKey)
     );
 
-    return model.save(callback as any) as Promise<Model<T>> | void;
+    return model.save(callback as any) as Promise<T> | void;
   }
 
   /********************************** Updates *********************************/
 
   public update(update: T): Promise<number>;
-  public update(update: T, callback: Driver.Callback<number>): void;
+  public update(update: T, callback: DB.Callback<number>): void;
   public update() {
     const query = this._query();
 
@@ -273,8 +273,8 @@ abstract class Relation<T extends object = {}, A = undefined> {
   }
 
   public increment(field: string, count?: number): Promise<number>;
-  public increment(field: string, callback: Driver.Callback<number>): void;
-  public increment(field: string, count: number, callback: Driver.Callback<number>): void;
+  public increment(field: string, callback: DB.Callback<number>): void;
+  public increment(field: string, count: number, callback: DB.Callback<number>): void;
   public increment() {
     const query = this._query();
 
@@ -282,8 +282,8 @@ abstract class Relation<T extends object = {}, A = undefined> {
   }
 
   public decrement(field: string, count?: number): Promise<number>;
-  public decrement(field: string, callback: Driver.Callback<number>): void;
-  public decrement(field: string, count: number, callback: Driver.Callback<number>): void;
+  public decrement(field: string, callback: DB.Callback<number>): void;
+  public decrement(field: string, count: number, callback: DB.Callback<number>): void;
   public decrement() {
     const query = this._query();
 
@@ -293,7 +293,7 @@ abstract class Relation<T extends object = {}, A = undefined> {
   /********************************** Deletes *********************************/
 
   public delete(): Promise<number>;
-  public delete(callback: Driver.Callback<number>): void;
+  public delete(callback: DB.Callback<number>): void;
   public delete() {
     const query = this._query();
 

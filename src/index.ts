@@ -1,8 +1,7 @@
 import QueryBuilder from "./base/QueryBuilder";
 import Relational from "./base/Relational";
-import connections from "./connections";
+import Connect from "./Connect";
 import * as DB from "./DB";
-import { Base as Driver } from "./drivers";
 import GraphQL from "./GraphQL";
 import GraphQLInstance from "./GraphQL/Model";
 import Model from "./Model";
@@ -26,17 +25,17 @@ module Odin {
   }
 
   export interface Document {
-    id?: Driver.Id;
+    id?: DB.Id;
 
     [key: string]: any;
   }
 
-  export type Event = "created";
+  export type Event = "create";
 
   export type DB = typeof DB;
   export type GraphQL = typeof GraphQL;
   export type Types = typeof Types;
-  export type connections = typeof connections;
+  export type Connect = typeof Connect;
 }
 
 interface Odin<T extends object = {}> extends Model<T> {

@@ -1,7 +1,6 @@
 import * as mongodb from "mongodb";
-import { function as func } from "../../../utils";
-import Driver from "../../Driver";
-import { OPERATORS, prepareKey, prepareValue } from "../utils";
+import * as DB from ".";
+import { function as func, OPERATORS, prepareKey, prepareValue } from "../utils";
 
 namespace Filter {
   export interface Filters<T = any> {
@@ -71,10 +70,10 @@ class Filter {
 
   /******************************* Where Clauses ******************************/
 
-  public where(query: Driver.FilterQuery): this;
+  public where(query: DB.FilterQuery): this;
   public where(field: string, value: any): this;
-  public where(field: string, operator: Driver.Operator, value: any): this;
-  public where(field: string | Driver.FilterQuery, operator?: Driver.Operator | any, value?: any) {
+  public where(field: string, operator: DB.Operator, value: any): this;
+  public where(field: string | DB.FilterQuery, operator?: DB.Operator | any, value?: any) {
     if (func.isFunction(field)) {
       const filter: Filter = field(new Filter()) as any;
 
@@ -89,10 +88,10 @@ class Filter {
     return this._where(field, OPERATORS[operator], value);
   }
 
-  public orWhere(query: Driver.FilterQuery): this;
+  public orWhere(query: DB.FilterQuery): this;
   public orWhere(field: string, value: any): this;
-  public orWhere(field: string, operator: Driver.Operator, value: any): this;
-  public orWhere(field: string | Driver.FilterQuery, operator?: Driver.Operator | any, value?: any) {
+  public orWhere(field: string, operator: DB.Operator, value: any): this;
+  public orWhere(field: string | DB.FilterQuery, operator?: DB.Operator | any, value?: any) {
     if (func.isFunction(field)) {
       const filter: Filter = field(new Filter()) as any;
 

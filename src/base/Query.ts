@@ -1,26 +1,30 @@
 import * as async from "async";
-import * as Model from "..";
+import * as mongodb from "mongodb";
+import * as Odin from "..";
 import * as DB from "../DB";
-import { Base as Driver } from "../drivers";
-import Relation from "../drivers/Relation/Base";
 import events from "../events";
-import * as utils from "../utils";
+import Relation from "../Relation/Base";
+import { string } from "../utils";
 
-class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "query"> {
-  protected readonly _model: typeof Model;
+class Query<T extends object = {}> extends DB<T> {
+  protected readonly _model: typeof Odin;
   protected _withTrashed = false;
 
-  constructor(model: typeof Model, table: string, relations: Relation[] = []) {
+  constructor(model: typeof Odin, table: string, relations: Relation[] = []) {
     super(model.connection);
 
-    this.table(table);
+    this.collection(table);
 
     this._model = model;
 
-    relations.forEach(relation => relation.load(this));
+    relations.forEach(relation => relation.load(this as any));
   }
 
-  private _apply_trashed_options() {
+  protected _emit(event: string, ops: any[]) {
+    ops.forEach(item => events.emit(event, new this._model(this._prepareToRead(item))));
+  }
+
+  protected _apply_trashed_options() {
     if (this._model.softDelete && !this._withTrashed)
       this.whereNull(this._model.DELETED_AT);
 
@@ -37,8 +41,8 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
 
   /*********************************** Joins **********************************/
 
-  public join(table: string | typeof Model, query?: Driver.JoinQuery<T>, as?: string) {
-    if (!utils.string.isString(table)) {
+  public join(table: string | typeof Odin, query?: DB.JoinQuery<T>, as?: string) {
+    if (!string.isString(table)) {
       const model = table;
       table = model.toString();
 
@@ -60,7 +64,7 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
   /*********************************** Read ***********************************/
 
   public exists(): Promise<boolean>;
-  public exists(callback: Driver.Callback<boolean>): void;
+  public exists(callback: DB.Callback<boolean>): void;
   public exists() {
     this._apply_trashed_options();
 
@@ -68,16 +72,16 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
   }
 
   public count(): Promise<number>;
-  public count(callback: Driver.Callback<number>): void;
+  public count(callback: DB.Callback<number>): void;
   public count() {
     this._apply_trashed_options();
 
     return super.count.apply(this, arguments);
   }
 
-  public get(): Promise<Array<Model<T>>>;
-  public get(callback: Driver.Callback<Array<Model<T>>>): void;
-  public async get(callback?: Driver.Callback<Array<Model<T>>>) {
+  public get(): Promise<T[]>;
+  public get(callback: DB.Callback<T[]>): void;
+  public async get(callback?: DB.Callback<T[]>) {
     const iterator = (item: any, cb: any) => cb(undefined, new this._model(item));
 
     this._apply_trashed_options();
@@ -93,7 +97,7 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
         );
       });
 
-    let items: Array<Model<T>> = [];
+    let items: T[] = [];
 
     async.map(
       await super.get() as any[],
@@ -108,23 +112,19 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
     return items;
   }
 
-  public first(): Promise<Model<T>>;
-  public first(callback: Driver.Callback<Model<T>>): void;
-  public async first(callback?: Driver.Callback<Model<T>>) {
-    const model = this._model;
+  public first(): Promise<T>;
+  public first(callback: DB.Callback<T>): void;
+  public async first(callback?: DB.Callback<T>) {
+    this.limit(1);
 
-    this._apply_trashed_options();
+    if (callback) return this.get((err, res) =>
+      (callback as DB.Callback<T>)(err, res && res[0]));
 
-    if (callback)
-      return super.first((err, res) => callback(err, res && new model(res)));
-
-    const item = await super.first();
-
-    return item && new model(item);
+    return (await this.get())[0];
   }
 
   public value(field: string): Promise<any>;
-  public value(field: string, callback: Driver.Callback<any>): void;
+  public value(field: string, callback: DB.Callback<any>): void;
   public value() {
     this._apply_trashed_options();
 
@@ -132,7 +132,7 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
   }
 
   public pluck(field: string): Promise<any>;
-  public pluck(field: string, callback: Driver.Callback<any>): void;
+  public pluck(field: string, callback: DB.Callback<any>): void;
   public pluck() {
     this._apply_trashed_options();
 
@@ -140,7 +140,7 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
   }
 
   public max(field: string): Promise<any>;
-  public max(field: string, callback: Driver.Callback<any>): void;
+  public max(field: string, callback: DB.Callback<any>): void;
   public max() {
     this._apply_trashed_options();
 
@@ -148,7 +148,7 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
   }
 
   public min(field: string): Promise<any>;
-  public min(field: string, callback: Driver.Callback<any>): void;
+  public min(field: string, callback: DB.Callback<any>): void;
   public min() {
     this._apply_trashed_options();
 
@@ -156,7 +156,7 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
   }
 
   public avg(field: string): Promise<any>;
-  public avg(field: string, callback: Driver.Callback<any>): void;
+  public avg(field: string, callback: DB.Callback<any>): void;
   public avg() {
     this._apply_trashed_options();
 
@@ -165,9 +165,53 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
 
   /********************************** Inserts *********************************/
 
+  protected async _insertMany(item: T[], callback?: DB.Callback<mongodb.InsertWriteOpResult>) {
+    const event = `${this._model.name}:create`;
+
+    if (events.listenerCount(event) === 0)
+      return super._insertMany(item, callback as any) as any;
+
+    if (callback)
+      return super._insertMany(item, (err, res) => {
+        if (err) callback(err, res as any);
+
+        this._emit(event, res.ops);
+
+        callback(err, res);
+      });
+
+    const result = await super._insertMany(item);
+
+    this._emit(event, result.ops);
+
+    return result;
+  }
+
+  protected async _insertOne(item: T, callback?: DB.Callback<mongodb.InsertOneWriteOpResult>) {
+    const event = `${this._model.name}:create`;
+
+    if (events.listenerCount(event) === 0)
+      return super._insertOne(item, callback as any) as any;
+
+    if (callback)
+      return super._insertOne(item, (err, res) => {
+        if (err) callback(err, res as any);
+
+        this._emit(event, res.ops);
+
+        callback(err, res);
+      });
+
+    const result = await super._insertOne(item);
+
+    this._emit(event, result.ops);
+
+    return result;
+  }
+
   public insert(items: T[]): Promise<number>;
-  public insert(items: T[], callback: Driver.Callback<number>): void;
-  public insert(items: T[], callback?: Driver.Callback<number>) {
+  public insert(items: T[], callback: DB.Callback<number>): void;
+  public insert(items: T[], callback?: DB.Callback<number>) {
     const model = this._model;
     const error = !Array.isArray(items) &&
       new Error(`Expected 'items' to be an array, '${typeof items}' given`);
@@ -209,49 +253,25 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
     return super.insert(items);
   }
 
-  public insertGetId(item: T): Promise<Driver.Id>;
-  public insertGetId(item: T, callback: Driver.Callback<Driver.Id>): void;
-  public async insertGetId(item: T, callback?: Driver.Callback<Driver.Id>) {
-    const model = this._model;
-
+  public insertGetId(item: T): Promise<DB.Id>;
+  public insertGetId(item: T, callback: DB.Callback<DB.Id>): void;
+  public async insertGetId(item: T, callback?: DB.Callback<DB.Id>) {
     try {
-      item = model.validate<T>(item) as any;
+      item = this._model.validate<T>(item) as any;
     } catch (err) {
       if (callback) return callback(err, undefined as any);
 
       throw err;
     }
 
-    const event = `${model.name}:created`;
-
-    if (events.listenerCount(event) > 0) {
-      if (callback) return super.insertGetId(item, (err, id) => {
-        if (err) return callback(err, id);
-
-        model.find(id, (err, item) => {
-          if (!err) events.emit(event, item);
-        });
-
-        callback(err, id);
-      });
-
-      const id = await super.insertGetId(item);
-
-      model.find(id, (err, item) => {
-        if (!err) events.emit(event, item);
-      });
-
-      return id;
-    }
-
-    return await super.insertGetId.call(this, item, callback);
+    return await super.insertGetId(item, callback as any) as any;
   }
 
   /********************************** Updates *********************************/
 
   public update(update: T): Promise<number>;
-  public update(update: T, callback: Driver.Callback<number>): void;
-  public update(update: T, callback?: Driver.Callback<number>) {
+  public update(update: T, callback: DB.Callback<number>): void;
+  public update(update: T, callback?: DB.Callback<number>) {
     try {
       update = this._model.validate<T>(update, true) as any;
     } catch (err) {
@@ -267,8 +287,8 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
 
   // FIXME: updated_at
   public increment(field: string, count?: number): Promise<number>;
-  public increment(field: string, callback: Driver.Callback<number>): void;
-  public increment(field: string, count: number, callback: Driver.Callback<number>): void;
+  public increment(field: string, callback: DB.Callback<number>): void;
+  public increment(field: string, count: number, callback: DB.Callback<number>): void;
   public increment() {
     this._apply_trashed_options();
 
@@ -277,8 +297,8 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
 
   // FIXME: updated_at
   public decrement(field: string, count?: number): Promise<number>;
-  public decrement(field: string, callback: Driver.Callback<number>): void;
-  public decrement(field: string, count: number, callback: Driver.Callback<number>): void;
+  public decrement(field: string, callback: DB.Callback<number>): void;
+  public decrement(field: string, count: number, callback: DB.Callback<number>): void;
   public decrement() {
     this._apply_trashed_options();
 
@@ -288,8 +308,8 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
   /********************************** Deletes *********************************/
 
   public delete(): Promise<number>;
-  public delete(callback: Driver.Callback<number>): void;
-  public delete(callback?: Driver.Callback<number>) {
+  public delete(callback: DB.Callback<number>): void;
+  public delete(callback?: DB.Callback<number>) {
     this._apply_trashed_options();
 
     if (this._model.softDelete)
@@ -301,8 +321,8 @@ class Query<T extends object = {}, D extends Driver<T> = any> extends DB<T, D, "
   /********************************* Restoring ********************************/
 
   public restore(): Promise<number>;
-  public restore(callback: Driver.Callback<number>): void;
-  public restore(callback?: Driver.Callback<number>) {
+  public restore(callback: DB.Callback<number>): void;
+  public restore(callback?: DB.Callback<number>) {
     return super.update.call(this, { [this._model.DELETED_AT]: null } as any, callback);
   }
 }

@@ -1,5 +1,4 @@
 import * as Odin from "../src";
-import Model from "../src/Model";
 import * as utils from "../src/utils";
 
 declare global {
@@ -31,19 +30,18 @@ const ITEMS = [
   },
 ];
 
-Odin.connections({
+Odin.Connect({
   default: {
-    driver: "MongoDB",
     database: global.__MONGO_DB_NAME__,
     connection: global.__MONGO_CONNECTION__,
   },
 });
 
 beforeAll((done) => {
-  Odin.DB.table(TABLE).insert(ITEMS, (err) => {
+  Odin.DB.collection(TABLE).insert(ITEMS, (err) => {
     if (err) throw err;
 
-    Odin.DB.table(TABLE).get((err, items) => {
+    Odin.DB.collection(TABLE).get((err, items) => {
       if (err) throw err;
 
       ITEMS.length = 0;
@@ -56,10 +54,10 @@ beforeAll((done) => {
 });
 
 afterEach((done) => {
-  Odin.DB.table(TABLE).delete((err) => {
+  Odin.DB.collection(TABLE).delete((err) => {
     if (err) throw err;
 
-    Odin.DB.table(TABLE).insert(ITEMS, (err) => {
+    Odin.DB.collection(TABLE).insert(ITEMS, (err) => {
       if (err) throw err;
 
       done();
@@ -68,7 +66,7 @@ afterEach((done) => {
 });
 
 afterAll((done) => {
-  Odin.DB.table(TABLE).delete((err) => {
+  Odin.DB.collection(TABLE).delete((err) => {
     if (err) throw err;
 
     done();
@@ -77,11 +75,11 @@ afterAll((done) => {
 
 class User extends Odin {
   public static schema = {
-    username: User.Types.String.alphanum.min(3).required,
-    email: User.Types.String.email.required,
+    username: User.Types.string.alphanum.min(3).required,
+    email: User.Types.string.email.required,
     name: {
-      first: User.Types.String.min(3).required,
-      last: User.Types.String.min(3),
+      first: User.Types.string.min(3).required,
+      last: User.Types.string.min(3),
     },
   };
 }
@@ -133,13 +131,14 @@ describe("Testing Model", () => {
   });
 
   test("Model.on 'create'", async () => {
-    expect.assertions(3);
-
-    User.on("created", (result) => {
-      expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(item);
-    });
+    expect.assertions(4);
 
     const item = utils.object.omit(ITEMS[0], ["id"]);
+
+    User.on("create", (result) => {
+      expect(result).toBeInstanceOf(User);
+      expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(item);
+    });
 
     const result = await User.create(item);
 

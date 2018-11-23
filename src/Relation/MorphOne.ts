@@ -1,11 +1,25 @@
-import * as Model from "../../index";
-import Driver from "../Driver";
-import Relation from "../Relation/MorphBase";
+import * as Odin from "..";
+import Query from "../base/Query";
+import * as DB from "../DB";
+import Relation from "./MorphBase";
 
-abstract class MorphOne<T extends object = {}> extends Relation<T, "MorphOne"> {
+class MorphOne<T extends Odin = Odin> extends Relation<T, "MorphOne"> {
+  public load(query: Query<T>) {
+    const as = this.as;
+
+    return query.join(
+      this.relation,
+      q => q.where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
+        .where(`${this.type}_type`, this.model.constructor.name),
+      as
+    ).pipeline({
+      $unwind: { path: `$${as}`, preserveNullAndEmptyArrays: true },
+    });
+  }
+
   public insert(items: T[]): Promise<undefined>;
-  public insert(items: T[], callback: Driver.Callback<undefined>): void;
-  public async insert(items: T[], callback?: Driver.Callback<undefined>) {
+  public insert(items: T[], callback: DB.Callback<undefined>): void;
+  public async insert(items: T[], callback?: DB.Callback<undefined>) {
     const error = new TypeError(`'${this.constructor.name}' relation can't insert multiple items`);
 
     if (callback)
@@ -14,9 +28,9 @@ abstract class MorphOne<T extends object = {}> extends Relation<T, "MorphOne"> {
     throw error;
   }
 
-  public create(item: T): Promise<Model<T>>;
-  public create(item: T, callback: Driver.Callback<Model<T>>): void;
-  public async create(item: T, callback?: Driver.Callback<Model<T>>) {
+  public create(item: T): Promise<T>;
+  public create(item: T, callback: DB.Callback<T>): void;
+  public async create(item: T, callback?: DB.Callback<T>) {
     const error = new TypeError(`This item already has one ${this.as}`);
 
     if (callback)
@@ -34,9 +48,9 @@ abstract class MorphOne<T extends object = {}> extends Relation<T, "MorphOne"> {
     return await super.create(item);
   }
 
-  public save(model: Model<T>): Promise<Model<T>>;
-  public save(model: Model<T>, callback: Driver.Callback<Model<T>>): void;
-  public async save(item: Model<T>, callback?: Driver.Callback<Model<T>>) {
+  public save(model: T): Promise<T>;
+  public save(model: T, callback: DB.Callback<T>): void;
+  public async save(item: T, callback?: DB.Callback<T>) {
     const error = new TypeError(`This item already has one ${this.as}`);
     const id = item.getAttribute("id");
 

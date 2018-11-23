@@ -1,4 +1,3 @@
-import { Driver } from "../connections";
 import TypeArray from "./Array";
 import TypeBoolean from "./Boolean";
 import TypeDate from "./Date";
@@ -10,33 +9,31 @@ import TypeString from "./String";
 declare module Type { }
 
 class Type {
-  constructor(protected _driver: Driver) { }
-
-  get Array() {
+  public static get array() {
     return new TypeArray();
   }
 
-  get Boolean() {
+  public static get boolean() {
     return new TypeBoolean();
   }
 
-  get Date() {
+  public static get date() {
     return new TypeDate();
   }
 
-  get Number() {
+  public static get number() {
     return new TypeNumber();
   }
 
-  get Object() {
+  public static get object() {
     return new TypeObject();
   }
 
-  get Id() {
+  public static get id() {
     return new TypeObjectId();
   }
 
-  get String() {
+  public static get string() {
     return new TypeString();
   }
 }

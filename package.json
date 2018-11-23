@@ -36,6 +36,7 @@
     "mongodb",
     "relation",
     "graphql",
+    "json",
     "schema",
     "validation"
   ],
@@ -50,7 +51,6 @@
     "graphql": "^0.13.2",
     "graphql-iso-date": "^3.6.1",
     "mongodb": "^3.1.9",
-    "mysql": "^2.16.0",
     "prototyped.js": "^0.20.2",
     "verifications": "^0.3.0"
   },
@@ -58,7 +58,6 @@
     "@types/async": "^2.0.50",
     "@types/deasync": "^0.1.0",
     "@types/jest": "^23.3.9",
-    "@types/mysql": "^2.15.5",
     "codecov": "^3.1.0",
     "dotenv": "^6.1.0",
     "fs-readdir-recursive": "^1.1.0",

@@ -2,31 +2,32 @@ import * as Odin from ".";
 import Base from "./Base";
 import QueryBuilder from "./base/QueryBuilder";
 import Relational from "./base/Relational";
-import connections, { getConnection } from "./connections";
+import Connect from "./Connect";
 import * as DB from "./DB";
-import Relation from "./drivers/Relation/Base";
-import HasOne from "./drivers/Relation/HasOne";
-import MorphOne from "./drivers/Relation/MorphOne";
 import events from "./events";
 import GraphQL from "./GraphQL";
 import GraphQLInstance from "./GraphQL/Model";
+import Relation from "./Relation/Base";
+import HasOne from "./Relation/HasOne";
+import MorphOne from "./Relation/MorphOne";
 import * as Types from "./types";
 import TypeAny from "./types/Any";
 import TypeArray from "./types/Array";
 import TypeDate from "./types/Date";
 import TypeObjectId from "./types/ObjectId";
-import * as utils from "./utils";
+import { array, define, getGetterName, getSetterName, makeTableName, object, string } from "./utils";
 
-const EVENTS = ["created"];
+const EVENTS: Odin.Event[] = ["create"];
 
 interface Model<T extends object = {}> extends QueryBuilder<T>, Relational, GraphQLInstance<T> {
 }
 
 class Model<T extends object = {}> extends Base<T>
   implements QueryBuilder<T>, Relational, GraphQLInstance {
+  public static Connect = Connect;
   public static DB = DB;
   public static GraphQL = GraphQL;
-  public static connections = connections;
+  public static Types = Types;
 
   public static connection: Odin.Connection = "default";
 
@@ -45,36 +46,28 @@ class Model<T extends object = {}> extends Base<T>
   public static hidden: string[] = [];
 
   private static get _table() {
-    return this.table || utils.makeTableName(this.name);
+    return this.table || makeTableName(this.name);
   }
 
   private static get _schema() {
     const schema: Odin.Schema = {
-      id: this.Types.Id,
+      id: this.Types.id,
       ...this.schema,
     };
 
     if (this.timestamps) {
-      schema[this.CREATED_AT] = this.Types.Date.default(() => new Date());
-      schema[this.UPDATED_AT] = this.Types.Date;
+      schema[this.CREATED_AT] = this.Types.date.default(() => new Date());
+      schema[this.UPDATED_AT] = this.Types.date;
     }
 
     if (this.softDelete)
-      schema[this.DELETED_AT] = this.Types.Date;
+      schema[this.DELETED_AT] = this.Types.date;
 
     return schema;
   }
 
-  public static get Types() {
-    return new Types(this.driver);
-  }
-
-  public static get driver() {
-    return getConnection(this.connection).driver;
-  }
-
   public static on<T extends object>(event: Odin.Event, listener: (item: Odin<T>) => void) {
-    if (!utils.array.contains(EVENTS, event)) throw new TypeError(`Unexpected event "${event}"`);
+    if (!array.contains(EVENTS, event)) throw new TypeError(`Unexpected event "${event}"`);
 
     events.on(`${this.name}:${event}`, listener);
 
@@ -95,7 +88,7 @@ class Model<T extends object = {}> extends Base<T>
       for (const key in schema) {
         const hide = ancestors.concat([key]).join(".");
 
-        if (utils.array.contains(hidden, hide)) continue;
+        if (array.contains(hidden, hide)) continue;
 
         const type = schema[key];
 
@@ -135,7 +128,7 @@ class Model<T extends object = {}> extends Base<T>
 
         const generated = jsonSchemaGenerator(type, ancestors.concat([key]));
 
-        if (utils.object.size(generated.properties) === 0) {
+        if (object.size(generated.properties) === 0) {
           properties[key] = {
             type: "object",
           };
@@ -224,11 +217,11 @@ class Model<T extends object = {}> extends Base<T>
             for (const errorKey in validation.errors)
               errors[`${key}.${errorKey}`] = validation.errors[errorKey];
 
-          if (utils.object.size(validation.value) > 0) value[key] = validation.value;
+          if (object.size(validation.value) > 0) value[key] = validation.value;
         }
       }
 
-      if (utils.object.size(errors) === 0) errors = null;
+      if (object.size(errors) === 0) errors = null;
 
       return {
         errors,
@@ -239,12 +232,12 @@ class Model<T extends object = {}> extends Base<T>
     const validation = validator(this._schema, document);
 
     if (validation.errors && updating) {
-      utils.object.forEach(validation.errors, (errors, key) => {
+      object.forEach(validation.errors, (errors, key) => {
         if (errors.length === 1 && errors[0] === "Must be provided")
           delete (validation.errors as any)[key];
       });
 
-      if (utils.object.size(validation.errors) === 0) validation.errors = null;
+      if (object.size(validation.errors) === 0) validation.errors = null;
     }
 
     if (validation.errors) {
@@ -263,9 +256,9 @@ class Model<T extends object = {}> extends Base<T>
     return value;
   }
 
-  public attributes: Odin.Document = {};
+  public attributes: Odin.Document & Partial<T> = {};
 
-  constructor(document: Odin.Document = {}) {
+  constructor(document: Odin.Document & Partial<T> = {}) {
     super();
 
     const schema = this.constructor._schema;
@@ -273,18 +266,18 @@ class Model<T extends object = {}> extends Base<T>
     const setters: string[] = [];
 
     for (const attr in schema) {
-      const getterName = utils.getGetterName(attr);
+      const getterName = getGetterName(attr);
       const getter = (this as any)[getterName] || ((origin: any) => origin);
-      utils.define(this, "get", attr, () => getter(this.attributes[attr]));
+      define(this, "get", attr, () => getter(this.attributes[attr]));
       getters.push(getterName);
 
-      const setterName = utils.getSetterName(attr);
+      const setterName = getSetterName(attr);
       const setter = (this as any)[setterName] || ((origin: any) => origin);
-      utils.define(this, "set", attr, value => this.attributes[attr] = setter(value));
+      define(this, "set", attr, value => this.attributes[attr] = setter(value));
       setters.push(setterName);
     }
 
-    utils.object.forEach(document, (value, key) => {
+    object.forEach(document, (value, key) => {
       if (setters.indexOf(key as string) === -1) this.attributes[key] = value;
       else (this as any)[key] = value;
     });
@@ -297,7 +290,7 @@ class Model<T extends object = {}> extends Base<T>
 
       if (!regex) return;
 
-      utils.define(this, "get", utils.string.snakeCase(regex[1]), (this as any)[key]);
+      define(this, "get", string.snakeCase(regex[1]), (this as any)[key]);
     });
   }
 
@@ -307,7 +300,7 @@ class Model<T extends object = {}> extends Base<T>
    * @returns {*}
    */
   public getAttribute(attribute: string) {
-    return utils.object.get(this.attributes, attribute);
+    return object.get(this.attributes, attribute);
   }
 
   /**
@@ -316,16 +309,16 @@ class Model<T extends object = {}> extends Base<T>
    * @param {*} value
    */
   public setAttribute(attribute: string, value: any) {
-    utils.object.set(this.attributes, attribute, value);
+    object.set(this.attributes, attribute, value);
   }
 
   public toJSON() {
     const hidden = this.constructor.hidden;
 
-    return utils.object.mapValues(this.attributes, (value, attr) => {
-      if (utils.array.contains(hidden, attr)) return undefined;
+    return object.mapValues(this.attributes, (value, attr) => {
+      if (array.contains(hidden, attr)) return undefined;
 
-      const getter = (this as any)[utils.getGetterName(attr)];
+      const getter = (this as any)[getGetterName(attr)];
 
       return (getter ? getter(value) : value);
     });

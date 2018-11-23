@@ -1,12 +1,43 @@
+import * as Odin from "..";
 import Base from "../Base";
-import { Base as Driver } from "../drivers";
-import Relation from "../drivers/Relation/Base";
-import * as Model from "../index";
+import * as DB from "../DB";
+import Relation from "../Relation/Base";
 import * as utils from "../utils";
 import Query from "./Query";
 
+const nestRelations = (relation: string, prev: any[] = []) => {
+  const relations = relation.split(".");
+
+  const curr = relations.shift();
+
+  const index = prev.findIndex(p => p.relation === curr);
+
+  if (index !== -1) {
+    prev[index].relations = nestRelations(relations.join("."), prev[index].relations);
+
+    return prev;
+  }
+
+  prev.push({
+    relation: curr,
+    relations: [],
+  });
+
+  return prev;
+};
+
+const getRelations = (relations: string[]) => relations.reduce((prev, curr) => nestRelations(curr, prev), [] as any[]);
+const applyRelations = (relations: any[], query: QueryBuilder) => relations.reduce(
+  (prev, curr) => {
+    prev.push(query[curr.relation].apply(query).with());
+
+    return prev;
+  },
+  [] as any[]
+);
+
 interface QueryBuilder<T extends object = {}> extends Base<T> {
-  constructor: typeof Model;
+  constructor: typeof Odin;
 }
 
 class QueryBuilder<T extends object = {}> extends Base<T> {
@@ -32,7 +63,7 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
       let query = (this.prototype as any)[name] as Relation;
 
       if (!utils.function.isFunction(query))
-        throw new Error(`Relation '${name}' does not exist on '${this.name}' Model`);
+        throw new Error(`Relation '${name}' does not exist on '${this.name}' Odin`);
 
       query = query.apply(this.prototype);
 
@@ -46,18 +77,18 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
   /*********************************** Joins **********************************/
 
   public static join<T extends object>(
-    table: string | typeof Model, query?: Driver.JoinQuery<T>, as?: string): Query<T>;
-  public static join(table: string | typeof Model, query?: Driver.JoinQuery, as?: string) {
+    table: string | typeof Odin, query?: DB.JoinQuery<T>, as?: string): Query<T>;
+  public static join(table: string | typeof Odin, query?: DB.JoinQuery, as?: string) {
     return this.query().join(table, query, as);
   }
 
   /******************************* Where Clauses ******************************/
 
-  public static where<T extends object>(query: Driver.FilterQuery): Query<T>;
+  public static where<T extends object>(query: DB.FilterQuery): Query<T>;
   public static where<T extends object>(field: string, value: any): Query<T>;
   public static where<T extends object>(
-    field: string, operator: Driver.Operator, value: any): Query<T>;
-  public static where(field: any, operator?: Driver.Operator | any, value?: any) {
+    field: string, operator: DB.Operator, value: any): Query<T>;
+  public static where(field: any, operator?: DB.Operator | any, value?: any) {
     return this.query().where(field, operator, value);
   }
 
@@ -103,8 +134,8 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
 
   /******************** Ordering, Grouping, Limit & Offset ********************/
 
-  public static orderBy<T extends object>(field: string, order?: Driver.Order): Query<T>;
-  public static orderBy(field: string, order?: Driver.Order) {
+  public static orderBy<T extends object>(field: string, order?: DB.Order): Query<T>;
+  public static orderBy(field: string, order?: DB.Order) {
     return this.query().orderBy(field, order);
   }
 
@@ -131,84 +162,84 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
   /*********************************** Read ***********************************/
 
   public static exists<T>(): Promise<boolean>;
-  public static exists<T>(callback: Driver.Callback<boolean>): void;
-  public static exists(callback?: Driver.Callback<boolean>) {
+  public static exists<T>(callback: DB.Callback<boolean>): void;
+  public static exists(callback?: DB.Callback<boolean>) {
     return this.query().exists(callback as any) as any;
   }
 
   public static count(): Promise<number>;
-  public static count(callback: Driver.Callback<number>): void;
-  public static count(callback?: Driver.Callback<number>) {
+  public static count(callback: DB.Callback<number>): void;
+  public static count(callback?: DB.Callback<number>) {
     return this.query().count(callback as any) as any;
   }
 
-  public static get<T extends object>(): Promise<Array<Model<T>>>;
-  public static get<T extends object>(callback: Driver.Callback<Array<Model<T>>>): void;
-  public static get(callback?: Driver.Callback<any>) {
+  public static get<T extends object>(): Promise<Array<ThisType<T>>>;
+  public static get<T extends object>(callback: DB.Callback<Array<ThisType<T>>>): void;
+  public static get(callback?: DB.Callback<any>) {
     return this.query().get(callback as any) as any;
   }
 
-  public static first<T extends object>(): Promise<Model<T>>;
-  public static first<T extends object>(callback: Driver.Callback<Model<T>>): void;
-  public static first(callback?: Driver.Callback<any>) {
+  public static first<T extends object>(): Promise<ThisType<T>>;
+  public static first<T extends object>(callback: DB.Callback<ThisType<T>>): void;
+  public static first(callback?: DB.Callback<any>) {
     return this.query().first(callback as any) as any;
   }
 
-  public static find<T extends object>(ids: Driver.Id | Driver.Id[]): Promise<Model<T>>;
+  public static find<T extends object>(ids: DB.Id | DB.Id[]): Promise<Odin<T>>;
   public static find<T extends object>(
-    ids: Driver.Id | Driver.Id[],
-    callback: Driver.Callback<Model<T>>
+    ids: DB.Id | DB.Id[],
+    callback: DB.Callback<Odin<T>>
   ): void;
-  public static find(ids: Driver.Id | Driver.Id[], callback?: Driver.Callback<any>) {
+  public static find(ids: DB.Id | DB.Id[], callback?: DB.Callback<any>) {
     return this.findBy("id", ids, callback as any) as any;
   }
 
-  public static findBy<T extends object>(field: string, values: any | any[]): Promise<Model<T>>;
+  public static findBy<T extends object>(field: string, values: any | any[]): Promise<Odin<T>>;
   public static findBy<T extends object>(
     field: string, values: any | any[],
-    callback: Driver.Callback<Model<T>>
+    callback: DB.Callback<Odin<T>>
   ): void;
-  public static findBy(field: string, value: any | any[], callback?: Driver.Callback<any>) {
+  public static findBy(field: string, value: any | any[], callback?: DB.Callback<any>) {
     if (Array.isArray(value)) return this.query().whereIn(field, value).first(callback as any);
 
     return this.query().where(field, value).first(callback as any) as any;
   }
 
   public static value<T>(field: string): Promise<any>;
-  public static value<T>(field: string, callback: Driver.Callback<any>): void;
-  public static value(field: string, callback?: Driver.Callback<any>) {
+  public static value<T>(field: string, callback: DB.Callback<any>): void;
+  public static value(field: string, callback?: DB.Callback<any>) {
     return this.query().value(field, callback as any) as any;
   }
 
   public static pluck<T>(field: string): Promise<any>;
-  public static pluck<T>(field: string, callback: Driver.Callback<any>): void;
-  public static pluck(field: string, callback?: Driver.Callback<any>) {
+  public static pluck<T>(field: string, callback: DB.Callback<any>): void;
+  public static pluck(field: string, callback?: DB.Callback<any>) {
     return this.value(field, callback as any) as any;
   }
 
   public static max<T>(field: string): Promise<any>;
-  public static max<T>(field: string, callback: Driver.Callback<any>): void;
-  public static max(field: string, callback?: Driver.Callback<any>) {
+  public static max<T>(field: string, callback: DB.Callback<any>): void;
+  public static max(field: string, callback?: DB.Callback<any>) {
     return this.query().max(field, callback as any) as any;
   }
 
   public static min<T>(field: string): Promise<any>;
-  public static min<T>(field: string, callback: Driver.Callback<any>): void;
-  public static min(field: string, callback?: Driver.Callback<any>) {
+  public static min<T>(field: string, callback: DB.Callback<any>): void;
+  public static min(field: string, callback?: DB.Callback<any>) {
     return this.query().min(field, callback as any) as any;
   }
 
   /********************************** Inserts *********************************/
 
   public static insert<T>(items: T[]): Promise<number>;
-  public static insert<T>(items: T[], callback: Driver.Callback<number>): void;
-  public static insert(items: any[], callback?: Driver.Callback<number>) {
+  public static insert<T>(items: T[], callback: DB.Callback<number>): void;
+  public static insert(items: any[], callback?: DB.Callback<number>) {
     return this.query().insert(items, callback as any) as any;
   }
 
-  public static create<T extends object>(item: T): Promise<Model<T>>;
-  public static create<T extends object>(item: T, callback: Driver.Callback<Model<T>>): void;
-  public static async create(item: any, callback?: Driver.Callback<any>) {
+  public static create<T extends object>(item: T): Promise<Odin<T>>;
+  public static create<T extends object>(item: T, callback: DB.Callback<Odin<T>>): void;
+  public static async create(item: any, callback?: DB.Callback<any>) {
     if (callback)
       return this.query().insertGetId(item, (err, res) => {
         if (err) return callback(err, res);
@@ -222,8 +253,8 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
   /********************************** Updates *********************************/
 
   public save(): Promise<T>;
-  public save(callback: Driver.Callback<T>): void;
-  public async save(callback?: Driver.Callback<T>) {
+  public save(callback: DB.Callback<T>): void;
+  public async save(callback?: DB.Callback<T>) {
     const queryBuilder = this.constructor;
 
     if (this._isNew)
@@ -235,19 +266,19 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
       return query.update((this as any).attributes, (err, res) => {
         if (err) return callback(err, res as any);
 
-        queryBuilder.find((this as any).attributes.id as Driver.Id, callback as any);
+        queryBuilder.find((this as any).attributes.id as DB.Id, callback as any);
       });
 
     await query.update((this as any).attributes);
 
-    return await queryBuilder.find((this as any).attributes.id as Driver.Id) as any;
+    return await queryBuilder.find((this as any).attributes.id as DB.Id) as any;
   }
 
   /********************************** Deletes *********************************/
 
-  public static destroy(ids: Driver.Id | Driver.Id[]): Promise<number>;
-  public static destroy(ids: Driver.Id | Driver.Id[], callback: Driver.Callback<number>): void;
-  public static destroy(ids: Driver.Id | Driver.Id[], callback?: Driver.Callback<number>) {
+  public static destroy(ids: DB.Id | DB.Id[]): Promise<number>;
+  public static destroy(ids: DB.Id | DB.Id[], callback: DB.Callback<number>): void;
+  public static destroy(ids: DB.Id | DB.Id[], callback?: DB.Callback<number>) {
     let query = this.query();
 
     if (Array.isArray(ids)) query = query.whereIn("id", ids);
@@ -259,8 +290,8 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
   /********************************* Restoring ********************************/
 
   public restore(): Promise<boolean>;
-  public restore(callback: Driver.Callback<boolean>): void;
-  public async restore(callback?: Driver.Callback<boolean>) {
+  public restore(callback: DB.Callback<boolean>): void;
+  public async restore(callback?: DB.Callback<boolean>) {
     const id = (this as any).attributes.id;
 
     if (this._isNew || !id) return false;

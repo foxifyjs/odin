@@ -1,77 +1,66 @@
-import * as Model from "..";
+import * as Odin from "..";
 import Base from "../Base";
-import * as drivers from "../drivers";
-import Relation from "../drivers/Relation/Base";
+import { EmbedMany, HasMany, HasOne, MorphMany, MorphOne } from "../Relation";
 import * as utils from "../utils";
 
 interface Relational<T extends object = {}> extends Base<T> {
-  constructor: typeof Model;
+  constructor: typeof Odin;
 }
 
 class Relational extends Base {
-  public embedMany<T extends Model = any>(
-    relation: string | typeof Model,
+  public embedMany<T extends Odin = any>(
+    relation: string | typeof Odin,
     localKey?: string,
     foreignKey?: string
-  ): Relation<T> {
+  ): EmbedMany<T> {
     if (utils.string.isString(relation))
-      relation = this.constructor.models[relation] as typeof Model;
+      relation = this.constructor.models[relation] as typeof Odin;
 
-    const EmbedMany: any = drivers[this.constructor.driver].Relation.EmbedMany;
-
-    return new EmbedMany(this, relation, localKey, foreignKey, this.embedMany);
+    return new EmbedMany(this as any, relation, localKey, foreignKey, this.embedMany);
   }
 
-  public hasMany<T extends Model = any>(
-    relation: string | typeof Model,
+  public hasMany<T extends Odin = any>(
+    relation: string | typeof Odin,
     localKey?: string,
     foreignKey?: string
-  ): Relation<T> {
+  ): HasMany<T> {
     if (utils.string.isString(relation))
-      relation = this.constructor.models[relation] as typeof Model;
+      relation = this.constructor.models[relation] as typeof Odin;
 
-    const HasMany: any = drivers[this.constructor.driver].Relation.HasMany;
-
-    return new HasMany(this, relation, localKey, foreignKey, this.hasMany);
+    return new HasMany(this as any, relation, localKey, foreignKey, this.hasMany);
   }
 
-  public hasOne<T extends Model = any>(
-    relation: string | typeof Model,
+  public hasOne<T extends Odin = any>(
+    relation: string | typeof Odin,
     localKey?: string,
     foreignKey?: string
-  ): Relation<T> {
+  ): HasOne<T> {
     if (utils.string.isString(relation))
-      relation = this.constructor.models[relation] as typeof Model;
+      relation = this.constructor.models[relation] as typeof Odin;
 
-    const HasOne: any = drivers[this.constructor.driver].Relation.HasOne;
-
-    return new HasOne(this, relation, localKey, foreignKey, this.hasOne);
+    return new HasOne(this as any, relation, localKey, foreignKey, this.hasOne);
   }
 
-  public morphMany<T extends Model = any>(
-    relation: string | typeof Model,
+  public morphMany<T extends Odin = any>(
+    relation: string | typeof Odin,
     localKey?: string,
     type?: string
-  ): Relation<T> {
+  ): MorphMany<T> {
     if (utils.string.isString(relation))
-      relation = this.constructor.models[relation] as typeof Model;
+      relation = this.constructor.models[relation] as typeof Odin;
 
-    const MorphMany: any = drivers[this.constructor.driver].Relation.MorphMany;
-
-    return new MorphMany(this, relation, localKey, undefined, type, this.morphMany);
+    return new MorphMany(this as any, relation, localKey, undefined, type, this.morphMany);
   }
 
-  public morphOne<T extends Model = any>(
-    relation: string | typeof Model,
+  public morphOne<T extends Odin = any>(
+    relation: string | typeof Odin,
     localKey?: string,
     type?: string
-  ): Relation<T> {
+  ): MorphOne<T> {
     if (utils.string.isString(relation))
-      relation = this.constructor.models[relation] as typeof Model;
+      relation = this.constructor.models[relation] as typeof Odin;
 
-    const MorphOne: any = drivers[this.constructor.driver].Relation.MorphOne;
-
-    return new MorphOne(this, relation, localKey, undefined, type, this.morphOne);
+    return new MorphOne(this as any, relation, localKey, undefined, type, this.morphOne);
   }
 }
 
