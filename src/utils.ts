@@ -33,6 +33,10 @@ export interface ClassInterface {
   new(...args: any[]): any;
 }
 
+export type Expandable<T extends object = {}> = {
+  [K in keyof T]: T[K];
+} & { [key: string]: any; };
+
 /**
  * Adds the given mixin to the class
  * @param {*} baseCtor

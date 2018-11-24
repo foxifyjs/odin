@@ -1,13 +1,9 @@
 import * as Odin from "..";
-import Base from "../Base";
+import GraphQL from "../GraphQL/Model";
 import { EmbedMany, HasMany, HasOne, MorphMany, MorphOne } from "../Relation";
 import * as utils from "../utils";
 
-interface Relational<T extends object = {}> extends Base<T> {
-  constructor: typeof Odin;
-}
-
-class Relational extends Base {
+class Relational<T extends object = {}> extends GraphQL<T> {
   public embedMany<T extends Odin = any>(
     relation: string | typeof Odin,
     localKey?: string,

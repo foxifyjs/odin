@@ -4,6 +4,8 @@ import * as DB from "./DB";
 const MODELS: { [name: string]: typeof Odin | undefined } = {};
 
 interface Base<T extends object = {}> {
+  constructor: typeof Odin;
+
   id?: DB.Id;
 
   [key: string]: any;

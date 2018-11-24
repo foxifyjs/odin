@@ -36,10 +36,6 @@ const applyRelations = (relations: any[], query: QueryBuilder) => relations.redu
   [] as any[]
 );
 
-interface QueryBuilder<T extends object = {}> extends Base<T> {
-  constructor: typeof Odin;
-}
-
 class QueryBuilder<T extends object = {}> extends Base<T> {
   public static query<T extends object>(relations?: Relation[]) {
     return new Query<T>(this as any, (this as any)._table, relations);

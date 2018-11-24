@@ -1,5 +1,5 @@
 import * as Base from "graphql";
-import * as Model from "..";
+import * as Odin from "..";
 
 module GraphQL {
   export interface Queries {
@@ -7,14 +7,14 @@ module GraphQL {
   }
 }
 
-type GraphQL = (...models: Array<typeof Model>) => Base.GraphQLSchema;
+type GraphQL = (...models: Array<typeof Odin>) => Base.GraphQLSchema;
 
 const GraphQL: GraphQL = (...models) => {
   const queries: GraphQL.Queries = {};
   const mutations: GraphQL.Queries = {};
 
-  models.forEach((Model) => {
-    const gql = Model.toGraphQL();
+  models.forEach((Odin) => {
+    const gql = Odin.toGraphQL();
 
     Object.assign(queries, gql.queries);
 

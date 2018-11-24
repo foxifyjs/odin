@@ -1,12 +1,12 @@
 import * as GraphQLBase from "graphql";
-import Base from "../Base";
+import * as Odin from "..";
 import Query from "../base/Query";
+import QueryBuilder from "../base/QueryBuilder";
 import * as DB from "../DB";
-import * as Model from "../index";
 import TypeAny from "../types/Any";
 import * as utils from "../utils";
 
-const _schema = (model: string, schema: Model.Schema) => {
+const _schema = (model: string, schema: Odin.Schema) => {
   const fields: GraphQL.Schema = {};
   const args: any = {};
 
@@ -57,10 +57,10 @@ const _projection = (fieldASTs: any) => fieldASTs.selectionSet.selections.reduce
   []
 );
 
-const _orderBy = (model: string, schema: Model.Schema) => {
+const _orderBy = (model: string, schema: Odin.Schema) => {
   const orderByASC = (key: string) => `${key}_ASC`;
   const orderByDESC = (key: string) => `${key}_DESC`;
-  const getValues = (schema: Model.Schema, keyPrefix?: string) => {
+  const getValues = (schema: Odin.Schema, keyPrefix?: string) => {
     const values: { [key: string]: any } = {};
 
     for (const key in schema) {
@@ -92,7 +92,7 @@ const _orderBy = (model: string, schema: Model.Schema) => {
   });
 };
 
-const _prepare = (item: Model) => item && item.toJSON();
+const _prepare = (item: Odin) => item && item.toJSON();
 
 const _encapsulate = async (fn: () => Promise<any>) => {
   try {
@@ -122,7 +122,7 @@ module GraphQL {
   }
 }
 
-class GraphQL<T extends object = {}> extends Base<T> {
+class GraphQL<T extends object = {}> extends QueryBuilder<T> {
   public static toGraphQL(): any {
     const name = this.name;
 
@@ -231,7 +231,7 @@ class GraphQL<T extends object = {}> extends Base<T> {
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
           const result = await _encapsulate(
-            async () => await ((this as any) as typeof Model).create(params.data)
+            async () => await ((this as any) as typeof Odin).create(params.data)
           );
 
           return _prepare(result);
@@ -245,7 +245,7 @@ class GraphQL<T extends object = {}> extends Base<T> {
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => await _encapsulate(
-          async () => await ((this as any) as typeof Model).insert(params.data)
+          async () => await ((this as any) as typeof Odin).insert(params.data)
         ),
       },
       [`update_${multiple}`]: {
@@ -262,7 +262,7 @@ class GraphQL<T extends object = {}> extends Base<T> {
           const query: Query = utils.object.reduce(
             params.query || {},
             (query, value, key) => query.where(key, value),
-            (this as any) as Model | Query
+            (this as any) as Odin | Query
           );
 
           return await _encapsulate(async () => await query.update(params.data));
@@ -279,7 +279,7 @@ class GraphQL<T extends object = {}> extends Base<T> {
           const query: Query = utils.object.reduce(
             params.query || {},
             (query, value, key) => query.where(key, value),
-            (this as any) as Model | Query
+            (this as any) as Odin | Query
           );
 
           return await query.delete();
@@ -299,7 +299,7 @@ class GraphQL<T extends object = {}> extends Base<T> {
           const query: Query = utils.object.reduce(
             params.query,
             (query, value, key) => query.where(key, value),
-            ((this as any) as typeof Model).withTrashed()
+            ((this as any) as typeof Odin).withTrashed()
           );
 
           return await query.restore();
