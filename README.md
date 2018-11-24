@@ -71,10 +71,10 @@ User.schema = {
 - [x] `Schema` validation
 - [ ] Model
   - [ ] Hooks
-    - [x] `created`
-    - [ ] `updated`
-    - [ ] `deleted`
-    - [ ] `restored`
+    - [x] `create`
+    - [ ] `update`
+    - [ ] `delete`
+    - [ ] `restore`
   - [ ] Relationships
     - [x] `embedMany`
     - [x] `hasMany`
