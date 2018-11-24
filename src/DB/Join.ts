@@ -7,7 +7,7 @@ class Join<T = any> extends Filter {
 
   protected _let: { [key: string]: any } = {};
 
-  public get pipeline() {
+  public get pipe() {
     this._resetFilters();
 
     return {
@@ -33,7 +33,7 @@ class Join<T = any> extends Filter {
   protected _resetFilters() {
     const FILTER = this._filters;
 
-    if (object.size(FILTER) > 0) this._pipeline.push({ $match: FILTER });
+    if (object.size(FILTER) > 0) this.pipeline({ $match: FILTER });
 
     this._filter = {
       $and: [],
@@ -90,6 +90,14 @@ class Join<T = any> extends Filter {
     return super._or_where(field, operator, value);
   }
 
+  /********************************** Extra **********************************/
+
+  public pipeline(...objects: object[]) {
+    this._pipeline.push(...objects);
+
+    return this;
+  }
+
   /*********************************** Joins **********************************/
 
   public join(
@@ -101,9 +109,34 @@ class Join<T = any> extends Filter {
 
     this._resetFilters();
 
-    this._pipeline.push(join.pipeline);
+    this.pipeline(join.pipe);
 
     return this;
+  }
+
+  /*************** Mapping, Ordering, Grouping, Limit & Offset ***************/
+
+  public orderBy(field: string, order?: DB.Order) {
+    return this._resetFilters()
+      .pipeline({ $sort: { [field]: order === "desc" ? -1 : 1 } });
+  }
+
+  public skip(offset: number) {
+    return this._resetFilters()
+      .pipeline({ $skip: offset });
+  }
+
+  public offset(offset: number) {
+    return this.skip(offset);
+  }
+
+  public limit(limit: number) {
+    return this._resetFilters()
+      .pipeline({ $limit: limit });
+  }
+
+  public take(limit: number) {
+    return this.limit(limit);
   }
 
   /******************************* Where Clauses ******************************/

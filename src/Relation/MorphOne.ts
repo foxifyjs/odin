@@ -9,8 +9,10 @@ class MorphOne<T extends Odin = Odin> extends Relation<T, "MorphOne"> {
 
     return query.join(
       this.relation,
-      q => q.where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
-        .where(`${this.type}_type`, this.model.constructor.name),
+      q => q
+        .where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
+        .where(`${this.type}_type`, this.model.constructor.name)
+        .limit(1),
       as
     ).pipeline({
       $unwind: { path: `$${as}`, preserveNullAndEmptyArrays: true },

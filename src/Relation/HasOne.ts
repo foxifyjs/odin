@@ -20,7 +20,9 @@ class HasOne<T extends Odin = Odin> extends Relation<T, "HasOne"> {
 
     return query.join(
       this.relation,
-      q => q.where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`),
+      q => q
+        .where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
+        .limit(1),
       as
     ).pipeline({
       $unwind: { path: `$${as}`, preserveNullAndEmptyArrays: true },

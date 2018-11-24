@@ -15,43 +15,7 @@ namespace DB {
 
   export type Id = string;
 
-  export interface Filter {
-    where(query: FilterQuery): this;
-    where(field: string, value: any): this;
-    where(field: string, operator: Operator, value: any): this;
-
-    orWhere(query: FilterQuery): this;
-    orWhere(field: string, value: any): this;
-    orWhere(field: string, operator: Operator, value: any): this;
-
-    whereLike(field: string, value: any): this;
-
-    whereNotLike(field: string, value: any): this;
-
-    whereIn(field: string, values: any[]): this;
-
-    whereNotIn(field: string, values: any[]): this;
-
-    whereBetween(field: string, start: any, end: any): this;
-
-    whereNotBetween(field: string, start: any, end: any): this;
-
-    whereNull(field: string): this;
-
-    whereNotNull(field: string): this;
-  }
-
   export type FilterQuery = (query: Filter) => Filter;
-
-  export interface Join<T = any> extends Filter {
-    join(table: string, query?: JoinQuery<T>, as?: string): this;
-
-    whereIn(field: string, embeddedField: string): this;
-    whereIn(field: string, values: any[]): this;
-
-    whereNotIn(field: string, embeddedField: string): this;
-    whereNotIn(field: string, values: any[]): this;
-  }
 
   export type JoinQuery<T = any> = (query: Join<T>) => Join<T>;
 
