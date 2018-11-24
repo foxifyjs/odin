@@ -86,7 +86,7 @@ class DB<T extends object = any> extends Filter {
   protected _resetFilters() {
     const FILTER = this._filters;
 
-    if (object.size(FILTER) > 0) this._pipeline.push({ $match: FILTER });
+    if (object.size(FILTER) > 0) this.pipeline({ $match: FILTER });
 
     this._filter = {
       $and: [],
@@ -143,7 +143,7 @@ class DB<T extends object = any> extends Filter {
 
     this._resetFilters();
 
-    this._pipeline.push(join.pipeline);
+    this.pipeline(join.pipe);
 
     return this;
   }
