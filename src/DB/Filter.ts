@@ -11,13 +11,13 @@ namespace Filter {
 }
 
 class Filter {
-  protected _filters: Filter.Filters = {
+  protected _filter: Filter.Filters = {
     $and: [],
   };
 
-  get filters() {
+  protected get _filters() {
     const FILTERS = {
-      ...this._filters,
+      ...this._filter,
     };
 
     if (FILTERS.$and && FILTERS.$and.length === 0) delete FILTERS.$and;
@@ -29,19 +29,19 @@ class Filter {
   /********************************** Helpers *********************************/
 
   protected _push_filter(operator: "and" | "or", value: any) {
-    const filters = { ...this._filters };
+    const _filters = { ...this._filter };
 
-    if (operator === "and" && filters.$or) {
-      filters.$and = [this._filters];
-      delete filters.$or;
-    } else if (operator === "or" && filters.$and) {
-      filters.$or = [this._filters];
-      delete filters.$and;
+    if (operator === "and" && _filters.$or) {
+      _filters.$and = [this._filter];
+      delete _filters.$or;
+    } else if (operator === "or" && _filters.$and) {
+      _filters.$or = [this._filter];
+      delete _filters.$and;
     }
 
-    filters[`$${operator}`].push(value);
+    _filters[`$${operator}`].push(value);
 
-    this._filters = filters;
+    this._filter = _filters;
 
     return this;
   }
@@ -77,7 +77,7 @@ class Filter {
     if (func.isFunction(field)) {
       const filter: Filter = field(new Filter()) as any;
 
-      return this._push_filter("and", filter.filters);
+      return this._push_filter("and", filter._filters);
     }
 
     if (value === undefined) {
@@ -95,7 +95,7 @@ class Filter {
     if (func.isFunction(field)) {
       const filter: Filter = field(new Filter()) as any;
 
-      return this._push_filter("or", filter.filters);
+      return this._push_filter("or", filter._filters);
     }
 
     if (value === undefined) {

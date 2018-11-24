@@ -73,6 +73,8 @@ afterAll((done) => {
   });
 });
 
+interface User extends Odin { }
+
 class User extends Odin {
   public static schema = {
     username: User.Types.string.alphanum.min(3).required,
@@ -85,6 +87,54 @@ class User extends Odin {
 }
 
 describe("Testing Model", () => {
+  test("model.save (async/await style)", async () => {
+    expect.assertions(2);
+
+    const item = utils.object.omit(ITEMS[0], ["id"]);
+
+    const user = new User(item);
+
+    const result = await user.save();
+
+    expect(result).toBeInstanceOf(User);
+    expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(item);
+  });
+
+  test("model.save (callback style)", (done) => {
+    expect.assertions(3);
+
+    const item = utils.object.omit(ITEMS[0], ["id"]);
+
+    const user = new User(item);
+
+    user.save((err, res) => {
+      expect(err).toBe(null);
+      expect(res).toBeInstanceOf(User);
+      expect(utils.object.omit(res.toJSON(), ["id", "created_at"])).toEqual(item);
+
+      done();
+    });
+  });
+
+  test("Model.insert (async/await style)", async () => {
+    expect.assertions(1);
+
+    const result = await User.insert(ITEMS.map(item => utils.object.omit(item, ["id"])));
+
+    expect(result).toBe(ITEMS.length);
+  });
+
+  test("Model.insert (callback style)", (done) => {
+    expect.assertions(2);
+
+    User.insert(ITEMS.map(item => utils.object.omit(item, ["id"])), (err, res) => {
+      expect(err).toBe(null);
+      expect(res).toBe(ITEMS.length);
+
+      done();
+    });
+  });
+
   test("Model.create (async/await style)", async () => {
     expect.assertions(2);
 

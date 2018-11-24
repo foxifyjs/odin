@@ -120,11 +120,11 @@ class DB<T extends object = any> extends Filter {
   }
 
   protected _resetFilters() {
-    const FILTER = this.filters;
+    const FILTER = this._filters;
 
     if (object.size(FILTER) > 0) this._pipeline.push({ $match: FILTER });
 
-    this._filters = {
+    this._filter = {
       $and: [],
     };
 

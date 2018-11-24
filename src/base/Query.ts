@@ -214,7 +214,7 @@ class Query<T extends object = {}> extends DB<T> {
   public insert(items: T[], callback?: DB.Callback<number>) {
     const model = this._model;
     const error = !Array.isArray(items) &&
-      new Error(`Expected 'items' to be an array, '${typeof items}' given`);
+      new TypeError(`Expected 'items' to be an array, '${typeof items}' given`);
 
     const iterator = (item: T, cb: any) => {
       try {
@@ -269,6 +269,19 @@ class Query<T extends object = {}> extends DB<T> {
 
   /********************************** Updates *********************************/
 
+  protected _update(
+    update: { [key: string]: any },
+    callback?: DB.Callback<mongodb.UpdateWriteOpResult>
+  ): Promise<mongodb.UpdateWriteOpResult> {
+    if (!update.$unset) {
+      if (!update.$set) update.$set = {};
+
+      update.$set[this._model.UPDATED_AT] = new Date();
+    }
+
+    return super._update(update, callback);
+  }
+
   public update(update: T): Promise<number>;
   public update(update: T, callback: DB.Callback<number>): void;
   public update(update: T, callback?: DB.Callback<number>) {
@@ -285,7 +298,6 @@ class Query<T extends object = {}> extends DB<T> {
     return super.update.call(this, update, callback);
   }
 
-  // FIXME: updated_at
   public increment(field: string, count?: number): Promise<number>;
   public increment(field: string, callback: DB.Callback<number>): void;
   public increment(field: string, count: number, callback: DB.Callback<number>): void;
@@ -295,7 +307,6 @@ class Query<T extends object = {}> extends DB<T> {
     return super.increment.apply(this, arguments);
   }
 
-  // FIXME: updated_at
   public decrement(field: string, count?: number): Promise<number>;
   public decrement(field: string, callback: DB.Callback<number>): void;
   public decrement(field: string, count: number, callback: DB.Callback<number>): void;
@@ -313,7 +324,7 @@ class Query<T extends object = {}> extends DB<T> {
     this._apply_trashed_options();
 
     if (this._model.softDelete)
-      return super.update.call(this, { [this._model.DELETED_AT]: new Date() } as any, callback);
+      return super.update.call(this, { [this._model.DELETED_AT]: new Date() }, callback);
 
     return super.delete.call(this, callback);
   }
@@ -322,8 +333,15 @@ class Query<T extends object = {}> extends DB<T> {
 
   public restore(): Promise<number>;
   public restore(callback: DB.Callback<number>): void;
-  public restore(callback?: DB.Callback<number>) {
-    return super.update.call(this, { [this._model.DELETED_AT]: null } as any, callback);
+  public async restore(callback?: DB.Callback<number>) {
+    if (callback)
+      return this._update({ $unset: { [this._model.DELETED_AT]: "" } }, (err, res) => {
+        if (err) return callback(err, res as any);
+
+        callback(err, res.modifiedCount);
+      });
+
+    return (await this._update({ $unset: { [this._model.DELETED_AT]: "" } }, callback)).modifiedCount;
   }
 }
 

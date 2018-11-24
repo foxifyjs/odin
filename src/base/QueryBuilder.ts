@@ -252,9 +252,9 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
 
   /********************************** Updates *********************************/
 
-  public save(): Promise<T>;
-  public save(callback: DB.Callback<T>): void;
-  public async save(callback?: DB.Callback<T>) {
+  public save(): Promise<this>;
+  public save(callback: DB.Callback<this>): void;
+  public async save(callback?: DB.Callback<this>) {
     const queryBuilder = this.constructor;
 
     if (this._isNew)
