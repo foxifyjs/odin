@@ -2,7 +2,15 @@ import * as async from "async";
 import * as Odin from "..";
 import Query from "../base/Query";
 import * as DB from "../DB";
+import Join from "../DB/Join";
 import { getCallerFunctionName } from "../utils";
+
+namespace Relation {
+  export interface Relation {
+    name: string;
+    relations: Relation[];
+  }
+}
 
 abstract class Relation<T extends Odin = Odin, A = undefined> {
   public readonly as: string;
@@ -28,22 +36,22 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
     );
   }
 
-  public abstract load(query: Query<T>): any;
+  public abstract load(query: DB<T> | Join<T>, relations: Relation.Relation[]): DB<T> | Join<T>;
 
   /****************************** With Relations ******************************/
 
   public with(...relations: string[]): Query<T>;
   public with() {
-    return this._query.call(this, arguments);
+    return this._query.call(this, arguments as any);
   }
 
   /*********************************** Joins **********************************/
 
-  public join(table: string | typeof Odin, query?: DB.JoinQuery<T>, as?: string): Query<T>;
+  public join(collection: string | typeof Odin, query?: DB.JoinQuery<T>, as?: string): Query<T>;
   public join() {
     const query = this._query();
 
-    return query.join.apply(query, arguments);
+    return query.join.apply(query, arguments as any);
   }
 
   /******************************* Where Clauses ******************************/
@@ -53,49 +61,49 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   public where() {
     const query = this._query();
 
-    return query.where.apply(query, arguments);
+    return query.where.apply(query, arguments as any);
   }
 
   public whereIn(field: string, values: any[]): Query<T>;
   public whereIn() {
     const query = this._query();
 
-    return query.whereIn.apply(query, arguments);
+    return query.whereIn.apply(query, arguments as any);
   }
 
   public whereNotIn(field: string, values: any[]): Query<T>;
   public whereNotIn() {
     const query = this._query();
 
-    return query.whereNotIn.apply(query, arguments);
+    return query.whereNotIn.apply(query, arguments as any);
   }
 
   public whereBetween(field: string, start: any, end: any): Query<T>;
   public whereBetween() {
     const query = this._query();
 
-    return query.whereBetween.apply(query, arguments);
+    return query.whereBetween.apply(query, arguments as any);
   }
 
   public whereNotBetween(field: string, start: any, end: any): Query<T>;
   public whereNotBetween() {
     const query = this._query();
 
-    return query.whereNotBetween.apply(query, arguments);
+    return query.whereNotBetween.apply(query, arguments as any);
   }
 
   public whereNull(field: string): Query<T>;
   public whereNull() {
     const query = this._query();
 
-    return query.whereNull.apply(query, arguments);
+    return query.whereNull.apply(query, arguments as any);
   }
 
   public whereNotNull(field: string): Query<T>;
   public whereNotNull() {
     const query = this._query();
 
-    return query.whereNotNull.apply(query, arguments);
+    return query.whereNotNull.apply(query, arguments as any);
   }
 
   /******************** Ordering, Grouping, Limit & Offset ********************/
@@ -104,31 +112,31 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   public orderBy() {
     const query = this._query();
 
-    return query.orderBy.apply(query, arguments);
+    return query.orderBy.apply(query, arguments as any);
   }
 
   public skip(offset: number): Query<T>;
   public skip() {
     const query = this._query();
 
-    return query.skip.apply(query, arguments);
+    return query.skip.apply(query, arguments as any);
   }
 
   public offset(offset: number): Query<T>;
   public offset() {
-    return this.skip.apply(this, arguments);
+    return this.skip.apply(this, arguments as any);
   }
 
   public limit(limit: number): Query<T>;
   public limit() {
     const query = this._query();
 
-    return query.limit.apply(query, arguments);
+    return query.limit.apply(query, arguments as any);
   }
 
   public take(limit: number): Query<T>;
   public take() {
-    return this.limit.apply(this, arguments);
+    return this.limit.apply(this, arguments as any);
   }
 
   /*********************************** Read ***********************************/
@@ -138,7 +146,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   public exists() {
     const query = this._query();
 
-    return query.exists.apply(query, arguments);
+    return query.exists.apply(query, arguments as any) as any;
   }
 
   public count(): Promise<number>;
@@ -146,7 +154,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   public count() {
     const query = this._query();
 
-    return query.count.apply(query, arguments);
+    return query.count.apply(query, arguments as any) as any;
   }
 
   public get(): Promise<T[]>;
@@ -154,7 +162,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   public get() {
     const query = this._query();
 
-    return query.get.apply(query, arguments);
+    return query.get.apply(query, arguments as any) as any;
   }
 
   public first(): Promise<T>;
@@ -162,7 +170,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   public first() {
     const query = this._query();
 
-    return query.first.apply(query, arguments);
+    return query.first.apply(query, arguments as any) as any;
   }
 
   public value(field: string): Promise<any>;
@@ -170,13 +178,13 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   public value() {
     const query = this._query();
 
-    return query.value.apply(query, arguments);
+    return query.value.apply(query, arguments as any) as any;
   }
 
   public pluck(field: string): Promise<any>;
   public pluck(field: string, callback: DB.Callback<any>): void;
   public pluck() {
-    return this.value.apply(this, arguments);
+    return this.value.apply(this, arguments as any) as any;
   }
 
   public max(field: string): Promise<any>;
@@ -184,7 +192,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   public max() {
     const query = this._query();
 
-    return query.max.apply(query, arguments);
+    return query.max.apply(query, arguments as any) as any;
   }
 
   public min(field: string): Promise<any>;
@@ -192,7 +200,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   public min() {
     const query = this._query();
 
-    return query.min.apply(query, arguments);
+    return query.min.apply(query, arguments as any) as any;
   }
 
   /********************************** Inserts *********************************/
@@ -269,7 +277,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   public update() {
     const query = this._query();
 
-    return query.update.apply(query, arguments);
+    return query.update.apply(query, arguments as any) as any;
   }
 
   public increment(field: string, count?: number): Promise<number>;
@@ -278,7 +286,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   public increment() {
     const query = this._query();
 
-    return query.increment.apply(query, arguments);
+    return query.increment.apply(query, arguments as any) as any;
   }
 
   public decrement(field: string, count?: number): Promise<number>;
@@ -287,7 +295,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   public decrement() {
     const query = this._query();
 
-    return query.decrement.apply(query, arguments);
+    return query.decrement.apply(query, arguments as any) as any;
   }
 
   /********************************** Deletes *********************************/
@@ -297,7 +305,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   public delete() {
     const query = this._query();
 
-    return query.delete.apply(query, arguments);
+    return query.delete.apply(query, arguments as any) as any;
   }
 }
 

@@ -1,31 +1,46 @@
 import * as Odin from "..";
-import Query from "../base/Query";
 import * as DB from "../DB";
-import { makeTableId } from "../utils";
+import Join from "../DB/Join";
+import { makeCollectionId } from "../utils";
 import Relation from "./Base";
 
 class HasOne<T extends Odin = Odin> extends Relation<T, "HasOne"> {
   constructor(
     model: Odin,
     relation: typeof Odin,
-    localKey: string = makeTableId(relation.toString()),
+    localKey: string = makeCollectionId(relation.toString()),
     foreignKey: string = "id",
     caller: (...args: any[]) => any
   ) {
     super(model, relation, localKey, foreignKey, caller);
   }
 
-  public load(query: Query<T>) {
-    const as = this.as;
+  public load(query: DB<T> | Join<T>, relations: Relation.Relation[]) {
+    const relation = this.relation;
+    const name = this.as;
 
     return query.join(
-      this.relation,
-      q => q
-        .where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
-        .limit(1),
-      as
+      relation.toString(),
+      q => relations.reduce(
+        (prev, cur) => {
+          const subRelation = cur.name;
+
+          if (!relation._relations.includes(subRelation))
+            throw new Error(`Relation '${subRelation}' does not exist on '${relation.name}' Model`);
+
+          const loader = relation.prototype[subRelation]();
+
+          return loader.load(prev, cur.relations);
+        },
+        q.where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
+          .limit(1)
+      ),
+      // q => q
+      //   .where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
+      //   .limit(1),
+      name
     ).pipeline({
-      $unwind: { path: `$${as}`, preserveNullAndEmptyArrays: true },
+      $unwind: { path: `$${name}`, preserveNullAndEmptyArrays: true },
     });
   }
 

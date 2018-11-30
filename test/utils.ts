@@ -9,16 +9,16 @@ describe("Testing `utils`", () => {
     expect(utils.getSetterName("first_name")).toBe("setFirstNameAttribute");
   });
 
-  test("makeTableName", () => {
-    expect(utils.makeTableName("user_account")).toBe("user_accounts");
+  test("makeCollectionName", () => {
+    expect(utils.makeCollectionName("user_account")).toBe("user_accounts");
   });
 
-  test("makeTableType", () => {
-    expect(utils.makeTableType("user_accounts")).toBe("user_account");
+  test("makeCollectionType", () => {
+    expect(utils.makeCollectionType("user_accounts")).toBe("user_account");
   });
 
-  test("makeTableId", () => {
-    expect(utils.makeTableId("user_accounts")).toBe("user_account_id");
+  test("makeCollectionId", () => {
+    expect(utils.makeCollectionId("user_accounts")).toBe("user_account_id");
   });
 
   test("makeMorphType", () => {

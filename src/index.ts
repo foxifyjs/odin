@@ -11,7 +11,7 @@ import TypeAny from "./types/Any";
 import TypeArray from "./types/Array";
 import TypeDate from "./types/Date";
 import TypeObjectId from "./types/ObjectId";
-import { array, define, getGetterName, getSetterName, makeTableName, object, string } from "./utils";
+import { array, define, getGetterName, getSetterName, makeCollectionName, object, string } from "./utils";
 
 const EVENTS: Odin.Event[] = ["create"];
 
@@ -53,7 +53,7 @@ class Odin<T extends object = {}> extends Relational<T> {
 
   public static connection: Odin.Connection = "default";
 
-  public static table?: string;
+  public static collection?: string;
 
   public static schema: Odin.Schema = {};
 
@@ -67,11 +67,11 @@ class Odin<T extends object = {}> extends Relational<T> {
 
   public static hidden: string[] = [];
 
-  private static get _table() {
-    return this.table || makeTableName(this.name);
+  protected static get _collection() {
+    return this.collection || makeCollectionName(this.name);
   }
 
-  private static get _schema() {
+  protected static get _schema() {
     const schema: Odin.Schema = {
       id: this.Types.id,
       ...this.schema,
@@ -97,7 +97,7 @@ class Odin<T extends object = {}> extends Relational<T> {
   }
 
   public static toString() {
-    return this._table;
+    return this._collection;
   }
 
   public static toJsonSchema() {
@@ -170,7 +170,7 @@ class Odin<T extends object = {}> extends Relational<T> {
       };
     };
 
-    const jsonSchema = jsonSchemaGenerator(this.schema);
+    const jsonSchema = jsonSchemaGenerator(this._schema);
 
     if (this.timestamps) {
       jsonSchema.properties[this.CREATED_AT] = {
@@ -337,8 +337,19 @@ class Odin<T extends object = {}> extends Relational<T> {
   public toJSON() {
     const hidden = this.constructor.hidden;
 
+    if (hidden.includes("*")) return {};
+
+    const relations = this.constructor._relations;
+
     return object.mapValues(this.attributes, (value, attr) => {
-      if (array.contains(hidden, attr)) return undefined;
+      if (hidden.includes(attr)) return undefined;
+
+      if (relations.includes(attr)) {
+        if (Array.isArray(value)) return value.map(v => v.toJSON());
+
+        return value;
+        return value && value.toJSON();
+      }
 
       const getter = (this as any)[getGetterName(attr)];
 

@@ -1,5 +1,5 @@
 import * as DB from ".";
-import { array, makeTableId, object, OPERATORS, prepareKey, string } from "../utils";
+import { array, makeCollectionId, object, OPERATORS, prepareKey, string } from "../utils";
 import Filter from "./Filter";
 
 class Join<T = any> extends Filter {
@@ -13,7 +13,7 @@ class Join<T = any> extends Filter {
     return {
       $lookup: {
         as: this._as,
-        from: this._table,
+        from: this._collection,
         let: this._let,
         pipeline: this._pipeline,
       },
@@ -22,8 +22,8 @@ class Join<T = any> extends Filter {
 
   constructor(
     protected _ancestor: string,
-    protected _table: string,
-    protected _as: string = _table
+    protected _collection: string,
+    protected _as: string = _collection
   ) {
     super();
   }
@@ -101,11 +101,11 @@ class Join<T = any> extends Filter {
   /*********************************** Joins **********************************/
 
   public join(
-    table: string,
-    query: DB.JoinQuery<T> = q => q.where(makeTableId(table), `${table}.id`),
-    as: string = table
+    collection: string,
+    query: DB.JoinQuery<T> = q => q.where(makeCollectionId(collection), `${collection}.id`),
+    as: string = collection
   ) {
-    const join: Join = query(new Join(this._table, table, as)) as any;
+    const join: Join = query(new Join(this._collection, collection, as)) as any;
 
     this._resetFilters();
 

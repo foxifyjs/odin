@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-const TABLE = "users";
+const COLLECTION = "users";
 const ITEMS = [
   {
     username: "ardalanamini",
@@ -38,10 +38,10 @@ Odin.Connect({
 });
 
 beforeAll((done) => {
-  Odin.DB.collection(TABLE).insert(ITEMS, (err) => {
+  Odin.DB.collection(COLLECTION).insert(ITEMS, (err) => {
     if (err) throw err;
 
-    Odin.DB.collection(TABLE).get((err, items) => {
+    Odin.DB.collection(COLLECTION).get((err, items) => {
       if (err) throw err;
 
       ITEMS.length = 0;
@@ -54,10 +54,10 @@ beforeAll((done) => {
 });
 
 afterEach((done) => {
-  Odin.DB.collection(TABLE).delete((err) => {
+  Odin.DB.collection(COLLECTION).delete((err) => {
     if (err) throw err;
 
-    Odin.DB.collection(TABLE).insert(ITEMS, (err) => {
+    Odin.DB.collection(COLLECTION).insert(ITEMS, (err) => {
       if (err) throw err;
 
       done();
@@ -66,7 +66,7 @@ afterEach((done) => {
 });
 
 afterAll((done) => {
-  Odin.DB.collection(TABLE).delete((err) => {
+  Odin.DB.collection(COLLECTION).delete((err) => {
     if (err) throw err;
 
     done();

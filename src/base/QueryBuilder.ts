@@ -2,43 +2,35 @@ import * as Odin from "..";
 import Base from "../Base";
 import * as DB from "../DB";
 import Relation from "../Relation/Base";
-import * as utils from "../utils";
 import Query from "./Query";
 
-const nestRelations = (relation: string, prev: any[] = []) => {
-  const relations = relation.split(".");
+const generateRelations = (relations: string[][]): Relation.Relation[] => {
+  const result: any[] = [];
 
-  const curr = relations.shift();
+  relations.forEach((items) => {
+    const name = items.shift() as string;
+    const found = result.find(item => item.name === name);
 
-  const index = prev.findIndex(p => p.relation === curr);
+    if (found) {
+      if (items.length) found.relations.push(items);
+      return;
+    }
 
-  if (index !== -1) {
-    prev[index].relations = nestRelations(relations.join("."), prev[index].relations);
-
-    return prev;
-  }
-
-  prev.push({
-    relation: curr,
-    relations: [],
+    result.push({
+      name,
+      relations: [items].filter(item => item.length),
+    });
   });
 
-  return prev;
+  return result.map(item => ({
+    name: item.name,
+    relations: generateRelations(item.relations),
+  }));
 };
 
-const getRelations = (relations: string[]) => relations.reduce((prev, curr) => nestRelations(curr, prev), [] as any[]);
-const applyRelations = (relations: any[], query: QueryBuilder) => relations.reduce(
-  (prev, curr) => {
-    prev.push(query[curr.relation].apply(query).with());
-
-    return prev;
-  },
-  [] as any[]
-);
-
 class QueryBuilder<T extends object = {}> extends Base<T> {
-  public static query<T extends object>(relations?: Relation[]) {
-    return new Query<T>(this as any, (this as any)._table, relations);
+  protected static query<T extends object>(relations?: Query.Rel[]) {
+    return new Query<T>(this as any, relations);
   }
 
   /******************************* With Trashed *******************************/
@@ -48,34 +40,46 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
     return this.query().withTrashed();
   }
 
+  /*********************************** Lean ***********************************/
+
+  public static lean<T extends object>(): Query<T>;
+  public static lean() {
+    return this.query().lean();
+  }
+
   /****************************** With Relations ******************************/
 
   public static with<T extends object>(...relations: string[]): Query<T>;
   public static with(...relations: string[]) {
-    if (relations.length === 0)
-      throw new TypeError("Expected at least one 'relation', got none");
+    return this.query(
+      generateRelations(relations.map(item => item.split(".")))
+        .map((relation) => {
+          if (!this._relations.includes(relation.name))
+            throw new Error(`Relation '${relation.name}' does not exist on '${this.name}' Model`);
 
-    return this.query(relations.map((name) => {
-      let query = (this.prototype as any)[name] as Relation;
+          return {
+            relation: (this.prototype as any)[relation.name](),
+            relations: relation.relations,
+          };
+        })
+    );
+    return relations.reduce(
+      (prev, cur) => {
+        if (!this._relations.includes(cur))
+          throw new Error(`Relation '${cur}' does not exist on '${this.name}' Model`);
 
-      if (!utils.function.isFunction(query))
-        throw new Error(`Relation '${name}' does not exist on '${this.name}' Odin`);
-
-      query = query.apply(this.prototype);
-
-      if (!(query instanceof Relation))
-        throw new Error(`'${name}' is not a relation`);
-
-      return query;
-    }));
+        return (this.prototype as any)[cur]().load(prev);
+      },
+      this.query()
+    );
   }
 
   /*********************************** Joins **********************************/
 
   public static join<T extends object>(
-    table: string | typeof Odin, query?: DB.JoinQuery<T>, as?: string): Query<T>;
-  public static join(table: string | typeof Odin, query?: DB.JoinQuery, as?: string) {
-    return this.query().join(table, query, as);
+    collection: string | typeof Odin, query?: DB.JoinQuery<T>, as?: string): Query<T>;
+  public static join(collection: string | typeof Odin, query?: DB.JoinQuery, as?: string) {
+    return this.query().join(collection, query, as);
   }
 
   /******************************* Where Clauses ******************************/
@@ -169,8 +173,8 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
     return this.query().count(callback as any) as any;
   }
 
-  public static get<T extends object>(): Promise<Array<ThisType<T>>>;
-  public static get<T extends object>(callback: DB.Callback<Array<ThisType<T>>>): void;
+  public static get<T extends object>(): Promise<T[]>;
+  public static get<T extends object>(callback: DB.Callback<T[]>): void;
   public static get(callback?: DB.Callback<any>) {
     return this.query().get(callback as any) as any;
   }
@@ -271,6 +275,12 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
   }
 
   /********************************** Deletes *********************************/
+
+  public static delete(): Promise<number>;
+  public static delete(callback: DB.Callback<number>): void;
+  public static delete(callback?: DB.Callback<number>) {
+    return this.query().delete(callback as any) as any;
+  }
 
   public static destroy(ids: DB.Id | DB.Id[]): Promise<number>;
   public static destroy(ids: DB.Id | DB.Id[], callback: DB.Callback<number>): void;

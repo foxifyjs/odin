@@ -11,11 +11,15 @@ interface Base<T extends object = {}> {
   [key: string]: any;
 }
 
-class Base {
+class Base<T extends object = {}> {
   public static _relations: string[] = [];
 
+  protected _original: Odin.Document & Partial<T> = {};
+
+  public attributes: Odin.Document & Partial<T> = {};
+
   protected get _isNew() {
-    return !this.attributes.id;
+    return !this._original.id;
   }
 
   public static get models() {

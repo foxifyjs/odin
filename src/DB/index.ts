@@ -1,6 +1,6 @@
 import * as mongodb from "mongodb";
 import { connection as getConnection } from "../Connect";
-import { date, function as func, isID, makeTableId, object, prepareKey } from "../utils";
+import { date, function as func, isID, makeCollectionId, object, prepareKey } from "../utils";
 import Filter from "./Filter";
 import Join from "./Join";
 
@@ -136,7 +136,7 @@ class DB<T extends object = any> extends Filter {
 
   public join(
     collection: string,
-    query: DB.JoinQuery<T> = q => q.where(makeTableId(collection), `${collection}.id`),
+    query: DB.JoinQuery<T> = q => q.where(makeCollectionId(collection), `${collection}.id`),
     as: string = collection
   ) {
     const join: Join = query(new Join(this._collection, collection, as)) as any;
@@ -311,7 +311,7 @@ class DB<T extends object = any> extends Filter {
   public pluck(field: string): Promise<any>;
   public pluck(field: string, callback: DB.Callback<any>): void;
   public pluck() {
-    return this.value.apply(this, arguments);
+    return this.value.apply(this, arguments as any) as any;
   }
 
   public max(field: string): Promise<any>;
@@ -382,7 +382,7 @@ class DB<T extends object = any> extends Filter {
 
   public insert(item: T | T[]): Promise<number>;
   public insert(item: T | T[], callback: DB.Callback<number>): void;
-  public  async insert(item: T | T[], callback?: DB.Callback<number>) {
+  public async insert(item: T | T[], callback?: DB.Callback<number>) {
     if (Array.isArray(item)) {
       if (callback)
         return this._insertMany(item, (err, res) => callback(err, res.insertedCount));
@@ -468,7 +468,7 @@ class DB<T extends object = any> extends Filter {
       count = 1;
     }
 
-    return this.increment.call(this, field, -count, callback);
+    return this.increment.call(this, field, -count, callback as any) as any;
   }
 
   /********************************** Deletes *********************************/

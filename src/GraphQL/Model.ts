@@ -126,7 +126,7 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
   public static toGraphQL(): any {
     const name = this.name;
 
-    const multiple = (this as any)._table;
+    const multiple = (this as any)._collection;
     const single = utils.string.pluralize(multiple, 1);
 
     const schema = _schema(name, (this as any)._schema);
@@ -142,7 +142,7 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
     });
 
     const getDB = () => {
-      const db = (this as any).DB.connection((this as any).connection).table((this as any)._table);
+      const db = (this as any).DB.connection((this as any).connection).collection((this as any)._collection);
 
       if ((this as any).softDelete) return db.whereNull((this as any).DELETED_AT);
 

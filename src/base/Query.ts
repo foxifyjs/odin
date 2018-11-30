@@ -4,29 +4,43 @@ import * as Odin from "..";
 import * as DB from "../DB";
 import events from "../events";
 import Relation from "../Relation/Base";
-import { string } from "../utils";
+import { initialize, string } from "../utils";
+
+namespace Query {
+  export interface Rel {
+    relation: Relation;
+    relations: Relation.Relation[];
+  }
+}
 
 class Query<T extends object = {}> extends DB<T> {
   protected readonly _model: typeof Odin;
+
+  protected readonly _relations: Query.Rel[];
+
   protected _withTrashed = false;
 
-  constructor(model: typeof Odin, table: string, relations: Relation[] = []) {
+  protected _lean = false;
+
+  constructor(model: typeof Odin, relations: Query.Rel[] = []) {
     super(model.connection);
 
-    this.collection(table);
+    this.collection((model as any)._collection);
 
     this._model = model;
-
-    relations.forEach(relation => relation.load(this as any));
+    this._relations = relations;
   }
 
   protected _emit(event: string, ops: any[]) {
-    ops.forEach(item => events.emit(event, new this._model(this._prepareToRead(item))));
+    ops.forEach(item => events.emit(event, initialize(this._model, this._prepareToRead(item))));
   }
 
-  protected _apply_trashed_options() {
+  protected _apply_options(withRelations = false) {
     if (this._model.softDelete && !this._withTrashed)
       this.whereNull(this._model.DELETED_AT);
+
+    if (withRelations) this._relations
+      .forEach(({ relation, relations }) => relation.load(this as any, relations) as any);
 
     return this;
   }
@@ -39,26 +53,34 @@ class Query<T extends object = {}> extends DB<T> {
     return this;
   }
 
+  /*********************************** Lean ***********************************/
+
+  public lean() {
+    this._lean = true;
+
+    return this;
+  }
+
   /*********************************** Joins **********************************/
 
-  public join(table: string | typeof Odin, query?: DB.JoinQuery<T>, as?: string) {
-    if (!string.isString(table)) {
-      const model = table;
-      table = model.toString();
+  public join(collection: string | typeof Odin, query?: DB.JoinQuery<T>, as?: string) {
+    if (!string.isString(collection)) {
+      const model = collection;
+      collection = model.toString();
 
-      if (!as) as = table as string;
+      if (!as) as = collection as string;
 
       this.map((item: any) => {
         const joined = item[as as string];
 
-        if (Array.isArray(joined)) item[as as string] = joined.map((i: any) => new model(i));
-        else item[as as string] = new model(joined);
+        if (Array.isArray(joined)) item[as as string] = joined.map((i: any) => initialize(model, i));
+        else item[as as string] = joined && initialize(model, joined);
 
         return item;
       });
     }
 
-    return super.join(table as string, query, as);
+    return super.join(collection as string, query, as);
   }
 
   /*********************************** Read ***********************************/
@@ -66,29 +88,29 @@ class Query<T extends object = {}> extends DB<T> {
   public exists(): Promise<boolean>;
   public exists(callback: DB.Callback<boolean>): void;
   public exists() {
-    this._apply_trashed_options();
+    this._apply_options(true);
 
-    return super.exists.apply(this, arguments);
+    return super.exists.apply(this, arguments as any) as any;
   }
 
   public count(): Promise<number>;
   public count(callback: DB.Callback<number>): void;
   public count() {
-    this._apply_trashed_options();
+    this._apply_options(true);
 
-    return super.count.apply(this, arguments);
+    return super.count.apply(this, arguments as any) as any;
   }
 
   public get(): Promise<T[]>;
   public get(callback: DB.Callback<T[]>): void;
   public async get(callback?: DB.Callback<T[]>) {
-    const iterator = (item: any, cb: any) => cb(undefined, new this._model(item));
+    const iterator = (item: any, cb: any) => cb(undefined, initialize(this._model, item));
 
-    this._apply_trashed_options();
+    this._apply_options(true);
 
     if (callback)
       return super.get((err, res) => {
-        if (err) return callback(err, res as any);
+        if (err || this._lean) return callback(err, res as any);
 
         async.map(
           res,
@@ -96,6 +118,8 @@ class Query<T extends object = {}> extends DB<T> {
           callback as any
         );
       });
+
+    if (this._lean) return await super.get();
 
     let items: T[] = [];
 
@@ -126,41 +150,41 @@ class Query<T extends object = {}> extends DB<T> {
   public value(field: string): Promise<any>;
   public value(field: string, callback: DB.Callback<any>): void;
   public value() {
-    this._apply_trashed_options();
+    this._apply_options(true);
 
-    return super.value.apply(this, arguments);
+    return super.value.apply(this, arguments as any) as any;
   }
 
   public pluck(field: string): Promise<any>;
   public pluck(field: string, callback: DB.Callback<any>): void;
   public pluck() {
-    this._apply_trashed_options();
+    this._apply_options(true);
 
-    return super.pluck.apply(this, arguments);
+    return super.pluck.apply(this, arguments as any) as any;
   }
 
   public max(field: string): Promise<any>;
   public max(field: string, callback: DB.Callback<any>): void;
   public max() {
-    this._apply_trashed_options();
+    this._apply_options(true);
 
-    return super.max.apply(this, arguments);
+    return super.max.apply(this, arguments as any) as any;
   }
 
   public min(field: string): Promise<any>;
   public min(field: string, callback: DB.Callback<any>): void;
   public min() {
-    this._apply_trashed_options();
+    this._apply_options(true);
 
-    return super.min.apply(this, arguments);
+    return super.min.apply(this, arguments as any) as any;
   }
 
   public avg(field: string): Promise<any>;
   public avg(field: string, callback: DB.Callback<any>): void;
   public avg() {
-    this._apply_trashed_options();
+    this._apply_options(true);
 
-    return super.avg.apply(this, arguments);
+    return super.avg.apply(this, arguments as any) as any;
   }
 
   /********************************** Inserts *********************************/
@@ -293,27 +317,27 @@ class Query<T extends object = {}> extends DB<T> {
       throw err;
     }
 
-    this._apply_trashed_options();
+    this._apply_options();
 
-    return super.update.call(this, update, callback);
+    return super.update.call(this, update, callback as any) as any;
   }
 
   public increment(field: string, count?: number): Promise<number>;
   public increment(field: string, callback: DB.Callback<number>): void;
   public increment(field: string, count: number, callback: DB.Callback<number>): void;
   public increment() {
-    this._apply_trashed_options();
+    this._apply_options();
 
-    return super.increment.apply(this, arguments);
+    return super.increment.apply(this, arguments as any) as any;
   }
 
   public decrement(field: string, count?: number): Promise<number>;
   public decrement(field: string, callback: DB.Callback<number>): void;
   public decrement(field: string, count: number, callback: DB.Callback<number>): void;
   public decrement() {
-    this._apply_trashed_options();
+    this._apply_options();
 
-    return super.decrement.apply(this, arguments);
+    return super.decrement.apply(this, arguments as any) as any;
   }
 
   /********************************** Deletes *********************************/
@@ -321,12 +345,12 @@ class Query<T extends object = {}> extends DB<T> {
   public delete(): Promise<number>;
   public delete(callback: DB.Callback<number>): void;
   public delete(callback?: DB.Callback<number>) {
-    this._apply_trashed_options();
+    this._apply_options();
 
     if (this._model.softDelete)
-      return super.update.call(this, { [this._model.DELETED_AT]: new Date() }, callback);
+      return super.update.call(this, { [this._model.DELETED_AT]: new Date() } as any, callback as any) as any;
 
-    return super.delete.call(this, callback);
+    return super.delete.call(this, callback as any);
   }
 
   /********************************* Restoring ********************************/

@@ -4,8 +4,7 @@ import * as utils from "../utils";
 
 interface TypeAny extends GraphQL { }
 
-@utils.mixins(GraphQL)
-class TypeAny implements GraphQL {
+class TypeAny extends GraphQL {
   protected _type = "Any";
 
   protected _casts: Array<(v: any) => any> = [];
