@@ -73,9 +73,17 @@ afterAll((done) => {
   });
 });
 
-interface User extends Odin { }
+interface Schema {
+  username: string;
+  email: string;
+  name: {
+    first: string;
+    last: string;
+  };
+}
 
-class User extends Odin {
+@Odin.register
+class User extends Odin<Schema> {
   public static schema = {
     username: User.Types.string.alphanum.min(3).required,
     email: User.Types.string.email.required,

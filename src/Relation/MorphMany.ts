@@ -16,7 +16,7 @@ class MorphMany<T extends Odin = Odin> extends MorphBase<T> {
         (prev, cur) => {
           const subRelation = cur.name;
 
-          if (!relation._relations.includes(subRelation))
+          if (!(relation as any)._relations.includes(subRelation))
             throw new Error(`Relation '${subRelation}' does not exist on '${relation.name}' Model`);
 
           const loader = relation.prototype[subRelation]();

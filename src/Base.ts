@@ -60,11 +60,13 @@ class Base<T extends object = {}> {
     return schema;
   }
 
-  protected _original: Odin.Document & Partial<T> = {};
+  protected _original: Odin.Document = {};
+  // protected _original: Odin.Document & Partial<T> = {};
 
   public relations: { [key: string]: any } = {};
 
-  public attributes: Odin.Document & Partial<T> = {};
+  public attributes: Odin.Document = {};
+  // public attributes: Odin.Document & Partial<T> = {};
 
   protected get _isNew() {
     return !this._original.id;
