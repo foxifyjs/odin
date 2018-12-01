@@ -45,7 +45,7 @@ const CHATS = [
 
 const MESSAGES = [
   {
-    chat: "1",
+    chatname: "1",
     message: "Hello World",
   },
 ];
@@ -90,7 +90,7 @@ class Chat extends Odin {
 
   @Odin.relation
   public message() {
-    return this.hasOne<Message>("Message", "name", "chat");
+    return this.hasOne<Message>("Message", "name", "chatname");
   }
 }
 
@@ -98,13 +98,13 @@ class Chat extends Odin {
 @Odin.register
 class Message extends Odin {
   public static schema = {
-    chat: Types.string.required,
+    chatname: Types.string.required,
     message: Types.string.required,
   };
 
   @Odin.relation
   public chat() {
-    return this.hasOne<Chat>("Chat", "chat", "name");
+    return this.hasOne<Chat>("Chat", "chatname", "name");
   }
 }
 
@@ -143,7 +143,7 @@ afterAll(async (done) => {
 });
 
 test("Model.with", async () => {
-  expect.assertions(1);
+  expect.assertions(2);
 
   const items = USERS.map(user => ({
     ...user,
@@ -153,15 +153,19 @@ test("Model.with", async () => {
   const results = await User.with("chat").lean().get();
 
   expect(results).toEqual(items);
+
+  const results2 = await User.with("chat").get();
+
+  expect(results2.map((item: any) => item.toJSON())).toEqual(items);
 });
 
 test("Model.with deep", async () => {
-  expect.assertions(2);
+  expect.assertions(4);
 
   const items = USERS.map((user) => {
     const chat = CHATS.filter(chat => chat.chatable_id === user.username && chat.chatable_type === "User")[0];
 
-    if (chat) (chat as any).message = MESSAGES.filter(message => message.chat === chat.name)[0];
+    if (chat) (chat as any).message = MESSAGES.filter(message => message.chatname === chat.name)[0];
 
     return {
       ...user,
@@ -176,4 +180,12 @@ test("Model.with deep", async () => {
   const results2 = await User.with("chat.message").lean().get();
 
   expect(results2).toEqual(items);
+
+  const results3 = await User.with("chat", "chat.message").get();
+
+  expect(results3.map((item: any) => item.toJSON())).toEqual(items);
+
+  const results4 = await User.with("chat.message").get();
+
+  expect(results4.map((item: any) => item.toJSON())).toEqual(items);
 });

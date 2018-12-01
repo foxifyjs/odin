@@ -303,6 +303,12 @@ class Odin<T extends object = {}> extends Relational<T> {
       if (relations.includes(key)) {
         const relation = this[key]().relation;
 
+        if (Array.isArray(value)) {
+          this.relations[key] = value.map(item => new relation(item));
+
+          return;
+        }
+
         this.relations[key] = new relation(value);
 
         return;
