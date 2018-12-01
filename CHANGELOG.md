@@ -12,6 +12,13 @@
 
 ---
 
+## [v0.5.0](https://github.com/foxifyjs/odin/releases/tag/v0.5.0) - *(2018-12-01)*
+
+- :zap: Added deep relation loading ability
+- :zap: Added `lean` method to model queries to skip creating model instances
+- :star2: Improved model static method `toJsonSchema` functionality
+- :star2: Improved model hook `created`
+
 ## [v0.4.0](https://github.com/foxifyjs/odin/releases/tag/v0.4.0) - *(2018-11-16)*
 
 - :zap: Added `embedMany` relation

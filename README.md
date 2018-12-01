@@ -94,6 +94,7 @@ User.schema = {
       - [x] Update operation
       - [x] Delete operation
   - [x] `GraphQL` support
+  - [x] `JSON Schema` support
 - [ ] Migrations
 - [ ] Seeding
 - [ ] Tests
