@@ -5,9 +5,11 @@ class TypeDate extends TypeAny {
   protected _type = "Date";
 
   protected _base(v: any) {
-    if (utils.date.isDate(v)) return null;
+    if (utils.string.isString(v) || utils.number.isNumber(v)) v = new Date(v);
 
-    return "Must be a date";
+    if (utils.date.isDate(v) && v.toString() !== "Invalid Date") return null;
+
+    return "Must be a valid date";
   }
 
   public min(date: Date | (() => Date)) {
