@@ -16,6 +16,8 @@ class Base<T extends object = {}> {
 
   protected _original: Odin.Document & Partial<T> = {};
 
+  public relations: { [key: string]: any } = {};
+
   public attributes: Odin.Document & Partial<T> = {};
 
   protected get _isNew() {
@@ -36,7 +38,7 @@ class Base<T extends object = {}> {
     });
   }
 
-  public static relation = (target: any, relation: string) => {
+  public static relation = (target: any, relation: string, descriptor: any) => {
     target.constructor._relations = target.constructor._relations.concat([relation]);
   }
 }

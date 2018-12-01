@@ -278,8 +278,6 @@ class Odin<T extends object = {}> extends Relational<T> {
     return value;
   }
 
-  public attributes: Odin.Document & Partial<T> = {};
-
   constructor(document: Odin.Document & Partial<T> = {}) {
     super();
 
@@ -289,19 +287,30 @@ class Odin<T extends object = {}> extends Relational<T> {
 
     for (const attr in schema) {
       const getterName = getGetterName(attr);
-      const getter = (this as any)[getterName] || ((origin: any) => origin);
+      const getter = this[getterName] || ((origin: any) => origin);
       define(this, "get", attr, () => getter(this.attributes[attr]));
       getters.push(getterName);
 
       const setterName = getSetterName(attr);
-      const setter = (this as any)[setterName] || ((origin: any) => origin);
+      const setter = this[setterName] || ((origin: any) => origin);
       define(this, "set", attr, value => this.attributes[attr] = setter(value));
       setters.push(setterName);
     }
 
+    const relations = this.constructor._relations;
+
     object.forEach(document, (value, key) => {
-      if (setters.indexOf(key as string) === -1) this.attributes[key] = value;
-      else (this as any)[key] = value;
+      if (relations.includes(key)) {
+        const relation = this[key]().relation;
+
+        this.relations[key] = new relation(value);
+
+        return;
+      }
+
+      this.attributes[key] = value;
+      // if (setters.indexOf(key as string) === -1) this.attributes[key] = value;
+      // else (this as any)[key] = value;
     });
 
     // virtual attributes
@@ -339,22 +348,23 @@ class Odin<T extends object = {}> extends Relational<T> {
 
     if (hidden.includes("*")) return {};
 
-    const relations = this.constructor._relations;
-
-    return object.mapValues(this.attributes, (value, attr) => {
+    const attributes = object.mapValues(this.attributes, (value, attr) => {
       if (hidden.includes(attr)) return undefined;
 
-      if (relations.includes(attr)) {
-        if (Array.isArray(value)) return value.map(v => v.toJSON());
-
-        return value;
-        return value && value.toJSON();
-      }
-
-      const getter = (this as any)[getGetterName(attr)];
+      const getter = this[getGetterName(attr)];
 
       return (getter ? getter(value) : value);
     });
+
+    const relations = object.mapValues(this.relations, (value, attr) => {
+      if (hidden.includes(attr)) return undefined;
+
+      if (Array.isArray(value)) return value.map(v => v.toJSON());
+
+      return value && value.toJSON();
+    });
+
+    return { ...attributes, ...relations };
   }
 
   public inspect() {

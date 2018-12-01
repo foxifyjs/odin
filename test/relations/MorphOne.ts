@@ -32,14 +32,20 @@ const USERS = [
 
 const CHATS = [
   {
-    username: "ardalanamini",
-    name: "test",
+    name: "1",
+    chatable_id: "ardalanamini",
+    chatable_type: "User",
+  },
+  {
+    name: "2",
+    chatable_id: "123",
+    chatable_type: "Something",
   },
 ];
 
 const MESSAGES = [
   {
-    chatname: "test",
+    chat: "1",
     message: "Hello World",
   },
 ];
@@ -64,7 +70,7 @@ class User extends Odin {
 
   @Odin.relation
   public chat() {
-    return this.hasOne<Chat>("Chat", "username", "username");
+    return this.morphOne<Chat>("Chat", "username");
   }
 }
 
@@ -72,18 +78,19 @@ class User extends Odin {
 @Odin.register
 class Chat extends Odin {
   public static schema = {
-    username: Types.string.alphanum.min(3).required,
+    chatable_id: Types.string.alphanum.min(3).required,
+    chatable_type: Types.string.required,
     name: Types.string.required,
   };
 
   @Odin.relation
   public user() {
-    return this.hasOne<User>("User", "username", "username");
+    return this.hasOne<User>("User", "user", "chatable_id");
   }
 
   @Odin.relation
   public message() {
-    return this.hasOne<Message>("Message", "name", "chatname");
+    return this.hasOne<Message>("Message", "name", "chat");
   }
 }
 
@@ -91,13 +98,13 @@ class Chat extends Odin {
 @Odin.register
 class Message extends Odin {
   public static schema = {
-    chatname: Types.string.required,
+    chat: Types.string.required,
     message: Types.string.required,
   };
 
   @Odin.relation
   public chat() {
-    return this.hasOne<Chat>("Chat", "chatname", "name");
+    return this.hasOne<Chat>("Chat", "chat", "name");
   }
 }
 
@@ -136,29 +143,25 @@ afterAll(async (done) => {
 });
 
 test("Model.with", async () => {
-  expect.assertions(2);
+  expect.assertions(1);
 
   const items = USERS.map(user => ({
     ...user,
-    chat: CHATS.filter(chat => chat.username === user.username)[0],
+    chat: CHATS.filter(chat => chat.chatable_id === user.username && chat.chatable_type === "User")[0],
   }));
 
   const results = await User.with("chat").lean().get();
 
   expect(results).toEqual(items);
-
-  const results2 = await User.with("chat").get();
-
-  expect(results2.map((item: any) => item.toJSON())).toEqual(items);
 });
 
 test("Model.with deep", async () => {
-  expect.assertions(4);
+  expect.assertions(2);
 
   const items = USERS.map((user) => {
-    const chat = CHATS.filter(chat => chat.username === user.username)[0];
+    const chat = CHATS.filter(chat => chat.chatable_id === user.username && chat.chatable_type === "User")[0];
 
-    if (chat) (chat as any).message = MESSAGES.filter(message => message.chatname === chat.name)[0];
+    if (chat) (chat as any).message = MESSAGES.filter(message => message.chat === chat.name)[0];
 
     return {
       ...user,
@@ -173,12 +176,4 @@ test("Model.with deep", async () => {
   const results2 = await User.with("chat.message").lean().get();
 
   expect(results2).toEqual(items);
-
-  const results3 = await User.with("chat", "chat.message").lean().get();
-
-  expect(results3).toEqual(items);
-
-  const results4 = await User.with("chat.message").get();
-
-  expect(results4.map((item: any) => item.toJSON())).toEqual(items);
 });

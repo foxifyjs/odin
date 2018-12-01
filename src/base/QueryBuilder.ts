@@ -63,15 +63,6 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
           };
         })
     );
-    return relations.reduce(
-      (prev, cur) => {
-        if (!this._relations.includes(cur))
-          throw new Error(`Relation '${cur}' does not exist on '${this.name}' Model`);
-
-        return (this.prototype as any)[cur]().load(prev);
-      },
-      this.query()
-    );
   }
 
   /*********************************** Joins **********************************/

@@ -32,15 +32,39 @@ const USERS = [
 
 const CHATS = [
   {
-    username: "ardalanamini",
-    name: "test",
+    name: "chat 1",
+    user: "ardalanamini",
+  },
+  {
+    name: "chat 2",
+    user: "ardalanamini",
+  },
+  {
+    name: "chat 3",
+    user: "john",
   },
 ];
 
 const MESSAGES = [
   {
-    chatname: "test",
-    message: "Hello World",
+    chat: "chat 1",
+    message: "1: Hello World",
+  },
+  {
+    chat: "chat 1",
+    message: "2: Hello World",
+  },
+  {
+    chat: "chat 2",
+    message: "3: Hello World",
+  },
+  {
+    chat: "chat 2",
+    message: "4: Hello World",
+  },
+  {
+    chat: "chat 2",
+    message: "5: Hello World",
   },
 ];
 
@@ -63,8 +87,8 @@ class User extends Odin {
   };
 
   @Odin.relation
-  public chat() {
-    return this.hasOne<Chat>("Chat", "username", "username");
+  public chats() {
+    return this.hasMany<Chat>("Chat", "username", "user");
   }
 }
 
@@ -72,18 +96,18 @@ class User extends Odin {
 @Odin.register
 class Chat extends Odin {
   public static schema = {
-    username: Types.string.alphanum.min(3).required,
+    user: Types.string.alphanum.min(3).required,
     name: Types.string.required,
   };
 
   @Odin.relation
   public user() {
-    return this.hasOne<User>("User", "username", "username");
+    return this.hasOne<User>("User", "user", "username");
   }
 
   @Odin.relation
-  public message() {
-    return this.hasOne<Message>("Message", "name", "chatname");
+  public messages() {
+    return this.hasMany<Message>("Message", "name", "chat");
   }
 }
 
@@ -91,13 +115,13 @@ class Chat extends Odin {
 @Odin.register
 class Message extends Odin {
   public static schema = {
-    chatname: Types.string.required,
+    chat: Types.string.required,
     message: Types.string.required,
   };
 
   @Odin.relation
   public chat() {
-    return this.hasOne<Chat>("Chat", "chatname", "name");
+    return this.hasOne<Chat>("Chat", "chat", "name");
   }
 }
 
@@ -136,49 +160,38 @@ afterAll(async (done) => {
 });
 
 test("Model.with", async () => {
-  expect.assertions(2);
+  expect.assertions(1);
 
   const items = USERS.map(user => ({
     ...user,
-    chat: CHATS.filter(chat => chat.username === user.username)[0],
+    chats: CHATS.filter(chat => chat.user === user.username),
   }));
 
-  const results = await User.with("chat").lean().get();
+  const results = await User.with("chats").lean().get();
 
   expect(results).toEqual(items);
-
-  const results2 = await User.with("chat").get();
-
-  expect(results2.map((item: any) => item.toJSON())).toEqual(items);
 });
 
 test("Model.with deep", async () => {
-  expect.assertions(4);
+  expect.assertions(2);
 
   const items = USERS.map((user) => {
-    const chat = CHATS.filter(chat => chat.username === user.username)[0];
-
-    if (chat) (chat as any).message = MESSAGES.filter(message => message.chatname === chat.name)[0];
+    const chats = CHATS.filter(chat => chat.user === user.username).map(chat => ({
+      ...chat,
+      messages: MESSAGES.filter(message => message.chat === chat.name),
+    }));
 
     return {
       ...user,
-      chat,
+      chats,
     };
   });
 
-  const results = await User.with("chat", "chat.message").lean().get();
+  const results = await User.with("chats", "chats.messages").lean().get();
 
   expect(results).toEqual(items);
 
-  const results2 = await User.with("chat.message").lean().get();
+  const results2 = await User.with("chats.messages").lean().get();
 
   expect(results2).toEqual(items);
-
-  const results3 = await User.with("chat", "chat.message").lean().get();
-
-  expect(results3).toEqual(items);
-
-  const results4 = await User.with("chat.message").get();
-
-  expect(results4.map((item: any) => item.toJSON())).toEqual(items);
 });
