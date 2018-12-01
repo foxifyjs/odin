@@ -173,7 +173,7 @@ afterAll(async (done) => {
 });
 
 test("Model.with", async () => {
-  expect.assertions(1);
+  expect.assertions(2);
 
   const items = USERS.map(user => ({
     ...user,
@@ -183,10 +183,14 @@ test("Model.with", async () => {
   const results = await User.with("chats").lean().get();
 
   expect(results).toEqual(items);
+
+  const results2 = await User.with("chats").get();
+
+  expect(results2.map((item: any) => item.toJSON())).toEqual(items);
 });
 
 test("Model.with deep", async () => {
-  expect.assertions(2);
+  expect.assertions(4);
 
   const items = USERS.map((user) => {
     const chats = CHATS.filter(chat => chat.chatable_id === user.username && chat.chatable_type === "User")
@@ -208,4 +212,12 @@ test("Model.with deep", async () => {
   const results2 = await User.with("chats.messages").lean().get();
 
   expect(results2).toEqual(items);
+
+  const results3 = await User.with("chats", "chats.messages").get();
+
+  expect(results3).toEqual(items);
+
+  const results4 = await User.with("chats.messages").get();
+
+  expect(results4.map((item: any) => item.toJSON())).toEqual(items);
 });

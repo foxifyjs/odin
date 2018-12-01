@@ -174,7 +174,7 @@ test("Model.with deep", async () => {
 
   expect(results2).toEqual(items);
 
-  const results3 = await User.with("chat", "chat.message").lean().get();
+  const results3 = await User.with("chat", "chat.message").get();
 
   expect(results3).toEqual(items);
 
