@@ -3,29 +3,14 @@ import Connect from "./Connect";
 import * as DB from "./DB";
 import events from "./events";
 import GraphQL from "./GraphQL";
-import Relation from "./Relation/Base";
-import HasOne from "./Relation/HasOne";
-import MorphOne from "./Relation/MorphOne";
 import * as Types from "./types";
 import TypeAny from "./types/Any";
-import TypeArray from "./types/Array";
-import TypeDate from "./types/Date";
-import TypeObjectId from "./types/ObjectId";
-import { array, define, getGetterName, getSetterName, makeCollectionName, object, string } from "./utils";
+import { array, define, getGetterName, getSetterName, object, string } from "./utils";
 
 const EVENTS: Odin.Event[] = ["create"];
 
 module Odin {
   export type Connection = string;
-
-  export interface ConnectionObject {
-    driver?: string;
-    host?: string;
-    port?: string;
-    database: string;
-    user?: string;
-    password?: string;
-  }
 
   export interface Schema {
     [key: string]: any;
@@ -51,43 +36,6 @@ class Odin<T extends object = {}> extends Relational<T> {
   public static GraphQL = GraphQL;
   public static Types = Types;
 
-  public static connection: Odin.Connection = "default";
-
-  public static collection?: string;
-
-  public static schema: Odin.Schema = {};
-
-  public static timestamps: boolean = true;
-
-  public static softDelete: boolean = false;
-
-  public static CREATED_AT = "created_at";
-  public static UPDATED_AT = "updated_at";
-  public static DELETED_AT = "deleted_at";
-
-  public static hidden: string[] = [];
-
-  protected static get _collection() {
-    return this.collection || makeCollectionName(this.name);
-  }
-
-  protected static get _schema() {
-    const schema: Odin.Schema = {
-      id: this.Types.id,
-      ...this.schema,
-    };
-
-    if (this.timestamps) {
-      schema[this.CREATED_AT] = this.Types.date.default(() => new Date());
-      schema[this.UPDATED_AT] = this.Types.date;
-    }
-
-    if (this.softDelete)
-      schema[this.DELETED_AT] = this.Types.date;
-
-    return schema;
-  }
-
   public static on<T extends object>(event: Odin.Event, listener: (item: Odin<T>) => void) {
     if (!array.contains(EVENTS, event)) throw new TypeError(`Unexpected event "${event}"`);
 
@@ -98,119 +46,6 @@ class Odin<T extends object = {}> extends Relational<T> {
 
   public static toString() {
     return this._collection;
-  }
-
-  public static toJsonSchema() {
-    const hidden = this.hidden;
-
-    const jsonSchemaGenerator = (schema: Odin.Schema, ancestors: string[] = []) => {
-      const properties: { [key: string]: any } = {};
-      const required: string[] = [];
-
-      for (const key in schema) {
-        const hide = ancestors.concat([key]).join(".");
-
-        if (array.contains(hidden, hide)) continue;
-
-        const type = schema[key];
-
-        if (type instanceof TypeAny) {
-          // Type
-
-          let schemaType: string = (type as any)._type.toLowerCase();
-
-          if (
-            type instanceof TypeObjectId
-            || type instanceof TypeDate
-          ) schemaType = "string";
-
-          properties[key] = {
-            type: schemaType,
-          };
-
-          if (type instanceof TypeArray) {
-            let ofSchemaType: string = (type.ofType as any)._type.toLowerCase();
-
-            if (
-              type.ofType instanceof TypeObjectId
-              || type.ofType instanceof TypeDate
-            ) ofSchemaType = "string";
-
-            properties[key].items = {
-              type: ofSchemaType,
-            };
-          }
-
-          if ((type as any)._required) required.push(key);
-
-          continue;
-        }
-
-        // Object
-
-        const generated = jsonSchemaGenerator(type, ancestors.concat([key]));
-
-        if (object.size(generated.properties) === 0) {
-          properties[key] = {
-            type: "object",
-          };
-
-          continue;
-        }
-
-        properties[key] = generated;
-
-        if (generated.required.length) required.push(key);
-      }
-
-      return {
-        properties,
-        required,
-        type: "object",
-      };
-    };
-
-    const jsonSchema = jsonSchemaGenerator(this._schema);
-
-    if (this.timestamps) {
-      jsonSchema.properties[this.CREATED_AT] = {
-        type: "string",
-      };
-
-      jsonSchema.properties[this.UPDATED_AT] = {
-        type: "string",
-      };
-
-      jsonSchema.required.push(this.CREATED_AT);
-    }
-
-    if (this.softDelete) jsonSchema.properties[this.DELETED_AT] = {
-      type: "string",
-    };
-
-    for (const key of Object.getOwnPropertyNames(this.prototype)) {
-      if (key === "constructor") continue;
-
-      const proto = this.prototype[key]();
-      if (proto instanceof Relation) {
-        if (proto instanceof HasOne || proto instanceof MorphOne) {
-          jsonSchema.properties[key] = {
-            type: "object",
-          };
-
-          continue;
-        }
-
-        jsonSchema.properties[key] = {
-          type: "array",
-          items: {
-            type: "object",
-          },
-        };
-      }
-    }
-
-    return jsonSchema;
   }
 
   public static validate<T = object>(document: T, updating: boolean = false) {
@@ -315,8 +150,6 @@ class Odin<T extends object = {}> extends Relational<T> {
       }
 
       this.attributes[key] = value;
-      // if (setters.indexOf(key as string) === -1) this.attributes[key] = value;
-      // else (this as any)[key] = value;
     });
 
     // virtual attributes
