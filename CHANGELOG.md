@@ -12,6 +12,10 @@
 
 ---
 
+## [v0.5.4](https://github.com/foxifyjs/odin/releases/tag/v0.5.4) - *(2018-12-03)*
+
+- :zap: Added `Collection` to create collection and indexes
+
 ## [v0.5.0](https://github.com/foxifyjs/odin/releases/tag/v0.5.0) - *(2018-12-01)*
 
 - :zap: Added deep relation loading ability

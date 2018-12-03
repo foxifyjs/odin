@@ -1,4 +1,5 @@
 import Relational from "./base/Relational";
+import Collection from "./Collection";
 import Connect from "./Connect";
 import * as DB from "./DB";
 import events from "./events";
@@ -31,6 +32,7 @@ module Odin {
 }
 
 class Odin<T extends object = {}> extends Relational<T> {
+  public static Collection = Collection;
   public static Connect = Connect;
   public static DB = DB;
   public static GraphQL = GraphQL;
