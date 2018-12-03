@@ -76,8 +76,6 @@ class Base<T extends object = {}> {
     return MODELS;
   }
 
-  public static isOdin = (arg: any): arg is Odin => arg instanceof Odin;
-
   public static register = (...models: Array<typeof Odin>) => {
     models.forEach((model) => {
       if (MODELS[model.name]) throw new Error(`Model "${model.name}" already exists`);
@@ -97,6 +95,13 @@ class Base<T extends object = {}> {
   }
 
   public static toJsonSchema(definitions = true) {
+    if (definitions) return {
+      definitions: JSON_SCHEMA_DEFINITIONS,
+      ref: {
+        $ref: `#/definitions/${this.name}`,
+      },
+    };
+
     const hidden = this.hidden;
 
     const jsonSchemaGenerator = (schema: Odin.Schema, ancestors: string[] = []) => {
@@ -204,11 +209,6 @@ class Base<T extends object = {}> {
         },
       };
     });
-
-    if (definitions) return {
-      definitions: JSON_SCHEMA_DEFINITIONS,
-      ...jsonSchema,
-    };
 
     return jsonSchema;
   }

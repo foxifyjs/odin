@@ -5,7 +5,7 @@ import events from "./events";
 import GraphQL from "./GraphQL";
 import * as Types from "./types";
 import TypeAny from "./types/Any";
-import { array, define, getGetterName, getSetterName, object, string } from "./utils";
+import { define, getGetterName, getSetterName, object, string } from "./utils";
 
 const EVENTS: Odin.Event[] = ["create"];
 
@@ -36,8 +36,10 @@ class Odin<T extends object = {}> extends Relational<T> {
   public static GraphQL = GraphQL;
   public static Types = Types;
 
+  public static isOdin = (arg: any): arg is Odin => arg instanceof Odin;
+
   public static on<T extends object>(event: Odin.Event, listener: (item: Odin<T>) => void) {
-    if (!array.contains(EVENTS, event)) throw new TypeError(`Unexpected event "${event}"`);
+    if (!EVENTS.includes(event)) throw new TypeError(`Unexpected event "${event}"`);
 
     events.on(`${this.name}:${event}`, listener);
 

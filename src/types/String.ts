@@ -47,7 +47,7 @@ class TypeString extends TypeAny {
   }
 
   get email() {
-    return this._test((v: string) => !/^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/.test(v)
+    return this._test((v: string) => !/^\w[\w\.]+@\w+?\.[a-zA-Z]{2,3}$/.test(v)
       ? "Must be an email address" : null);
   }
 
