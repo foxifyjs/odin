@@ -12,10 +12,10 @@ class Join<T = any> extends Filter {
 
     return {
       $lookup: {
-        as: this._as,
-        from: this._collection,
         let: this._let,
+        from: this._collection,
         pipeline: this._pipeline,
+        as: this._as,
       },
     };
   }
@@ -54,10 +54,9 @@ class Join<T = any> extends Filter {
 
       keys.push(prepareKey(keys.pop() as string));
 
-      const key = keys.join(".");
-      const pivotKey = `pivot_${key}`;
+      const pivotKey = `pivot_${keys.join("_ODIN_")}`;
 
-      this._let[pivotKey] = `$${key}`;
+      this._let[pivotKey] = `$${keys.join(".")}`;
 
       return this._push_filter("and", {
         $expr: {
@@ -75,10 +74,9 @@ class Join<T = any> extends Filter {
 
       keys.push(prepareKey(keys.pop() as string));
 
-      const key = keys.join(".");
-      const pivotKey = `pivot_${key}`;
+      const pivotKey = `pivot_${keys.join("_ODIN_")}`;
 
-      this._let[pivotKey] = `$${key}`;
+      this._let[pivotKey] = `$${keys.join(".")}`;
 
       return this._push_filter("or", {
         $expr: {

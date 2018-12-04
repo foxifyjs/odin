@@ -31,6 +31,25 @@ class MorphMany<T extends Odin = Odin> extends MorphBase<T> {
       name
     );
   }
+
+  public loadCount(query: DB<T> | Join<T>) {
+    const constructor = this.model.constructor;
+
+    return query
+      .join(
+        this.relation.toString(),
+        q => q
+          .where(this.foreignKey, `${constructor.toString()}.data.${this.localKey}`)
+          .where(`${this.type}_type`, constructor.name),
+        "relation"
+      )
+      .pipeline({
+        $project: {
+          data: 1,
+          count: { $size: "$relation" },
+        },
+      });
+  }
 }
 
 export default MorphMany;

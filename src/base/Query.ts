@@ -63,21 +63,25 @@ class Query<T extends object = {}> extends DB<T> {
 
   /****************************** Has & WhereHas ******************************/
 
-  // TODO: join relation's count
   public has(relation: string, operator: DB.Operator = ">", count: number = 0) {
+    if (!(this._model as any)._relations.includes(relation))
+      throw new Error(`Relation '${relation}' does not exist on '${this._model.name}' Model`);
+
     this.pipeline({
       $project: {
-        _id: 0,
         data: "$$ROOT",
       },
     });
 
     // join relation
+    (this._model.prototype as any)[relation]().loadCount(this);
 
     return this.pipeline(
       {
-        relation: {
-          [OPERATORS[operator]]: count, // filter data according to count and operator
+        $match: {
+          count: {
+            [`$${OPERATORS[operator]}`]: count, // filter data according to count and operator
+          },
         },
       },
       {

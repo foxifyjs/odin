@@ -33,9 +33,24 @@ class HasMany<T extends Odin = Odin> extends Relation<T> {
         },
         q.where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
       ),
-      // q => q.where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`),
       this.as
     );
+  }
+
+  public loadCount(query: DB<T> | Join<T>) {
+    return query
+      .join(
+        this.relation.toString(),
+        q => q
+          .where(this.foreignKey, `${this.model.constructor.toString()}.data.${this.localKey}`),
+        "relation"
+      )
+      .pipeline({
+        $project: {
+          data: 1,
+          count: { $size: "$relation" },
+        },
+      });
   }
 }
 

@@ -36,6 +36,26 @@ class MorphOne<T extends Odin = Odin> extends MorphBase<T, "MorphOne"> {
     });
   }
 
+  public loadCount(query: DB<T> | Join<T>) {
+    const constructor = this.model.constructor;
+
+    return query
+      .join(
+        this.relation.toString(),
+        q => q
+          .where(this.foreignKey, `${constructor.toString()}.data.${this.localKey}`)
+          .where(`${this.type}_type`, constructor.name)
+          .limit(1),
+        "relation"
+      )
+      .pipeline({
+        $project: {
+          data: 1,
+          count: { $size: "$relation" },
+        },
+      });
+  }
+
   public insert(items: T[]): Promise<undefined>;
   public insert(items: T[], callback: DB.Callback<undefined>): void;
   public async insert(items: T[], callback?: DB.Callback<undefined>) {

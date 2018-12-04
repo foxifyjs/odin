@@ -35,13 +35,27 @@ class HasOne<T extends Odin = Odin> extends Relation<T, "HasOne"> {
         q.where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
           .limit(1)
       ),
-      // q => q
-      //   .where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
-      //   .limit(1),
       name
     ).pipeline({
       $unwind: { path: `$${name}`, preserveNullAndEmptyArrays: true },
     });
+  }
+
+  public loadCount(query: DB<T> | Join<T>) {
+    return query
+      .join(
+        this.relation.toString(),
+        q => q
+          .where(this.foreignKey, `${this.model.constructor.toString()}.data.${this.localKey}`)
+          .limit(1),
+        "relation"
+      )
+      .pipeline({
+        $project: {
+          data: 1,
+          count: { $size: "$relation" },
+        },
+      });
   }
 
   public insert(items: T[]): Promise<undefined>;

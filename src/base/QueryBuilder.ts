@@ -47,6 +47,12 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
     return this.query().lean();
   }
 
+  /****************************** Has & WhereHas ******************************/
+
+  public static has(relation: string, operator?: DB.Operator, count?: number) {
+    return this.query().has(relation, operator, count);
+  }
+
   /****************************** With Relations ******************************/
 
   public static with<T extends object>(...relations: string[]): Query<T>;

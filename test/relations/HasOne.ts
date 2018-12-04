@@ -1,4 +1,5 @@
 import * as Odin from "../../src";
+import { array } from "../../src/utils";
 
 declare global {
   namespace NodeJS {
@@ -181,4 +182,14 @@ test("Model.with deep", async () => {
   const results4 = await User.with("chat.message").get();
 
   expect(results4.map((item: any) => item.toJSON())).toEqual(items);
+});
+
+test("Model.has", async () => {
+  expect.assertions(1);
+
+  const items = USERS.filter(user => array.any(CHATS, chat => chat.username === user.username));
+
+  const results = await User.has("chat").lean().get();
+
+  expect(results).toEqual(items);
 });

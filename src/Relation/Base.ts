@@ -10,6 +10,11 @@ namespace Relation {
     name: string;
     relations: Relation[];
   }
+
+  export interface RelationCount {
+    name: string;
+    relation?: RelationCount;
+  }
 }
 
 abstract class Relation<T extends Odin = Odin, A = undefined> {
@@ -37,6 +42,8 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public abstract load(query: DB<T> | Join<T>, relations: Relation.Relation[]): DB<T> | Join<T>;
+
+  public abstract loadCount(query: DB<T> | Join<T>): DB<T> | Join<T>;
 
   /****************************** With Relations ******************************/
 

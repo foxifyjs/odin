@@ -1,7 +1,7 @@
 import * as Odin from "..";
 import * as DB from "../DB";
 import Join from "../DB/Join";
-import { makeCollectionId } from "../utils";
+import { array, makeCollectionId } from "../utils";
 import Relation from "./Base";
 import HasMany from "./HasMany";
 
@@ -34,9 +34,24 @@ class EmbedMany<T extends Odin = Odin> extends HasMany<T> {
         },
         q.whereIn(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
       ),
-      // q => q.whereIn(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`),
       this.as
     );
+  }
+
+  public loadCount(query: DB<T> | Join<T>) {
+    return query
+      .join(
+        this.relation.toString(),
+        q => q
+          .whereIn(this.foreignKey, `${this.model.constructor.toString()}.data.${this.localKey}`),
+        "relation"
+      )
+      .pipeline({
+        $project: {
+          data: 1,
+          count: { $size: "$relation" },
+        },
+      });
   }
 }
 

@@ -12,6 +12,10 @@
 
 ---
 
+## [v0.6.0](https://github.com/foxifyjs/odin/releases/tag/v0.6.0) - *(2018-12-04)*
+
+- :zap: Added `has` to model queries (use with caution since it may have a negative impact on your performance)
+
 ## [v0.5.4](https://github.com/foxifyjs/odin/releases/tag/v0.5.4) - *(2018-12-03)*
 
 - :zap: Added `Collection` to create collection and indexes
