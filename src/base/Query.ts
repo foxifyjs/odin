@@ -4,7 +4,7 @@ import * as Odin from "..";
 import * as DB from "../DB";
 import events from "../events";
 import Relation from "../Relation/Base";
-import { initialize, string } from "../utils";
+import { initialize, OPERATORS, string } from "../utils";
 
 namespace Query {
   export interface Rel {
@@ -60,6 +60,35 @@ class Query<T extends object = {}> extends DB<T> {
 
     return this;
   }
+
+  /****************************** Has & WhereHas ******************************/
+
+  // TODO: join relation's count
+  public has(relation: string, operator: DB.Operator = ">", count: number = 0) {
+    this.pipeline({
+      $project: {
+        _id: 0,
+        data: "$$ROOT",
+      },
+    });
+
+    // join relation
+
+    return this.pipeline(
+      {
+        relation: {
+          [OPERATORS[operator]]: count, // filter data according to count and operator
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: "$data",
+        },
+      }
+    );
+  }
+
+  // TODO: whereHas
 
   /*********************************** Joins **********************************/
 
