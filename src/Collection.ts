@@ -4,7 +4,7 @@ import { connection as getConnection } from "./Connect";
 
 namespace Collection {
   export interface Spec {
-    [field: string]: 1 | -1;
+    [field: string]: 1 | -1 | "text" | "2dsphere" | "2d";
   }
 
   export interface Index {
@@ -33,6 +33,26 @@ class Collection {
     });
 
     return this;
+  }
+
+  public timestamps() {
+    return this
+      .index(
+        { created_at: 1 },
+        { name: "created_at", background: true }
+      )
+      .index(
+        { updated_at: 1 },
+        { name: "updated_at", background: true }
+      );
+  }
+
+  public softDelete() {
+    return this
+      .index(
+        { deleted_at: 1 },
+        { name: "deleted_at", background: true }
+      );
   }
 
   public exec(callback?: (err?: mongodb.MongoError) => void) {

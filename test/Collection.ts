@@ -23,7 +23,9 @@ it("Should create collection with the given indexes (async/await)", async () => 
 
   collection
     .index({ field_1: 1, field_2: -1 }, { name: "field_1_field_2", background: true, unique: true })
-    .index({ field_3: 1 }, { name: "field_3", background: true });
+    .index({ field_3: 1 }, { name: "field_3", background: true })
+    .timestamps()
+    .softDelete();
 
   await collection.exec();
 });
@@ -35,7 +37,9 @@ it("Should create collection with the given indexes (callback)", (done) => {
 
   collection
     .index({ field_1: 1, field_2: -1 }, { name: "field_1_field_2", background: true, unique: true })
-    .index({ field_3: 1 }, { name: "field_3", background: true });
+    .index({ field_3: 1 }, { name: "field_3", background: true })
+    .timestamps()
+    .softDelete();
 
   collection.exec((err) => {
     expect(err).toBe(null);

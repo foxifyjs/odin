@@ -1,6 +1,6 @@
 {
   "name": "@foxify/odin",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Active Record Model",
   "author": "Ardalan Amini <ardalanamini22@gmail.com> [https://github.com/ardalanamini]",
   "contributors": [
@@ -60,7 +60,7 @@
     "@types/deasync": "^0.1.0",
     "@types/jest": "^23.3.10",
     "codecov": "^3.1.0",
-    "dotenv": "^6.1.0",
+    "dotenv": "^6.2.0",
     "fs-readdir-recursive": "^1.1.0",
     "jest": "^23.6.0",
     "mongodb-memory-server": "^2.7.4",
