@@ -282,7 +282,7 @@ class Query<T extends object = {}> extends DB<T> {
     };
 
     if (callback) {
-      if (error) return callback(error, undefined as any);
+      if (error) return callback(error as any, undefined as any);
 
       return (async as any).map(
         items,

@@ -1,13 +1,14 @@
 import * as mongodb from "mongodb";
 import { connection as getConnection } from "../Connect";
-import { date, function as func, isID, makeCollectionId, object, prepareKey } from "../utils";
+import OdinError, { safeExec } from "../Error";
+import { date, function as func, isID, makeCollectionId, object, prepareKey, string } from "../utils";
 import Filter from "./Filter";
 import Join from "./Join";
 
 const ObjectId = mongodb.ObjectId;
 
 namespace DB {
-  export type Callback<T = any> = (error: Error, result: T) => void;
+  export type Callback<T = any> = (error: OdinError, result: T) => void;
 
   export type Operator = "<" | "<=" | "=" | "<>" | ">=" | ">";
 
@@ -187,9 +188,16 @@ class DB<T extends object = any> extends Filter {
   //   return this.pipeline({ $match: MATCH });
   // }
 
-  public orderBy(field: string, order?: DB.Order) {
+  public orderBy(field: string, order?: DB.Order): this;
+  public orderBy(fields: { [field: string]: "asc" | "desc" }): this;
+  public orderBy(fields: string | { [field: string]: "asc" | "desc" }, order?: DB.Order) {
+    const $sort: { [field: string]: 1 | -1 } = {};
+
+    if (string.isString(fields)) $sort[fields] = (order === "desc" ? -1 : 1);
+    else object.forEach(fields, (value, field) => $sort[field] = (value === "desc" ? -1 : 1));
+
     return this._resetFilters()
-      .pipeline({ $sort: { [field]: order === "desc" ? -1 : 1 } });
+      .pipeline({ $sort });
   }
 
   public skip(offset: number) {
@@ -208,6 +216,43 @@ class DB<T extends object = any> extends Filter {
 
   public take(limit: number) {
     return this.limit(limit);
+  }
+
+  /********************************* Indexes *********************************/
+
+  public indexes(): Promise<any>;
+  public indexes(callback: DB.Callback<any>): void;
+  public indexes(callback?: DB.Callback<any>) {
+    return safeExec(this._query, "indexes", [], callback);
+  }
+
+  public index(fieldOrSpec: string | object, options?: mongodb.IndexOptions): Promise<string>;
+  public index(fieldOrSpec: string | object, callback: DB.Callback<string>): void;
+  public index(fieldOrSpec: string | object, options: mongodb.IndexOptions, callback: DB.Callback<string>): void;
+  public index(
+    fieldOrSpec: string | object,
+    options?: mongodb.IndexOptions | DB.Callback<string>,
+    callback?: DB.Callback<string>
+  ) {
+    return safeExec(this._query, "createIndex", [fieldOrSpec, options], callback);
+  }
+
+  public reIndex(): Promise<any>;
+  public reIndex(callback: DB.Callback<any>): void;
+  public reIndex(callback?: DB.Callback<any>) {
+    return safeExec(this._query, "reIndex", [], callback);
+  }
+
+  public dropIndex(indexName: string, options?: mongodb.CommonOptions & { maxTimeMS?: number }): Promise<any>;
+  public dropIndex(
+    indexName: string, options: mongodb.CommonOptions & { maxTimeMS?: number }, callback: DB.Callback<any>
+  ): void;
+  public dropIndex(
+    indexName: string,
+    options?: (mongodb.CommonOptions & { maxTimeMS?: number }) | DB.Callback<any>,
+    callback?: DB.Callback<any>
+  ) {
+    return safeExec(this._query, "dropIndex", [indexName, options], callback);
   }
 
   /*********************************** Read **********************************/
@@ -241,7 +286,7 @@ class DB<T extends object = any> extends Filter {
   public count(): Promise<number>;
   public count(callback: DB.Callback<number>): void;
   public count(callback?: DB.Callback<number>): Promise<number> | void {
-    return this._query.countDocuments(this._filtersOnly(), callback as any);
+    return safeExec(this._query, "countDocuments", [this._filtersOnly()], callback);
   }
 
   public exists(): Promise<boolean>;
@@ -268,8 +313,9 @@ class DB<T extends object = any> extends Filter {
       ),
     });
 
-    return this._aggregate()
-      .toArray(callback as any);
+    return safeExec(this._aggregate(), "toArray", [], callback);
+    // return this._aggregate()
+    //   .toArray(callback as any);
   }
 
   public first(fields?: string[]): Promise<T>;
@@ -296,16 +342,30 @@ class DB<T extends object = any> extends Filter {
 
     const keys = field.split(".");
 
-    return this
-      .map((item: any) => keys.reduce((prev, key) => prev[key], item))
-      .pipeline({
-        $project: {
-          _id: 0,
-          [field]: { $ifNull: [`$${field}`, "$__NULL__"] },
-        },
-      })
-      ._aggregate()
-      .toArray(callback as any) as any;
+    return safeExec(
+      this
+        .map((item: any) => keys.reduce((prev, key) => prev[key], item))
+        .pipeline({
+          $project: {
+            _id: 0,
+            [field]: { $ifNull: [`$${field}`, "$__NULL__"] },
+          },
+        })
+        ._aggregate(),
+      "toArray",
+      [],
+      callback
+    );
+    // return this
+    //   .map((item: any) => keys.reduce((prev, key) => prev[key], item))
+    //   .pipeline({
+    //     $project: {
+    //       _id: 0,
+    //       [field]: { $ifNull: [`$${field}`, "$__NULL__"] },
+    //     },
+    //   })
+    //   ._aggregate()
+    //   .toArray(callback as any) as any;
   }
 
   public pluck(field: string): Promise<any>;
@@ -364,12 +424,13 @@ class DB<T extends object = any> extends Filter {
 
   /********************************** Inserts *********************************/
 
-  protected _insertMany(item: T[]): Promise<mongodb.InsertWriteOpResult>;
-  protected _insertMany(item: T[], callback: DB.Callback<mongodb.InsertWriteOpResult>): void;
-  protected _insertMany(item: T[], callback?: DB.Callback<mongodb.InsertWriteOpResult>) {
-    item = this._prepareToStore(item);
+  protected _insertMany(items: T[]): Promise<mongodb.InsertWriteOpResult>;
+  protected _insertMany(items: T[], callback: DB.Callback<mongodb.InsertWriteOpResult>): void;
+  protected _insertMany(items: T[], callback?: DB.Callback<mongodb.InsertWriteOpResult>) {
+    items = this._prepareToStore(items);
 
-    return this._query.insertMany(item, callback as any) as any;
+    return safeExec(this._query, "insertMany", [items], callback);
+    // return this._query.insertMany(items, callback as any) as any;
   }
 
   protected _insertOne(item: T): Promise<mongodb.InsertOneWriteOpResult>;
@@ -377,7 +438,8 @@ class DB<T extends object = any> extends Filter {
   protected _insertOne(item: T, callback?: DB.Callback<mongodb.InsertOneWriteOpResult>) {
     item = this._prepareToStore(item);
 
-    return this._query.insertOne(item, callback as any) as any;
+    return safeExec(this._query, "insertOne", [item], callback);
+    // return this._query.insertOne(item, callback as any) as any;
   }
 
   public insert(item: T | T[]): Promise<number>;
@@ -411,10 +473,11 @@ class DB<T extends object = any> extends Filter {
     update: object,
     callback?: DB.Callback<mongodb.UpdateWriteOpResult>
   ): Promise<mongodb.UpdateWriteOpResult> {
-    if (callback)
-      return this._query.updateMany(this._filtersOnly(), update, callback) as any;
+    return safeExec(this._query, "updateMany", [this._filtersOnly(), update], callback);
+    // if (callback)
+    //   return this._query.updateMany(this._filtersOnly(), update, callback) as any;
 
-    return await this._query.updateMany(this._filtersOnly(), update);
+    // return await this._query.updateMany(this._filtersOnly(), update);
   }
 
   public update(update: T): Promise<number>;
@@ -476,13 +539,21 @@ class DB<T extends object = any> extends Filter {
   public delete(): Promise<number>;
   public delete(callback: DB.Callback<number>): void;
   public async delete(callback?: DB.Callback<number>) {
-    if (callback)
-      return this._query.deleteMany(
-        this._filtersOnly(),
-        (err, res: any) => callback(err, res.deletedCount)
-      );
+    if (callback) return safeExec(this._query, "deleteMany", [this._filtersOnly()], (err, res) => {
+      if (err) return callback(err, res);
 
-    return (await this._query.deleteMany(this._filtersOnly())).deletedCount;
+      callback(err, res.deletedCount);
+    });
+
+    return (await safeExec(this._query, "deleteMany", [this._filtersOnly()])).deletedCount;
+
+    // if (callback)
+    //   return this._query.deleteMany(
+    //     this._filtersOnly(),
+    //     (err, res: any) => callback(err, res.deletedCount)
+    //   );
+
+    // return (await this._query.deleteMany(this._filtersOnly())).deletedCount;
   }
 }
 

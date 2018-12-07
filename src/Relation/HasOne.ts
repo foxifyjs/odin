@@ -64,7 +64,7 @@ class HasOne<T extends Odin = Odin> extends Relation<T, "HasOne"> {
     const error = new TypeError("'hasOne' relation can't insert multiple items");
 
     if (callback)
-      return callback(error, undefined);
+      return callback(error as any, undefined);
 
     throw error;
   }
@@ -78,7 +78,7 @@ class HasOne<T extends Odin = Odin> extends Relation<T, "HasOne"> {
       return this.exists((err, res) => {
         if (err) return callback(err, undefined as any);
 
-        if (res) return callback(error, undefined as any);
+        if (res) return callback(error as any, undefined as any);
 
         super.create(item, callback);
       });
@@ -99,7 +99,7 @@ class HasOne<T extends Odin = Odin> extends Relation<T, "HasOne"> {
       return this.first((err, res) => {
         if (err) return callback(err, undefined as any);
 
-        if (res.id !== id) return callback(error, undefined as any);
+        if (res.id !== id) return callback(error as any, undefined as any);
 
         super.save(item, callback);
       });

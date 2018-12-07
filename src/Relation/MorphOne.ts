@@ -62,7 +62,7 @@ class MorphOne<T extends Odin = Odin> extends MorphBase<T, "MorphOne"> {
     const error = new TypeError(`'${this.constructor.name}' relation can't insert multiple items`);
 
     if (callback)
-      return callback(error, undefined);
+      return callback(error as any, undefined);
 
     throw error;
   }
@@ -76,7 +76,7 @@ class MorphOne<T extends Odin = Odin> extends MorphBase<T, "MorphOne"> {
       return this.exists((err, res) => {
         if (err) return callback(err, undefined as any);
 
-        if (res) return callback(error, undefined as any);
+        if (res) return callback(error as any, undefined as any);
 
         super.create(item, callback);
       });
@@ -97,7 +97,7 @@ class MorphOne<T extends Odin = Odin> extends MorphBase<T, "MorphOne"> {
       return this.first((err, res) => {
         if (err) return callback(err, undefined as any);
 
-        if (res.id !== id) return callback(error, undefined as any);
+        if (res.id !== id) return callback(error as any, undefined as any);
 
         super.save(item, callback);
       });

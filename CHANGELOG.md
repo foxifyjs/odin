@@ -12,6 +12,10 @@
 
 ---
 
+## [v0.6.2](https://github.com/foxifyjs/odin/releases/tag/v0.6.2) - *(2018-12-07)*
+
+- :star2: Added more compatibility with [`Foxify`](https://github.com/foxifyjs/foxify) error handling
+
 ## [v0.6.0](https://github.com/foxifyjs/odin/releases/tag/v0.6.0) - *(2018-12-04)*
 
 - :zap: Added `has` to model queries (use with caution since it may have a negative impact on your performance)
