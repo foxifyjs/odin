@@ -2,6 +2,7 @@ import * as async from "async";
 import * as Odin from "..";
 import Query from "../base/Query";
 import * as DB from "../DB";
+import Filter from "../DB/Filter";
 import Join from "../DB/Join";
 import { getCallerFunctionName } from "../utils";
 
@@ -25,6 +26,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
     public readonly relation: typeof Odin,
     public readonly localKey: string,
     public readonly foreignKey: string,
+    protected readonly filter: (q: Filter<T>) => Filter<T> = q => q,
     caller: (...args: any[]) => any
   ) {
     this.as = getCallerFunctionName(caller);
@@ -35,10 +37,10 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
 
     if (relations) query = query.with(...relations);
 
-    return (query as Query<T>).where(
+    return this.filter((query as Query<T>).where(
       this.foreignKey,
       this.model.getAttribute(this.localKey)
-    );
+    )) as any;
   }
 
   public abstract load(query: DB<T> | Join<T>, relations: Relation.Relation[]): DB<T> | Join<T>;

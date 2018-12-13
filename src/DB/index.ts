@@ -1,7 +1,10 @@
 import * as mongodb from "mongodb";
+import * as Odin from "..";
 import { connection as getConnection } from "../Connect";
 import OdinError, { safeExec } from "../Error";
-import { date, function as func, isID, makeCollectionId, object, prepareKey, string } from "../utils";
+import {
+  array, date, function as func, isID, makeCollectionId, object, prepareKey, string
+} from "../utils";
 import Filter from "./Filter";
 import Join from "./Join";
 
@@ -16,20 +19,20 @@ namespace DB {
 
   export type Id = string;
 
-  export type FilterQuery = (query: Filter) => Filter;
+  export type FilterQuery<T extends object = any> = (query: Filter<T>) => Filter<T>;
 
-  export type JoinQuery<T = any> = (query: Join<T>) => Join<T>;
+  export type JoinQuery<T extends object = any> = (query: Join<T>) => Join<T>;
 
-  export interface GroupQueryObject<T = any> {
+  export interface GroupQueryObject<T extends object = any> {
     having: (field: string, operator: Operator | any, value?: any) => GroupQueryObject<T>;
   }
 
-  export type GroupQuery<T = any> = (query: GroupQueryObject<T>) => void;
+  export type GroupQuery<T extends object = any> = (query: GroupQueryObject<T>) => void;
 
-  export type Mapper<T = any> = (item: T, index: number, items: T[]) => any;
+  export type Mapper<T extends object = any> = (item: T, index: number, items: T[]) => any;
 }
 
-class DB<T extends object = any> extends Filter {
+class DB<T extends object = any> extends Filter<T> {
   protected _query: mongodb.Collection;
 
   protected _collection!: string;
@@ -37,6 +40,10 @@ class DB<T extends object = any> extends Filter {
   protected _pipeline: Array<{ [key: string]: any }> = [];
 
   protected _mappers: Array<DB.Mapper<T>> = [];
+
+  public get pipeline() {
+    return this._pipeline;
+  }
 
   constructor(connection: string) {
     super();
@@ -87,7 +94,7 @@ class DB<T extends object = any> extends Filter {
   protected _resetFilters() {
     const FILTER = this._filters;
 
-    if (object.size(FILTER) > 0) this.pipeline({ $match: FILTER });
+    if (object.size(FILTER) > 0) this._pipeline.push({ $match: FILTER });
 
     this._filter = {
       $and: [],
@@ -98,14 +105,15 @@ class DB<T extends object = any> extends Filter {
 
   /******************************** Collection *******************************/
 
-  public static connection(connection: string) {
+  public static connection<T extends object = any>(connection: string): DB<T> {
     return new this(connection);
   }
 
-  public static collection(collection: string) {
+  public static collection<T extends object = any>(collection: string): DB<T> {
     let connection = "default";
 
     const keys = collection.split(".");
+
     if (keys.length === 2) {
       connection = keys[0];
       collection = keys[1];
@@ -127,8 +135,10 @@ class DB<T extends object = any> extends Filter {
 
   /********************************** Extra **********************************/
 
-  public pipeline(...objects: object[]) {
-    this._pipeline.push(...objects);
+  public aggregate(...objects: object[] | object[][]) {
+    this._resetFilters();
+
+    this._pipeline.push(...array.deepFlatten(objects));
 
     return this;
   }
@@ -142,14 +152,12 @@ class DB<T extends object = any> extends Filter {
   ) {
     const join: Join = query(new Join(this._collection, collection, as)) as any;
 
-    this._resetFilters();
-
-    this.pipeline(join.pipe);
+    this.aggregate(join.pipeline);
 
     return this;
   }
 
-  /*************** Mapping, Ordering, Grouping, Limit & Offset ***************/
+  /********* Mapping, Ordering, Grouping, Limit, Offset & Pagination *********/
 
   public map(fn: DB.Mapper<T>) {
     this._mappers.push(fn);
@@ -188,6 +196,7 @@ class DB<T extends object = any> extends Filter {
   //   return this.pipeline({ $match: MATCH });
   // }
 
+  public orderBy<K extends keyof T>(field: K, order?: DB.Order): this;
   public orderBy(field: string, order?: DB.Order): this;
   public orderBy(fields: { [field: string]: "asc" | "desc" }): this;
   public orderBy(fields: string | { [field: string]: "asc" | "desc" }, order?: DB.Order) {
@@ -196,13 +205,11 @@ class DB<T extends object = any> extends Filter {
     if (string.isString(fields)) $sort[fields] = (order === "desc" ? -1 : 1);
     else object.forEach(fields, (value, field) => $sort[field] = (value === "desc" ? -1 : 1));
 
-    return this._resetFilters()
-      .pipeline({ $sort });
+    return this.aggregate({ $sort });
   }
 
   public skip(offset: number) {
-    return this._resetFilters()
-      .pipeline({ $skip: offset });
+    return this.aggregate({ $skip: offset });
   }
 
   public offset(offset: number) {
@@ -210,12 +217,17 @@ class DB<T extends object = any> extends Filter {
   }
 
   public limit(limit: number) {
-    return this._resetFilters()
-      .pipeline({ $limit: limit });
+    return this.aggregate({ $limit: limit });
   }
 
   public take(limit: number) {
     return this.limit(limit);
+  }
+
+  public paginate(page = 0, limit = 10) {
+    return this
+      .skip(page * limit)
+      .limit(limit);
   }
 
   /********************************* Indexes *********************************/
@@ -258,8 +270,6 @@ class DB<T extends object = any> extends Filter {
   /*********************************** Read **********************************/
 
   private _aggregate(options?: mongodb.CollectionAggregationOptions) {
-    this._resetFilters();
-
     return this._mappers.reduce(
       (query: any, mapper) => query.map(mapper),
       this._query.aggregate(
@@ -297,8 +307,8 @@ class DB<T extends object = any> extends Filter {
     return (await this.count()) !== 0;
   }
 
-  public get(fields?: string[]): Promise<T[]>;
-  public get(fields: string[], callback: DB.Callback<T[]>): void;
+  public get<K extends keyof T>(fields?: Array<K | string>): Promise<T[]>;
+  public get<K extends keyof T>(fields: Array<K | string>, callback: DB.Callback<T[]>): void;
   public get(callback: DB.Callback<T[]>): void;
   public get(fields?: string[] | DB.Callback<T[]>, callback?: DB.Callback<T[]>): Promise<T[]> | void {
     if (func.isFunction(fields)) {
@@ -306,7 +316,9 @@ class DB<T extends object = any> extends Filter {
       fields = undefined;
     }
 
-    if (fields) this.pipeline({
+    this._resetFilters();
+
+    if (fields) this.aggregate({
       $project: fields.reduce(
         (prev, cur) => (prev[prepareKey(cur)] = 1, prev),
         { _id: 0 } as { [key: string]: any }
@@ -314,12 +326,10 @@ class DB<T extends object = any> extends Filter {
     });
 
     return safeExec(this._aggregate(), "toArray", [], callback);
-    // return this._aggregate()
-    //   .toArray(callback as any);
   }
 
-  public first(fields?: string[]): Promise<T>;
-  public first(fields: string[], callback: DB.Callback<T>): void;
+  public first<K extends keyof T>(fields?: Array<K | string>): Promise<T>;
+  public first<K extends keyof T>(fields: Array<K | string>, callback: DB.Callback<T>): void;
   public first(callback: DB.Callback<T>): void;
   public async first(fields?: string[] | DB.Callback<T>, callback?: DB.Callback<T>) {
     if (func.isFunction(fields)) {
@@ -327,7 +337,8 @@ class DB<T extends object = any> extends Filter {
       fields = undefined;
     }
 
-    this.limit(1);
+    this._resetFilters()
+      .limit(1);
 
     if (callback) return this.get(fields as any, (err, res) =>
       (callback as DB.Callback<T>)(err, res && res[0]));
@@ -335,7 +346,9 @@ class DB<T extends object = any> extends Filter {
     return (await this.get(fields))[0];
   }
 
+  public value<K extends keyof T>(field: K): Promise<T[K]>;
   public value(field: string): Promise<any>;
+  public value<K extends keyof T>(field: K, callback: DB.Callback<T[K]>): void;
   public value(field: string, callback: DB.Callback<any>): void;
   public value(field: string, callback?: DB.Callback<any>) {
     field = prepareKey(field);
@@ -345,7 +358,8 @@ class DB<T extends object = any> extends Filter {
     return safeExec(
       this
         .map((item: any) => keys.reduce((prev, key) => prev[key], item))
-        .pipeline({
+        ._resetFilters()
+        .aggregate({
           $project: {
             _id: 0,
             [field]: { $ifNull: [`$${field}`, "$__NULL__"] },
@@ -356,33 +370,26 @@ class DB<T extends object = any> extends Filter {
       [],
       callback
     );
-    // return this
-    //   .map((item: any) => keys.reduce((prev, key) => prev[key], item))
-    //   .pipeline({
-    //     $project: {
-    //       _id: 0,
-    //       [field]: { $ifNull: [`$${field}`, "$__NULL__"] },
-    //     },
-    //   })
-    //   ._aggregate()
-    //   .toArray(callback as any) as any;
   }
 
+  public pluck<K extends keyof T>(field: K): Promise<T[K]>;
   public pluck(field: string): Promise<any>;
+  public pluck<K extends keyof T>(field: K, callback: DB.Callback<T[K]>): void;
   public pluck(field: string, callback: DB.Callback<any>): void;
-  public pluck() {
-    return this.value.apply(this, arguments as any) as any;
+  public pluck(field: string, callback?: DB.Callback<any>) {
+    return this.value(field, callback as any) as any;
   }
 
+  public max<K extends keyof T>(field: K): Promise<T[K]>;
   public max(field: string): Promise<any>;
+  public max<K extends keyof T>(field: K, callback: DB.Callback<T[K]>): void;
   public max(field: string, callback: DB.Callback<any>): void;
   public async max(field: string, callback?: DB.Callback<any>) {
-    this._resetFilters()
-      .pipeline({ $group: { _id: null, max: { $max: `$${field}` } } });
+    this.aggregate({ $group: { _id: null, max: { $max: `$${field}` } } });
 
     if (callback)
       return this.first((err, res) => {
-        if (err) return callback(err, res);
+        if (err) return callback(err, res as any);
 
         callback(err, (res as any).max);
       });
@@ -390,15 +397,16 @@ class DB<T extends object = any> extends Filter {
     return ((await this.first()) as any).max;
   }
 
+  public min<K extends keyof T>(field: K): Promise<T[K]>;
   public min(field: string): Promise<any>;
+  public min<K extends keyof T>(field: K, callback: DB.Callback<T[K]>): void;
   public min(field: string, callback: DB.Callback<any>): void;
   public async min(field: string, callback?: DB.Callback<any>) {
-    this._resetFilters()
-      .pipeline({ $group: { _id: null, min: { $min: `$${field}` } } });
+    this.aggregate({ $group: { _id: null, min: { $min: `$${field}` } } });
 
     if (callback)
       return this.first((err, res) => {
-        if (err) return callback(err, res);
+        if (err) return callback(err, res as any);
 
         callback(err, (res as any).min);
       });
@@ -406,15 +414,16 @@ class DB<T extends object = any> extends Filter {
     return ((await this.first()) as any).min;
   }
 
+  public avg<K extends keyof T>(field: K): Promise<T[K]>;
   public avg(field: string): Promise<any>;
+  public avg<K extends keyof T>(field: K, callback: DB.Callback<T[K]>): void;
   public avg(field: string, callback: DB.Callback<any>): void;
   public async avg(field: string, callback?: DB.Callback<any>) {
-    this._resetFilters()
-      .pipeline({ $group: { _id: null, avg: { $avg: `$${field}` } } });
+    this.aggregate({ $group: { _id: null, avg: { $avg: `$${field}` } } });
 
     if (callback)
       return this.first((err, res) => {
-        if (err) return callback(err, res);
+        if (err) return callback(err, res as any);
 
         callback(err, (res as any).avg);
       });
@@ -458,9 +467,9 @@ class DB<T extends object = any> extends Filter {
     return (await this._insertOne(item)).insertedCount;
   }
 
-  public insertGetId(item: T): Promise<string>;
-  public insertGetId(item: T, callback: DB.Callback<string>): void;
-  public async insertGetId(item: T, callback?: DB.Callback<string>) {
+  public insertGetId(item: T): Promise<DB.Id>;
+  public insertGetId(item: T, callback: DB.Callback<DB.Id>): void;
+  public async insertGetId(item: T, callback?: DB.Callback<DB.Id>) {
     if (callback)
       return this._insertOne(item, (err, res) => callback(err, res.insertedId.toString()));
 
@@ -474,15 +483,11 @@ class DB<T extends object = any> extends Filter {
     callback?: DB.Callback<mongodb.UpdateWriteOpResult>
   ): Promise<mongodb.UpdateWriteOpResult> {
     return safeExec(this._query, "updateMany", [this._filtersOnly(), update], callback);
-    // if (callback)
-    //   return this._query.updateMany(this._filtersOnly(), update, callback) as any;
-
-    // return await this._query.updateMany(this._filtersOnly(), update);
   }
 
-  public update(update: T): Promise<number>;
-  public update(update: T, callback: DB.Callback<number>): void;
-  public async update(update: T, callback?: DB.Callback<number>) {
+  public update(update: Partial<T>): Promise<number>;
+  public update(update: Partial<T>, callback: DB.Callback<number>): void;
+  public async update(update: Partial<T>, callback?: DB.Callback<number>) {
     const _update = {
       $set: this._prepareToStore(update),
     };
@@ -494,7 +499,9 @@ class DB<T extends object = any> extends Filter {
   }
 
   public increment(field: string, count?: number): Promise<number>;
+  public increment<K extends keyof T>(field: K, count?: number): Promise<number>;
   public increment(field: string, callback: DB.Callback<number>): void;
+  public increment<K extends keyof T>(field: K, callback: DB.Callback<number>): void;
   public increment(field: string, count: number, callback: DB.Callback<number>): void;
   public async increment(
     field: string,
@@ -519,7 +526,9 @@ class DB<T extends object = any> extends Filter {
   }
 
   public decrement(field: string, count?: number): Promise<number>;
+  public decrement<K extends keyof T>(field: K, count?: number): Promise<number>;
   public decrement(field: string, callback: DB.Callback<number>): void;
+  public decrement<K extends keyof T>(field: K, callback: DB.Callback<number>): void;
   public decrement(field: string, count: number, callback: DB.Callback<number>): void;
   public decrement(
     field: string,
@@ -531,7 +540,7 @@ class DB<T extends object = any> extends Filter {
       count = 1;
     }
 
-    return this.increment.call(this, field, -count, callback as any) as any;
+    return this.increment(field, -count, callback as any) as any;
   }
 
   /********************************** Deletes *********************************/
@@ -546,14 +555,6 @@ class DB<T extends object = any> extends Filter {
     });
 
     return (await safeExec(this._query, "deleteMany", [this._filtersOnly()])).deletedCount;
-
-    // if (callback)
-    //   return this._query.deleteMany(
-    //     this._filtersOnly(),
-    //     (err, res: any) => callback(err, res.deletedCount)
-    //   );
-
-    // return (await this._query.deleteMany(this._filtersOnly())).deletedCount;
   }
 }
 

@@ -20,8 +20,8 @@ class TypeAny extends GraphQL {
     return "Invalid type";
   }
 
-  protected _cast(test: (v: any) => any) {
-    this._casts.push(test);
+  protected _cast(cast: (v: any) => any) {
+    this._casts.push(cast);
 
     return this;
   }

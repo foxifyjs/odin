@@ -1,6 +1,7 @@
 import * as Odin from "..";
 import Base from "../Base";
 import * as DB from "../DB";
+import Filter from "../DB/Filter";
 import Relation from "../Relation/Base";
 import Query from "./Query";
 
@@ -51,6 +52,14 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
 
   public static has(relation: string, operator?: DB.Operator, count?: number) {
     return this.query().has(relation, operator, count);
+  }
+
+  public static whereHas(relation: string, filter: (q: Filter) => Filter, count: number = 1) {
+    return this.query().whereHas(relation, filter, count);
+  }
+
+  public static whereDoesntHave(relation: string, filter: (q: Filter) => Filter, count: number = 1) {
+    return this.query().whereDoesntHave(relation, filter, count);
   }
 
   /****************************** With Relations ******************************/
@@ -129,7 +138,7 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
     return this.query().whereNotNull(field);
   }
 
-  /******************** Ordering, Grouping, Limit & Offset ********************/
+  /********* Mapping, Ordering, Grouping, Limit, Offset & Pagination *********/
 
   public static orderBy<T extends object>(field: string, order?: DB.Order): Query<T>;
   public static orderBy(field: string, order?: DB.Order) {
@@ -154,6 +163,11 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
   public static take<T extends object>(limit: number): Query<T>;
   public static take(limit: number) {
     return this.limit(limit);
+  }
+
+  public static paginate<T extends object>(page?: number, limit?: number): Query<T>;
+  public static paginate(page?: number, limit?: number) {
+    return this.query().paginate(page, limit);
   }
 
   /*********************************** Read ***********************************/

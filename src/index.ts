@@ -31,7 +31,7 @@ module Odin {
   export type Connect = typeof Connect;
 }
 
-class Odin<T extends object = {}> extends Relational<T> {
+class Odin<T extends object = any> extends Relational<T> {
   public static Collection = Collection;
   public static Connect = Connect;
   public static DB = DB;
@@ -173,6 +173,8 @@ class Odin<T extends object = {}> extends Relational<T> {
    * @param {string} attribute
    * @returns {*}
    */
+  public getAttribute<K extends keyof T>(attribute: K): T[K];
+  public getAttribute(attribute: string): any;
   public getAttribute(attribute: string) {
     return object.get(this.attributes, attribute);
   }
@@ -182,11 +184,13 @@ class Odin<T extends object = {}> extends Relational<T> {
    * @param {string} attribute
    * @param {*} value
    */
+  public setAttribute<K extends keyof T>(attribute: K, value: T[K]): void;
+  public setAttribute(attribute: string, value: any): void;
   public setAttribute(attribute: string, value: any) {
     object.set(this.attributes, attribute, value);
   }
 
-  public toJSON() {
+  public toJSON(): object {
     const hidden = this.constructor.hidden;
 
     if (hidden.includes("*")) return {};

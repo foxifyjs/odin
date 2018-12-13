@@ -1,5 +1,6 @@
 import * as Odin from "..";
 import * as DB from "../DB";
+import Filter from "../DB/Filter";
 import Join from "../DB/Join";
 import { makeCollectionId } from "../utils";
 import Relation from "./Base";
@@ -10,14 +11,19 @@ class HasOne<T extends Odin = Odin> extends Relation<T, "HasOne"> {
     relation: typeof Odin,
     localKey: string = makeCollectionId(relation.toString()),
     foreignKey: string = "id",
+    filter: undefined | ((q: Filter) => Filter),
     caller: (...args: any[]) => any
   ) {
-    super(model, relation, localKey, foreignKey, caller);
+    super(model, relation, localKey, foreignKey, filter, caller);
   }
 
-  public load(query: DB<T> | Join<T>, relations: Relation.Relation[]) {
+  public load(query: DB<T> | Join<T>, relations: Relation.Relation[], filter?: (q: Filter) => Filter) {
     const relation = this.relation;
     const name = this.as;
+
+    const filters = [this.filter];
+
+    if (filter) filters.push(filter);
 
     return query.join(
       relation.toString(),
@@ -32,25 +38,35 @@ class HasOne<T extends Odin = Odin> extends Relation<T, "HasOne"> {
 
           return loader.load(prev, cur.relations);
         },
-        q.where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
-          .limit(1)
+        filters.reduce(
+          (prev, filter) => filter(prev) as any,
+          q.where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
+            .limit(1)
+        )
       ),
       name
-    ).pipeline({
+    ).aggregate({
       $unwind: { path: `$${name}`, preserveNullAndEmptyArrays: true },
     });
   }
 
-  public loadCount(query: DB<T> | Join<T>) {
+  public loadCount(query: DB<T> | Join<T>, filter?: (q: Filter) => Filter) {
+    const filters = [this.filter];
+
+    if (filter) filters.push(filter);
+
     return query
       .join(
         this.relation.toString(),
-        q => q
-          .where(this.foreignKey, `${this.model.constructor.toString()}.data.${this.localKey}`)
-          .limit(1),
+        q =>
+          filters.reduce(
+            (prev, filter) => filter(prev) as any,
+            q.where(this.foreignKey, `${this.model.constructor.toString()}.data.${this.localKey}`)
+              .limit(1)
+          ),
         "relation"
       )
-      .pipeline({
+      .aggregate({
         $project: {
           data: 1,
           count: { $size: "$relation" },

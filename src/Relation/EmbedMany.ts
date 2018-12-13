@@ -1,23 +1,29 @@
 import * as Odin from "..";
 import * as DB from "../DB";
+import Filter from "../DB/Filter";
 import Join from "../DB/Join";
-import { array, makeCollectionId } from "../utils";
+import { makeCollectionId } from "../utils";
 import Relation from "./Base";
 import HasMany from "./HasMany";
 
-class EmbedMany<T extends Odin = Odin> extends HasMany<T> {
+class EmbedMany<T extends Odin = any> extends HasMany<T> {
   constructor(
     model: Odin,
     relation: typeof Odin,
     localKey: string = `${makeCollectionId(relation.toString())}s`,
     foreignKey: string = "id",
+    filter: undefined | ((q: Filter) => Filter),
     caller: (...args: any[]) => any
   ) {
-    super(model, relation, localKey, foreignKey, caller);
+    super(model, relation, localKey, foreignKey, filter, caller);
   }
 
-  public load(query: DB<T> | Join<T>, relations: Relation.Relation[]) {
+  public load(query: DB<T> | Join<T>, relations: Relation.Relation[], filter?: (q: Filter) => Filter) {
     const relation = this.relation;
+
+    const filters = [this.filter];
+
+    if (filter) filters.push(filter);
 
     return query.join(
       relation.toString(),
@@ -32,21 +38,30 @@ class EmbedMany<T extends Odin = Odin> extends HasMany<T> {
 
           return loader.load(prev, cur.relations);
         },
-        q.whereIn(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
+        filters.reduce(
+          (prev, filter) => filter(prev) as any,
+          q.whereIn(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
+        )
       ),
       this.as
     );
   }
 
-  public loadCount(query: DB<T> | Join<T>) {
+  public loadCount(query: DB<T> | Join<T>, filter?: (q: Filter) => Filter) {
+    const filters = [this.filter];
+
+    if (filter) filters.push(filter);
+
     return query
       .join(
         this.relation.toString(),
-        q => q
-          .whereIn(this.foreignKey, `${this.model.constructor.toString()}.data.${this.localKey}`),
+        q => filters.reduce(
+          (prev, filter) => filter(prev) as any,
+          q.whereIn(this.foreignKey, `${this.model.constructor.toString()}.data.${this.localKey}`)
+        ),
         "relation"
       )
-      .pipeline({
+      .aggregate({
         $project: {
           data: 1,
           count: { $size: "$relation" },

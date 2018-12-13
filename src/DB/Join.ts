@@ -2,12 +2,12 @@ import * as DB from ".";
 import { array, makeCollectionId, object, OPERATORS, prepareKey, string } from "../utils";
 import Filter from "./Filter";
 
-class Join<T = any> extends Filter {
+class Join<T extends object = any> extends Filter<T> {
   protected _pipeline: object[] = [];
 
   protected _let: { [key: string]: any } = {};
 
-  public get pipe() {
+  public get pipeline() {
     this._resetFilters();
 
     return {
@@ -33,7 +33,8 @@ class Join<T = any> extends Filter {
   protected _resetFilters() {
     const FILTER = this._filters;
 
-    if (object.size(FILTER) > 0) this.pipeline({ $match: FILTER });
+    if (object.size(FILTER) > 0) this._pipeline.push({ $match: FILTER });
+    // if (object.size(FILTER) > 0) this.aggregate({ $match: FILTER });
 
     this._filter = {
       $and: [],
@@ -90,8 +91,10 @@ class Join<T = any> extends Filter {
 
   /********************************** Extra **********************************/
 
-  public pipeline(...objects: object[]) {
-    this._pipeline.push(...objects);
+  public aggregate(...objects: object[] | object[][]) {
+    this._resetFilters();
+
+    this._pipeline.push(...array.deepFlatten(objects));
 
     return this;
   }
@@ -105,23 +108,27 @@ class Join<T = any> extends Filter {
   ) {
     const join: Join = query(new Join(this._collection, collection, as)) as any;
 
-    this._resetFilters();
-
-    this.pipeline(join.pipe);
+    this.aggregate(join.pipeline);
 
     return this;
   }
 
-  /*************** Mapping, Ordering, Grouping, Limit & Offset ***************/
+  /********* Mapping, Ordering, Grouping, Limit, Offset & Pagination *********/
 
-  public orderBy(field: string, order?: DB.Order) {
-    return this._resetFilters()
-      .pipeline({ $sort: { [field]: order === "desc" ? -1 : 1 } });
+  public orderBy<K extends keyof T>(field: K, order?: DB.Order): this;
+  public orderBy(field: string, order?: DB.Order): this;
+  public orderBy(fields: { [field: string]: "asc" | "desc" }): this;
+  public orderBy(fields: string | { [field: string]: "asc" | "desc" }, order?: DB.Order) {
+    const $sort: { [field: string]: 1 | -1 } = {};
+
+    if (string.isString(fields)) $sort[fields] = (order === "desc" ? -1 : 1);
+    else object.forEach(fields, (value, field) => $sort[field] = (value === "desc" ? -1 : 1));
+
+    return this.aggregate({ $sort });
   }
 
   public skip(offset: number) {
-    return this._resetFilters()
-      .pipeline({ $skip: offset });
+    return this.aggregate({ $skip: offset });
   }
 
   public offset(offset: number) {
@@ -129,24 +136,33 @@ class Join<T = any> extends Filter {
   }
 
   public limit(limit: number) {
-    return this._resetFilters()
-      .pipeline({ $limit: limit });
+    return this.aggregate({ $limit: limit });
   }
 
   public take(limit: number) {
     return this.limit(limit);
   }
 
+  public paginate(page = 0, limit = 10) {
+    return this
+      .skip(page * limit)
+      .limit(limit);
+  }
+
   /******************************* Where Clauses ******************************/
 
   public whereIn(field: string, embeddedField: string): this;
+  public whereIn<K extends keyof T>(field: K, embeddedField: string): this;
   public whereIn(field: string, values: any[]): this;
+  public whereIn<K extends keyof T>(field: K, values: Array<T[K]>): this;
   public whereIn(field: string, values: any) {
     return super.whereIn(field, values);
   }
 
   public whereNotIn(field: string, embeddedField: string): this;
+  public whereNotIn<K extends keyof T>(field: K, embeddedField: string): this;
   public whereNotIn(field: string, values: any[]): this;
+  public whereNotIn<K extends keyof T>(field: K, values: Array<T[K]>): this;
   public whereNotIn(field: string, values: any) {
     return super.whereNotIn(field, values);
   }

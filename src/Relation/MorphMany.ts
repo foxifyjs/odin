@@ -1,14 +1,19 @@
 import * as Odin from "..";
 import * as DB from "../DB";
+import Filter from "../DB/Filter";
 import Join from "../DB/Join";
 import Relation from "./Base";
 import MorphBase from "./MorphBase";
 
 class MorphMany<T extends Odin = Odin> extends MorphBase<T> {
-  public load(query: DB<T> | Join<T>, relations: Relation.Relation[]) {
+  public load(query: DB<T> | Join<T>, relations: Relation.Relation[], filter?: (q: Filter) => Filter) {
     const constructor = this.model.constructor;
     const relation = this.relation;
     const name = this.as;
+
+    const filters = [this.filter];
+
+    if (filter) filters.push(filter);
 
     return query.join(
       relation.toString(),
@@ -23,27 +28,34 @@ class MorphMany<T extends Odin = Odin> extends MorphBase<T> {
 
           return loader.load(prev, cur.relations);
         },
-        q.where(this.foreignKey, `${constructor.toString()}.${this.localKey}`)
-          .where(`${this.type}_type`, constructor.name)
+        filters.reduce(
+          (prev, filter) => filter(prev) as any,
+          q.where(this.foreignKey, `${constructor.toString()}.${this.localKey}`)
+            .where(`${this.type}_type`, constructor.name)
+        )
       ),
-      // q => q.where(this.foreignKey, `${this.model.constructor.toString()}.${this.localKey}`)
-      //   .where(`${this.type}_type`, this.model.constructor.name),
       name
     );
   }
 
-  public loadCount(query: DB<T> | Join<T>) {
+  public loadCount(query: DB<T> | Join<T>, filter?: (q: Filter) => Filter) {
     const constructor = this.model.constructor;
+
+    const filters = [this.filter];
+
+    if (filter) filters.push(filter);
 
     return query
       .join(
         this.relation.toString(),
-        q => q
-          .where(this.foreignKey, `${constructor.toString()}.data.${this.localKey}`)
-          .where(`${this.type}_type`, constructor.name),
+        q => filters.reduce(
+          (prev, filter) => filter(prev) as any,
+          q.where(this.foreignKey, `${constructor.toString()}.data.${this.localKey}`)
+            .where(`${this.type}_type`, constructor.name)
+        ),
         "relation"
       )
-      .pipeline({
+      .aggregate({
         $project: {
           data: 1,
           count: { $size: "$relation" },

@@ -12,7 +12,7 @@ class TypeDate extends TypeAny {
     return "Must be a valid date";
   }
 
-  public min(date: Date | (() => Date)) {
+  public min(date: Date | number | string | (() => (Date | number | string))) {
     if (utils.date.isDate(date)) date = () => date as Date;
 
     return this._test((v: Date) => v < (date as (() => Date))()
@@ -20,7 +20,7 @@ class TypeDate extends TypeAny {
       : null);
   }
 
-  public max(date: Date | (() => Date)) {
+  public max(date: Date | number | string | (() => (Date | number | string))) {
     if (utils.date.isDate(date)) date = () => date as Date;
 
     return this._test((v: Date) => v > (date as (() => Date))()

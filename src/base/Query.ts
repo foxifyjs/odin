@@ -1,7 +1,9 @@
+import * as assert from "assert";
 import * as async from "async";
 import * as mongodb from "mongodb";
 import * as Odin from "..";
 import * as DB from "../DB";
+import Filter from "../DB/Filter";
 import events from "../events";
 import Relation from "../Relation/Base";
 import { initialize, OPERATORS, string } from "../utils";
@@ -13,7 +15,7 @@ namespace Query {
   }
 }
 
-class Query<T extends object = {}> extends DB<T> {
+class Query<T extends object = any> extends DB<T> {
   protected readonly _model: typeof Odin;
 
   protected readonly _relations: Query.Rel[];
@@ -63,20 +65,20 @@ class Query<T extends object = {}> extends DB<T> {
 
   /****************************** Has & WhereHas ******************************/
 
-  public has(relation: string, operator: DB.Operator = ">", count: number = 0) {
+  public has(relation: string, operator: DB.Operator = ">=", count: number = 1) {
     if (!(this._model as any)._relations.includes(relation))
       throw new Error(`Relation '${relation}' does not exist on '${this._model.name}' Model`);
 
-    this.pipeline({
+    this.aggregate({
       $project: {
         data: "$$ROOT",
       },
     });
 
     // join relation
-    (this._model.prototype as any)[relation]().loadCount(this);
+    this._model.prototype[relation]().loadCount(this);
 
-    return this.pipeline(
+    return this.aggregate(
       {
         $match: {
           count: {
@@ -92,7 +94,63 @@ class Query<T extends object = {}> extends DB<T> {
     );
   }
 
-  // TODO: whereHas
+  public whereHas(relation: string, filter: (q: Filter) => Filter, count: number = 1) {
+    if (!(this._model as any)._relations.includes(relation))
+      throw new Error(`Relation '${relation}' does not exist on '${this._model.name}' Model`);
+
+    this.aggregate({
+      $project: {
+        data: "$$ROOT",
+      },
+    });
+
+    // join relation
+    this._model.prototype[relation]().loadCount(this, filter);
+
+    return this.aggregate(
+      {
+        $match: {
+          count: {
+            [`$gte`]: count, // filter data according to count and operator
+          },
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: "$data",
+        },
+      }
+    );
+  }
+
+  public whereDoesntHave(relation: string, filter: (q: Filter) => Filter, count: number = 1) {
+    if (!(this._model as any)._relations.includes(relation))
+      throw new Error(`Relation '${relation}' does not exist on '${this._model.name}' Model`);
+
+    this.aggregate({
+      $project: {
+        data: "$$ROOT",
+      },
+    });
+
+    // join relation
+    this._model.prototype[relation]().loadCount(this, filter);
+
+    return this.aggregate(
+      {
+        $match: {
+          count: {
+            [`$lt`]: count, // filter data according to count and operator
+          },
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: "$data",
+        },
+      }
+    );
+  }
 
   /*********************************** Joins **********************************/
 
@@ -270,8 +328,8 @@ class Query<T extends object = {}> extends DB<T> {
   public insert(items: T[], callback: DB.Callback<number>): void;
   public insert(items: T[], callback?: DB.Callback<number>) {
     const model = this._model;
-    const error = !Array.isArray(items) &&
-      new TypeError(`Expected 'items' to be an array, '${typeof items}' given`);
+
+    assert(Array.isArray(items), `Expected 'items' to be an array, '${typeof items}' given`);
 
     const iterator = (item: T, cb: any) => {
       try {
@@ -281,21 +339,15 @@ class Query<T extends object = {}> extends DB<T> {
       }
     };
 
-    if (callback) {
-      if (error) return callback(error as any, undefined as any);
+    if (callback) return (async as any).map(
+      items,
+      iterator,
+      (err: any, res: T[]) => {
+        if (err) return callback(err, undefined as any);
 
-      return (async as any).map(
-        items,
-        iterator,
-        (err: any, res: T[]) => {
-          if (err) return callback(err, undefined as any);
-
-          super.insert(res, callback);
-        }
-      );
-    }
-
-    if (error) throw error;
+        super.insert(res, callback);
+      }
+    );
 
     (async as any).map(
       items,
@@ -339,11 +391,11 @@ class Query<T extends object = {}> extends DB<T> {
     return super._update(update, callback);
   }
 
-  public update(update: T): Promise<number>;
-  public update(update: T, callback: DB.Callback<number>): void;
-  public update(update: T, callback?: DB.Callback<number>) {
+  public update(update: Partial<T>): Promise<number>;
+  public update(update: Partial<T>, callback: DB.Callback<number>): void;
+  public update(update: Partial<T>, callback?: DB.Callback<number>) {
     try {
-      update = this._model.validate<T>(update, true) as any;
+      update = this._model.validate(update, true) as any;
     } catch (err) {
       if (callback) return callback(err, undefined as any);
 
