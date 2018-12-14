@@ -29,7 +29,7 @@ const generateRelations = (relations: string[][]): Relation.Relation[] => {
   }));
 };
 
-class QueryBuilder<T extends object = {}> extends Base<T> {
+class QueryBuilder<T extends object = any> extends Base<T> {
   protected static query<T extends object>(relations?: Query.Rel[]) {
     return new Query<T>(this as any, relations);
   }
@@ -50,16 +50,22 @@ class QueryBuilder<T extends object = {}> extends Base<T> {
 
   /****************************** Has & WhereHas ******************************/
 
-  public static has(relation: string, operator?: DB.Operator, count?: number) {
-    return this.query().has(relation, operator, count);
+  public static has<T extends object = any>(relation: string, count?: number): Query<T>;
+  public static has<T extends object = any>(relation: string, operator: DB.Operator, count?: number): Query<T>;
+  public static has(relation: string, operator?: DB.Operator | number, count?: number) {
+    return this.query().has(relation, operator as any, count);
   }
 
-  public static whereHas(relation: string, filter: (q: Filter) => Filter, count: number = 1) {
-    return this.query().whereHas(relation, filter, count);
-  }
-
-  public static whereDoesntHave(relation: string, filter: (q: Filter) => Filter, count: number = 1) {
-    return this.query().whereDoesntHave(relation, filter, count);
+  public static whereHas<T extends object = any>(
+    relation: string, filter: (q: Filter) => Filter, count?: number
+  ): Query<T>;
+  public static whereHas<T extends object = any>(
+    relation: string, filter: (q: Filter) => Filter, operator: DB.Operator, count?: number
+  ): Query<T>;
+  public static whereHas(
+    relation: string, filter: (q: Filter) => Filter, operator?: DB.Operator | number, count?: number
+  ) {
+    return this.query().whereHas(relation, filter, operator as any, count);
   }
 
   /****************************** With Relations ******************************/

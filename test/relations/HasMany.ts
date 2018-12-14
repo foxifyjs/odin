@@ -1,5 +1,5 @@
 import * as Odin from "../../src";
-import { array } from "../../src/utils";
+import { array, object } from "../../src/utils";
 
 declare global {
   namespace NodeJS {
@@ -177,7 +177,7 @@ test("Model.with", async () => {
   expect(results2.map((item: any) => item.toJSON())).toEqual(items);
 });
 
-test("Model.with deep", async () => {
+test("Model.with (deep)", async () => {
   expect.assertions(4);
 
   const items = USERS.map((user) => {
@@ -215,6 +215,23 @@ test("Model.has", async () => {
   const items = CHATS.filter(chat => array.any(MESSAGES, message => message.chatname === chat.name));
 
   const results = await Chat.has("messages").lean().get();
+
+  expect(results).toEqual(items);
+});
+
+test("Model.has [deep]", async () => {
+  expect.assertions(1);
+
+  const items = USERS
+    .filter(user =>
+      array.any(MESSAGES, message =>
+        CHATS
+          .filter(chat => chat.username === user.username)
+          .findIndex(chat => message.chatname === chat.name) !== -1
+      )
+    );
+
+  const results = await User.has("chats.messages").lean().get();
 
   expect(results).toEqual(items);
 });

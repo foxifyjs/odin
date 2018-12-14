@@ -19,7 +19,6 @@ class HasMany<T extends Odin = Odin> extends Relation<T> {
 
   public load(query: DB<T> | Join<T>, relations: Relation.Relation[], filter?: (q: Filter) => Filter) {
     const relation = this.relation;
-
     const filters = [this.filter];
 
     if (filter) filters.push(filter);
@@ -46,26 +45,47 @@ class HasMany<T extends Odin = Odin> extends Relation<T> {
     );
   }
 
-  public loadCount(query: DB<T> | Join<T>, filter?: (q: Filter) => Filter) {
+  public loadCount(query: DB<T> | Join<T>, relations: string[], filter?: (q: Filter) => Filter) {
+    const relation = this.relation;
+    const subRelation = relations.shift();
+
+    if (subRelation) {
+      if (!(relation as any)._relations.includes(subRelation))
+        throw new Error(`Relation '${subRelation}' does not exist on '${relation.name}' Model`);
+
+      return query
+        .join(
+          relation.toString(),
+          q => relation.prototype[subRelation]().loadCount(
+            this.filter(
+              q
+                .where(this.foreignKey, `${this.model.constructor.toString()}.relation.${this.localKey}`)
+                .aggregate({
+                  $project: {
+                    relation: "$$ROOT",
+                  },
+                })
+            ) as any,
+            relations,
+            filter
+          ),
+          "relation"
+        );
+    }
+
     const filters = [this.filter];
 
     if (filter) filters.push(filter);
 
     return query
       .join(
-        this.relation.toString(),
+        relation.toString(),
         q => filters.reduce(
           (prev, filter) => filter(prev) as any,
-          q.where(this.foreignKey, `${this.model.constructor.toString()}.data.${this.localKey}`)
+          q.where(this.foreignKey, `${this.model.constructor.toString()}.relation.${this.localKey}`)
         ),
         "relation"
-      )
-      .aggregate({
-        $project: {
-          data: 1,
-          count: { $size: "$relation" },
-        },
-      });
+      );
   }
 }
 

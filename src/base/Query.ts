@@ -6,7 +6,7 @@ import * as DB from "../DB";
 import Filter from "../DB/Filter";
 import events from "../events";
 import Relation from "../Relation/Base";
-import { initialize, OPERATORS, string } from "../utils";
+import { initialize, number, OPERATORS, string } from "../utils";
 
 namespace Query {
   export interface Rel {
@@ -65,82 +65,87 @@ class Query<T extends object = any> extends DB<T> {
 
   /****************************** Has & WhereHas ******************************/
 
-  public has(relation: string, operator: DB.Operator = ">=", count: number = 1) {
-    if (!(this._model as any)._relations.includes(relation))
-      throw new Error(`Relation '${relation}' does not exist on '${this._model.name}' Model`);
-
-    this.aggregate({
-      $project: {
-        data: "$$ROOT",
-      },
-    });
-
-    // join relation
-    this._model.prototype[relation]().loadCount(this);
-
-    return this.aggregate(
-      {
-        $match: {
-          count: {
-            [`$${OPERATORS[operator]}`]: count, // filter data according to count and operator
-          },
-        },
-      },
-      {
-        $replaceRoot: {
-          newRoot: "$data",
-        },
-      }
-    );
+  public has(relation: string, count?: number): this;
+  public has(relation: string, operator: DB.Operator, count?: number): this;
+  public has(relation: string, operator: DB.Operator | number = ">=", count: number = 1) {
+    return this.whereHas(relation, undefined as any, operator as any, count);
   }
 
-  public whereHas(relation: string, filter: (q: Filter) => Filter, count: number = 1) {
-    if (!(this._model as any)._relations.includes(relation))
-      throw new Error(`Relation '${relation}' does not exist on '${this._model.name}' Model`);
+  public whereHas(relation: string, filter: (q: Filter) => Filter, count?: number): this;
+  public whereHas(relation: string, filter: (q: Filter) => Filter, operator: DB.Operator, count?: number): this;
+  public whereHas(
+    relation: string,
+    filter: (q: Filter) => Filter,
+    operator: DB.Operator | number = ">=",
+    count: number = 1
+  ) {
+    if (number.isNumber(operator)) {
+      count = operator;
+      operator = ">=";
+    }
+
+    const relations = relation.split(".");
+    const relationsCount = relations.length;
+    const currentRelation = relations.shift() as string;
+
+    if (!(this._model as any)._relations.includes(currentRelation))
+      throw new Error(`Relation '${currentRelation}' does not exist on '${this._model.name}' Model`);
 
     this.aggregate({
       $project: {
         data: "$$ROOT",
+        relation: "$$ROOT",
       },
     });
 
     // join relation
-    this._model.prototype[relation]().loadCount(this, filter);
+    this._model.prototype[currentRelation]().loadCount(this, relations, filter);
 
-    return this.aggregate(
-      {
-        $match: {
-          count: {
-            [`$gte`]: count, // filter data according to count and operator
+    if (relationsCount > 1) {
+      const projector = (length: number): any => {
+        length = length - 1;
+
+        if (length === 0) return { $concatArrays: ["$$value", "$$this.relation"] };
+
+        return {
+          $reduce: {
+            input: "$relation",
+            initialValue: [],
+            in: projector(length),
           },
+        };
+      };
+
+      this.aggregate({
+        $project: {
+          data: 1,
+          relation: projector(relationsCount),
         },
-      },
-      {
-        $replaceRoot: {
-          newRoot: "$data",
-        },
-      }
-    );
-  }
-
-  public whereDoesntHave(relation: string, filter: (q: Filter) => Filter, count: number = 1) {
-    if (!(this._model as any)._relations.includes(relation))
-      throw new Error(`Relation '${relation}' does not exist on '${this._model.name}' Model`);
-
-    this.aggregate({
-      $project: {
-        data: "$$ROOT",
-      },
-    });
-
-    // join relation
-    this._model.prototype[relation]().loadCount(this, filter);
+      });
+    }
 
     return this.aggregate(
-      {
+      // {
+      //   $project: {
+      //     data: 1,
+      //     relation: {
+      //       $reduce: {
+      //         input: "$relation",
+      //         initialValue: [],
+      //         in: {
+      //           $concatArrays: ["$$value", "$$this.relation"],
+      //         },
+      //       },
+      //     },
+      //   },
+      // }
+      { // filter data according to count and operator
         $match: {
-          count: {
-            [`$lt`]: count, // filter data according to count and operator
+          $expr: {
+            [`$${OPERATORS[operator]}`]: [
+              { $size: `$relation` },
+              count,
+            ],
           },
         },
       },

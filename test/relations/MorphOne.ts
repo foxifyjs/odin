@@ -202,3 +202,20 @@ test("Model.has", async () => {
 
   expect(results).toEqual(items);
 });
+
+test("Model.has [deep]", async () => {
+  expect.assertions(1);
+
+  const items = USERS
+    .filter(user =>
+      array.any(MESSAGES, message =>
+        CHATS
+          .filter(chat => chat.chatable_id === user.username && chat.chatable_type === "User")
+          .findIndex(chat => message.chatname === chat.name) !== -1
+      )
+    );
+
+  const results = await User.has("chat.message").lean().get();
+
+  expect(results).toEqual(items);
+});

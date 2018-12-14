@@ -12,6 +12,11 @@
 
 ---
 
+## [v0.7.0](https://github.com/foxifyjs/odin/releases/tag/v0.7.0) - *(2018-12-14)*
+
+- ::zap:: Added `whereHas` method to models
+- :star2: Added deep relation compatibility to `has` & `whereHas`
+
 ## [v0.6.2](https://github.com/foxifyjs/odin/releases/tag/v0.6.2) - *(2018-12-07)*
 
 - :star2: Added more compatibility with [`Foxify`](https://github.com/foxifyjs/foxify) error handling

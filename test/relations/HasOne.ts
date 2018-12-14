@@ -153,7 +153,7 @@ test("Model.with", async () => {
   expect(results2.map((item: any) => item.toJSON())).toEqual(items);
 });
 
-test("Model.with deep", async () => {
+test("Model.with [deep]", async () => {
   expect.assertions(4);
 
   const items = USERS.map((user) => {
@@ -190,6 +190,23 @@ test("Model.has", async () => {
   const items = USERS.filter(user => array.any(CHATS, chat => chat.username === user.username));
 
   const results = await User.has("chat").lean().get();
+
+  expect(results).toEqual(items);
+});
+
+test("Model.has [deep]", async () => {
+  expect.assertions(1);
+
+  const items = USERS
+    .filter(user =>
+      array.any(MESSAGES, message =>
+        CHATS
+          .filter(chat => chat.username === user.username)
+          .findIndex(chat => message.chatname === chat.name) !== -1
+      )
+    );
+
+  const results = await User.has("chat.message").lean().get();
 
   expect(results).toEqual(items);
 });
