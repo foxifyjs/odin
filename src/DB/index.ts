@@ -302,10 +302,12 @@ class DB<T extends object = any> extends Filter<T> {
       return this.first((err, res) => {
         if (err) return callback(err, res as any);
 
-        callback(err, (res as any).count);
+        callback(err, res ? (res as any).count : 0);
       });
 
-    return ((await this.first()) as any).count;
+    const result = await this.first() as any;
+
+    return result ? result.count : 0;
   }
 
   public exists(): Promise<boolean>;
@@ -400,10 +402,12 @@ class DB<T extends object = any> extends Filter<T> {
       return this.first((err, res) => {
         if (err) return callback(err, res as any);
 
-        callback(err, (res as any).max);
+        callback(err, res && (res as any).max);
       });
 
-    return ((await this.first()) as any).max;
+    const result = await this.first() as any;
+
+    return result && result.max;
   }
 
   public min<K extends keyof T>(field: K): Promise<T[K]>;
@@ -417,10 +421,12 @@ class DB<T extends object = any> extends Filter<T> {
       return this.first((err, res) => {
         if (err) return callback(err, res as any);
 
-        callback(err, (res as any).min);
+        callback(err, res && (res as any).min);
       });
 
-    return ((await this.first()) as any).min;
+    const result = await this.first() as any;
+
+    return result && result.min;
   }
 
   public avg<K extends keyof T>(field: K): Promise<T[K]>;
@@ -434,10 +440,12 @@ class DB<T extends object = any> extends Filter<T> {
       return this.first((err, res) => {
         if (err) return callback(err, res as any);
 
-        callback(err, (res as any).avg);
+        callback(err, res && (res as any).avg);
       });
 
-    return ((await this.first()) as any).avg;
+    const result = await this.first() as any;
+
+    return result && result.avg;
   }
 
   /********************************** Inserts *********************************/

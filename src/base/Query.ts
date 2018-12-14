@@ -247,7 +247,7 @@ class Query<T extends object = any> extends DB<T> {
   public value(field: string): Promise<any>;
   public value(field: string, callback: DB.Callback<any>): void;
   public value() {
-    this._apply_options(true).lean();
+    this._apply_options(true);
 
     return super.value.apply(this, arguments as any) as any;
   }
@@ -255,7 +255,7 @@ class Query<T extends object = any> extends DB<T> {
   public pluck(field: string): Promise<any>;
   public pluck(field: string, callback: DB.Callback<any>): void;
   public pluck() {
-    this._apply_options(true).lean();
+    this._apply_options(true);
 
     return super.pluck.apply(this, arguments as any) as any;
   }
