@@ -185,7 +185,7 @@ class Query<T extends object = any> extends DB<T> {
   public exists(): Promise<boolean>;
   public exists(callback: DB.Callback<boolean>): void;
   public exists() {
-    this._apply_options(true);
+    this._apply_options(true).lean();
 
     return super.exists.apply(this, arguments as any) as any;
   }
@@ -193,7 +193,7 @@ class Query<T extends object = any> extends DB<T> {
   public count(): Promise<number>;
   public count(callback: DB.Callback<number>): void;
   public count() {
-    this._apply_options(true);
+    this._apply_options(true).lean();
 
     return super.count.apply(this, arguments as any) as any;
   }
@@ -247,7 +247,7 @@ class Query<T extends object = any> extends DB<T> {
   public value(field: string): Promise<any>;
   public value(field: string, callback: DB.Callback<any>): void;
   public value() {
-    this._apply_options(true);
+    this._apply_options(true).lean();
 
     return super.value.apply(this, arguments as any) as any;
   }
@@ -255,7 +255,7 @@ class Query<T extends object = any> extends DB<T> {
   public pluck(field: string): Promise<any>;
   public pluck(field: string, callback: DB.Callback<any>): void;
   public pluck() {
-    this._apply_options(true);
+    this._apply_options(true).lean();
 
     return super.pluck.apply(this, arguments as any) as any;
   }
@@ -263,7 +263,7 @@ class Query<T extends object = any> extends DB<T> {
   public max(field: string): Promise<any>;
   public max(field: string, callback: DB.Callback<any>): void;
   public max() {
-    this._apply_options(true);
+    this._apply_options(true).lean();
 
     return super.max.apply(this, arguments as any) as any;
   }
@@ -271,7 +271,7 @@ class Query<T extends object = any> extends DB<T> {
   public min(field: string): Promise<any>;
   public min(field: string, callback: DB.Callback<any>): void;
   public min() {
-    this._apply_options(true);
+    this._apply_options(true).lean();
 
     return super.min.apply(this, arguments as any) as any;
   }
@@ -279,7 +279,7 @@ class Query<T extends object = any> extends DB<T> {
   public avg(field: string): Promise<any>;
   public avg(field: string, callback: DB.Callback<any>): void;
   public avg() {
-    this._apply_options(true);
+    this._apply_options(true).lean();
 
     return super.avg.apply(this, arguments as any) as any;
   }
