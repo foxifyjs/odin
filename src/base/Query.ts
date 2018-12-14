@@ -103,13 +103,14 @@ class Query<T extends object = any> extends DB<T> {
 
     if (relationsCount > 1) {
       const projector = (length: number): any => {
+        const isFirst = length === relationsCount;
         length = length - 1;
 
-        if (length === 0) return { $concatArrays: ["$$value", "$$this.relation"] };
+        if (length === 0) return { $concatArrays: ["$$value", { $ifNull: ["$$this.relation", []] }] };
 
         return {
           $reduce: {
-            input: "$relation",
+            input: isFirst ? "$relation" : "$$this.relation",
             initialValue: [],
             in: projector(length),
           },

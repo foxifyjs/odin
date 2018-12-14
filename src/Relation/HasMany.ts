@@ -56,19 +56,20 @@ class HasMany<T extends Odin = Odin> extends Relation<T> {
       return query
         .join(
           relation.toString(),
-          q => relation.prototype[subRelation]().loadCount(
-            this.filter(
-              q
-                .where(this.foreignKey, `${this.model.constructor.toString()}.relation.${this.localKey}`)
-                .aggregate({
-                  $project: {
-                    relation: "$$ROOT",
-                  },
-                })
-            ) as any,
-            relations,
-            filter
-          ),
+          q => relation.prototype[subRelation]()
+            .loadCount(
+              this.filter(
+                q
+                  .where(this.foreignKey, `${this.model.constructor.toString()}.relation.${this.localKey}`)
+                  .aggregate({
+                    $project: {
+                      relation: "$$ROOT",
+                    },
+                  })
+              ) as any,
+              relations,
+              filter
+            ),
           "relation"
         );
     }

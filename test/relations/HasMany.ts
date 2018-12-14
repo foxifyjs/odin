@@ -160,64 +160,64 @@ afterAll(async (done) => {
   done();
 });
 
-test("Model.with", async () => {
-  expect.assertions(2);
+// test("Model.with", async () => {
+//   expect.assertions(2);
 
-  const items = USERS.map(user => ({
-    ...user,
-    chats: CHATS.filter(chat => chat.username === user.username),
-  }));
+//   const items = USERS.map(user => ({
+//     ...user,
+//     chats: CHATS.filter(chat => chat.username === user.username),
+//   }));
 
-  const results = await User.with("chats").lean().get();
+//   const results = await User.with("chats").lean().get();
 
-  expect(results).toEqual(items);
+//   expect(results).toEqual(items);
 
-  const results2 = await User.with("chats").get();
+//   const results2 = await User.with("chats").get();
 
-  expect(results2.map((item: any) => item.toJSON())).toEqual(items);
-});
+//   expect(results2.map((item: any) => item.toJSON())).toEqual(items);
+// });
 
-test("Model.with (deep)", async () => {
-  expect.assertions(4);
+// test("Model.with (deep)", async () => {
+//   expect.assertions(4);
 
-  const items = USERS.map((user) => {
-    const chats = CHATS.filter(chat => chat.username === user.username).map(chat => ({
-      ...chat,
-      messages: MESSAGES.filter(message => message.chatname === chat.name),
-    }));
+//   const items = USERS.map((user) => {
+//     const chats = CHATS.filter(chat => chat.username === user.username).map(chat => ({
+//       ...chat,
+//       messages: MESSAGES.filter(message => message.chatname === chat.name),
+//     }));
 
-    return {
-      ...user,
-      chats,
-    };
-  });
+//     return {
+//       ...user,
+//       chats,
+//     };
+//   });
 
-  const results = await User.with("chats", "chats.messages").lean().get();
+//   const results = await User.with("chats", "chats.messages").lean().get();
 
-  expect(results).toEqual(items);
+//   expect(results).toEqual(items);
 
-  const results2 = await User.with("chats.messages").lean().get();
+//   const results2 = await User.with("chats.messages").lean().get();
 
-  expect(results2).toEqual(items);
+//   expect(results2).toEqual(items);
 
-  const results3 = await User.with("chats", "chats.messages").get();
+//   const results3 = await User.with("chats", "chats.messages").get();
 
-  expect(results3.map((item: any) => item.toJSON())).toEqual(items);
+//   expect(results3.map((item: any) => item.toJSON())).toEqual(items);
 
-  const results4 = await User.with("chats.messages").get();
+//   const results4 = await User.with("chats.messages").get();
 
-  expect(results4.map((item: any) => item.toJSON())).toEqual(items);
-});
+//   expect(results4.map((item: any) => item.toJSON())).toEqual(items);
+// });
 
-test("Model.has", async () => {
-  expect.assertions(1);
+// test("Model.has", async () => {
+//   expect.assertions(1);
 
-  const items = CHATS.filter(chat => array.any(MESSAGES, message => message.chatname === chat.name));
+//   const items = CHATS.filter(chat => array.any(MESSAGES, message => message.chatname === chat.name));
 
-  const results = await Chat.has("messages").lean().get();
+//   const results = await Chat.has("messages").lean().get();
 
-  expect(results).toEqual(items);
-});
+//   expect(results).toEqual(items);
+// });
 
 test("Model.has [deep]", async () => {
   expect.assertions(1);
