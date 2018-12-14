@@ -7,7 +7,6 @@ const {
 } = require("child_process");
 const fs = require("fs");
 const readdir = require("fs-readdir-recursive");
-const UglifyEs = require("uglify-es");
 
 const LICENSE = fs.readFileSync(path.join(__dirname, "..", "LICENSE"), "utf8")
   .split("\n")
@@ -39,21 +38,11 @@ tsc.on('close', (code) => {
   fileNames.map((filename) => {
     const filePath = path.join(outDir, filename);
 
-    const content = UglifyEs.minify(fs.readFileSync(filePath, "utf8"), {
-      // keep_classnames: true,
-      keep_fnames: true,
-      toplevel: true,
-      ecma: 6,
-      output: {
-        beautify: true,
-        comments: true,
-        preamble: LICENSE,
-      },
-    });
+    const content = fs.readFileSync(filePath, "utf8");
 
     if (content.error) throw content.error;
 
-    fs.writeFileSync(filePath, content.code, "utf8");
+    fs.writeFileSync(filePath, `${LICENSE}\n${content}`, "utf8");
   });
 
   const defenitionFiles = readdir(outDir, (filename) => /(?<!\.js)$/.test(filename));
