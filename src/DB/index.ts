@@ -295,8 +295,17 @@ class DB<T extends object = any> extends Filter<T> {
 
   public count(): Promise<number>;
   public count(callback: DB.Callback<number>): void;
-  public count(callback?: DB.Callback<number>): Promise<number> | void {
-    return safeExec(this._query, "countDocuments", [this._filtersOnly()], callback);
+  public async count(callback?: DB.Callback<number>) {
+    this.aggregate({ $count: "count" });
+
+    if (callback)
+      return this.first((err, res) => {
+        if (err) return callback(err, res as any);
+
+        callback(err, (res as any).count);
+      });
+
+    return ((await this.first()) as any).count;
   }
 
   public exists(): Promise<boolean>;
