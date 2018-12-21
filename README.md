@@ -1,9 +1,9 @@
-# Odin
+# Odin <!-- omit in toc -->
 
 Odin is an implementation of [**Active Record**](https://en.wikipedia.org/wiki/Active_record_pattern) pattern in [**TypeScript**](https://typescriptlang.com).
 
 [![NPM Version](https://img.shields.io/npm/v/@foxify/odin.svg)](https://www.npmjs.com/package/@foxify/odin)
-[![Node Version](https://img.shields.io/node/v/foxify.svg)](https://nodejs.org)
+[![Node Version](https://img.shields.io/node/v/@foxify/odin.svg)](https://nodejs.org)
 [![TypeScript Version](https://img.shields.io/npm/types/@foxify/odin.svg)](https://www.typescriptlang.org)
 [![Tested With Jest](https://img.shields.io/badge/tested_with-jest-99424f.svg)](https://github.com/facebook/jest)
 [![Pull Requests](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)](https://github.com/foxifyjs/odin/pulls)
@@ -22,12 +22,11 @@ Odin is an implementation of [**Active Record**](https://en.wikipedia.org/wiki/A
 
 ## Table of Content <!-- omit in toc -->
 
-- [Odin](#odin)
-  - [Installation](#installation)
-  - [Usage](#usage)
-  - [Features](#features)
-  - [TODO (RoadMap to version 1.0.0)](#todo-roadmap-to-version-100)
-  - [Support](#support)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Features](#features)
+- [TODO (RoadMap to version 1.0.0)](#todo-roadmap-to-version-100)
+- [Support](#support)
 
 ## Installation
 

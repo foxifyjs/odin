@@ -1,5 +1,6 @@
 import * as callerId from "caller-id";
 import { ObjectId } from "mongodb";
+import { date, object, string } from "prototyped.js/es6/methods";
 import * as Odin from ".";
 
 export * from "prototyped.js/es6/methods";
@@ -44,7 +45,7 @@ export function define(
  * getGetterName("first_name"); // getFirstNameAttribute
  */
 export const getGetterName = (key: string) =>
-  `get${exports.string.capitalize(exports.string.camelCase(key))}Attribute`;
+  `get${string.capitalize(string.camelCase(key))}Attribute`;
 
 /**
  * Generates setter name for the given key
@@ -54,7 +55,7 @@ export const getGetterName = (key: string) =>
  * getSetterName("first_name"); // setFirstNameAttribute
  */
 export const getSetterName = (key: string) =>
-  `set${exports.string.capitalize(exports.string.camelCase(key))}Attribute`;
+  `set${string.capitalize(string.camelCase(key))}Attribute`;
 
 /**
  * Generates collection name for the given name
@@ -64,9 +65,9 @@ export const getSetterName = (key: string) =>
  * makeCollectionName("user_account"); // user_accounts
  */
 export const makeCollectionName = (name: string) => {
-  const key = exports.string.snakeCase(name).split("_");
+  const key = string.snakeCase(name).split("_");
 
-  key.push(exports.string.pluralize(key.pop() as string));
+  key.push(string.pluralize(key.pop() as string));
 
   return key.join("_");
 };
@@ -81,7 +82,7 @@ export const makeCollectionName = (name: string) => {
 export const makeCollectionType = (name: string) => {
   const key = name.split("_");
 
-  key.push(exports.string.pluralize(key.pop() as string, 1));
+  key.push(string.pluralize(key.pop() as string, 1));
 
   return key.join("_");
 };
@@ -133,4 +134,42 @@ export const prepareValue = (field: string, value: any) => {
   if (!ObjectId.isValid(value)) return value;
 
   return new ObjectId(value);
+};
+
+export const prepareToRead = (document: any): any => {
+  if (
+    !document ||
+    !(object.isObject(document) || typeof document === "object") ||
+    date.isDate(document)
+  ) return document;
+
+  if (Array.isArray(document)) return document.map(prepareToRead);
+
+  return object.mapValues(
+    object.mapKeys(document, (value, key) => key === "_id" ? "id" : key),
+    (value, key) => isID(key as string) ?
+      value && value.toString() :
+      prepareToRead(value)
+  );
+};
+
+export const prepareToStore = (document: any): any => {
+  if (
+    !document ||
+    !(object.isObject(document) || typeof document === "object") ||
+    date.isDate(document)
+  ) return document;
+
+  if (Array.isArray(document)) return document.map(prepareToStore);
+
+  return object.mapValues(
+    object.mapKeys(document, (value, key) => key === "id" ? "_id" : key),
+    (value, key) => isID(key as string) ?
+      (
+        ObjectId.isValid(value) ?
+          new ObjectId(value) :
+          prepareToStore(value)
+      ) :
+      prepareToStore(value)
+  );
 };

@@ -200,7 +200,7 @@ test("db.first (callback style)", (done) => {
   });
 });
 
-test("db.where", (done) => {
+test("db.where [simple]", (done) => {
   DB.collection<ItemSchema>(COLLECTION).where("name", "foo").get((err, res) => {
     expect(err).toBe(null);
     expect(res).toEqual(ITEMS.filter(({ name }) => name === "foo"));
@@ -209,13 +209,36 @@ test("db.where", (done) => {
   });
 });
 
-test("db.orWhere", (done) => {
+test("db.where [complex]", (done) => {
+  DB.collection<ItemSchema>(COLLECTION)
+    .where(q => q.where("name", "foo"))
+    .get((err, res) => {
+      expect(err).toBe(null);
+      expect(res).toEqual(ITEMS.filter(({ name }) => name === "foo"));
+
+      done();
+    });
+});
+
+test("db.orWhere [simple]", (done) => {
   DB.collection(COLLECTION).where("name", "foo").orWhere("style", "async").get((err, res) => {
     expect(err).toBe(null);
     expect(res).toEqual(ITEMS.filter(({ name, style }) => name === "foo" || style === "async"));
 
     done();
   });
+});
+
+test("db.orWhere [complex]", (done) => {
+  DB.collection(COLLECTION)
+    .where(q => q.where("name", "foo"))
+    .orWhere(q => q.where("style", "async"))
+    .get((err, res) => {
+      expect(err).toBe(null);
+      expect(res).toEqual(ITEMS.filter(({ name, style }) => name === "foo" || style === "async"));
+
+      done();
+    });
 });
 
 test("db.whereLike", (done) => {
