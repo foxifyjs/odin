@@ -46,12 +46,12 @@ class Join<T extends object = any> extends Filter<T> {
   protected _shouldPushExpr(value: any) {
     if (!string.isString(value)) return false;
 
-    return new RegExp(`^${this._ancestor}\..+`).test(value);
+    return new RegExp(`^\\$?${this._ancestor}\..+`).test(value);
   }
 
   protected _where(field: string, operator: string, value: any) {
     if (this._shouldPushExpr(value)) {
-      const keys = array.tail(value.split("."));
+      const keys = array.tail(value.replace(/^\$/, "").split("."));
 
       keys.push(prepareKey(keys.pop() as string));
 

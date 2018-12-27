@@ -2,11 +2,7 @@ import * as Odin from ".";
 import * as DB from "./DB";
 import HasOne from "./Relation/HasOne";
 import MorphOne from "./Relation/MorphOne";
-import * as Types from "./types";
-import TypeAny from "./types/Any";
-import TypeArray from "./types/Array";
-import TypeDate from "./types/Date";
-import TypeObjectId from "./types/ObjectId";
+import Types from "./types";
 import { array, makeCollectionName, object } from "./utils";
 
 const MODELS: { [name: string]: typeof Odin | undefined } = {};
@@ -115,26 +111,26 @@ class Base<T extends object = {}> {
 
         const type = schema[key];
 
-        if (type instanceof TypeAny) {
+        if (Types.isType(type)) {
           // Type
 
-          let schemaType: string = (type as any)._type.toLowerCase();
+          let schemaType: string = (type as any).constructor.type.toLowerCase();
 
           if (
-            type instanceof TypeObjectId
-            || type instanceof TypeDate
+            (type.constructor as any).type === "ObjectId"
+            || (type.constructor as any).type === "Date"
           ) schemaType = "string";
 
           properties[key] = {
             type: schemaType,
           };
 
-          if (type instanceof TypeArray) {
-            let ofSchemaType: string = (type.ofType as any)._type.toLowerCase();
+          if ((type.constructor as any).type === "Array") {
+            let ofSchemaType: string = (type as any)._of.constructor.type.toLowerCase();
 
             if (
-              type.ofType instanceof TypeObjectId
-              || type.ofType instanceof TypeDate
+              ofSchemaType === "objectid"
+              || ofSchemaType === "date"
             ) ofSchemaType = "string";
 
             properties[key].items = {

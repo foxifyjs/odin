@@ -42,7 +42,7 @@ class Query<T extends object = any> extends DB<T> {
       this.whereNull(this._model.DELETED_AT);
 
     if (withRelations) this._relations
-      .forEach(({ relation, relations }) => relation.load(this as any, relations) as any);
+      .forEach(({ relation, relations }) => relation.load(this as any, relations, this._withTrashed));
 
     return this;
   }
@@ -99,7 +99,7 @@ class Query<T extends object = any> extends DB<T> {
     });
 
     // join relation
-    this._model.prototype[currentRelation]().loadCount(this, relations, filter);
+    this._model.prototype[currentRelation]().loadCount(this, relations, this._withTrashed, filter);
 
     if (relationsCount > 1) {
       const projector = (length: number): any => {

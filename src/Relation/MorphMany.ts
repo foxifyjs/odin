@@ -6,11 +6,17 @@ import Relation from "./Base";
 import MorphBase from "./MorphBase";
 
 class MorphMany<T extends Odin = Odin> extends MorphBase<T> {
-  public load(query: DB<T> | Join<T>, relations: Relation.Relation[], filter?: (q: Filter) => Filter) {
+  public load(
+    query: DB<T> | Join<T>, relations: Relation.Relation[], withTrashed?: boolean, filter?: (q: Filter) => Filter
+  ) {
     const constructor = this.model.constructor;
     const relation = this.relation;
     const name = this.as;
-    const filters = [this.filter];
+    const filters: Array<(q: Filter) => Filter> = [];
+
+    if (relation.softDelete && !withTrashed) filters.push(q => q.whereNull(relation.DELETED_AT));
+
+    filters.push(this.filter);
 
     if (filter) filters.push(filter);
 
@@ -23,9 +29,9 @@ class MorphMany<T extends Odin = Odin> extends MorphBase<T> {
           if (!(relation as any)._relations.includes(subRelation))
             throw new Error(`Relation '${subRelation}' does not exist on '${relation.name}' Model`);
 
-          const loader = relation.prototype[subRelation]();
+          const loader: Relation = relation.prototype[subRelation]();
 
-          return loader.load(prev, cur.relations);
+          return loader.load(prev, cur.relations, withTrashed) as any;
         },
         filters.reduce(
           (prev, filter) => filter(prev) as any,
@@ -37,10 +43,17 @@ class MorphMany<T extends Odin = Odin> extends MorphBase<T> {
     );
   }
 
-  public loadCount(query: DB<T> | Join<T>, relations: string[], filter?: (q: Filter) => Filter) {
+  public loadCount(
+    query: DB<T> | Join<T>, relations: string[], withTrashed?: boolean, filter?: (q: Filter) => Filter
+  ) {
     const constructor = this.model.constructor;
     const relation = this.relation;
     const subRelation = relations.shift();
+    const filters: Array<(q: Filter) => Filter> = [];
+
+    if (relation.softDelete && !withTrashed) filters.push(q => q.whereNull(relation.DELETED_AT));
+
+    filters.push(this.filter);
 
     if (subRelation) {
       if (!(relation as any)._relations.includes(subRelation))
@@ -49,25 +62,25 @@ class MorphMany<T extends Odin = Odin> extends MorphBase<T> {
       return query
         .join(
           relation.toString(),
-          q => relation.prototype[subRelation]().loadCount(
-            this.filter(
-              q
-                .where(this.foreignKey, `${constructor.toString()}.relation.${this.localKey}`)
-                .where(`${this.type}_type`, constructor.name)
-                .aggregate({
-                  $project: {
-                    relation: "$$ROOT",
-                  },
-                })
-            ) as any,
-            relations,
-            filter
-          ),
+          q => relation.prototype[subRelation]()
+            .loadCount(
+              filters.reduce(
+                (prev, filter) => filter(prev) as any,
+                q
+                  .where(this.foreignKey, `${constructor.toString()}.relation.${this.localKey}`)
+                  .where(`${this.type}_type`, constructor.name)
+                  .aggregate({
+                    $project: {
+                      relation: "$$ROOT",
+                    },
+                  })
+              ),
+              relations,
+              filter
+            ),
           "relation"
         );
     }
-
-    const filters = [this.filter];
 
     if (filter) filters.push(filter);
 

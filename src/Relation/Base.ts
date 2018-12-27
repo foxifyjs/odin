@@ -44,11 +44,17 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public abstract load(
-    query: DB<T> | Join<T>, relations: Relation.Relation[], filter?: (q: Filter) => Filter
+    query: DB<T> | Join<T>,
+    relations: Relation.Relation[],
+    withTrashed?: boolean,
+    filter?: (q: Filter) => Filter
   ): DB<T> | Join<T>;
 
   public abstract loadCount(
-    query: DB<T> | Join<T>, relations: string[], filter?: (q: Filter) => Filter
+    query: DB<T> | Join<T>,
+    relations: string[],
+    withTrashed?: boolean,
+    filter?: (q: Filter) => Filter
   ): DB<T> | Join<T>;
 
   /****************************** With Relations ******************************/

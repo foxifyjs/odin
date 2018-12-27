@@ -12,6 +12,14 @@
 
 ---
 
+## [v0.8.0](https://github.com/foxifyjs/odin/releases/tag/v0.8.0) - *(2018-12-27)*
+
+- :beetle: Fixed `embedMany` relation bug
+- :beetle: Fixed not applying `withTrashed` to relations
+- :boom: `Types` is now a peerDependency ([`@foxify/schema`](https://github.com/foxifyjs/schema)) which needs to be installed!
+- :eyeglasses: Added `embedMany` tests
+- :eyeglasses: Added `Node.js` version `11` to tests
+
 ## [v0.7.0](https://github.com/foxifyjs/odin/releases/tag/v0.7.0) - *(2018-12-14)*
 
 - :zap: Added `whereHas` method to models

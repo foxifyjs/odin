@@ -17,9 +17,15 @@ class HasMany<T extends Odin = Odin> extends Relation<T> {
     super(model, relation, localKey, foreignKey, filter, caller);
   }
 
-  public load(query: DB<T> | Join<T>, relations: Relation.Relation[], filter?: (q: Filter) => Filter) {
+  public load(
+    query: DB<T> | Join<T>, relations: Relation.Relation[], withTrashed?: boolean, filter?: (q: Filter) => Filter
+  ) {
     const relation = this.relation;
-    const filters = [this.filter];
+    const filters: Array<(q: Filter) => Filter> = [];
+
+    if (relation.softDelete && !withTrashed) filters.push(q => q.whereNull(relation.DELETED_AT));
+
+    filters.push(this.filter);
 
     if (filter) filters.push(filter);
 
@@ -32,9 +38,9 @@ class HasMany<T extends Odin = Odin> extends Relation<T> {
           if (!(relation as any)._relations.includes(subRelation))
             throw new Error(`Relation '${subRelation}' does not exist on '${relation.name}' Model`);
 
-          const loader = relation.prototype[subRelation]();
+          const loader: Relation = relation.prototype[subRelation]();
 
-          return loader.load(prev, cur.relations);
+          return loader.load(prev, cur.relations, withTrashed) as any;
         },
         filters.reduce(
           (prev, filter) => filter(prev) as any,
@@ -45,9 +51,16 @@ class HasMany<T extends Odin = Odin> extends Relation<T> {
     );
   }
 
-  public loadCount(query: DB<T> | Join<T>, relations: string[], filter?: (q: Filter) => Filter) {
+  public loadCount(
+    query: DB<T> | Join<T>, relations: string[], withTrashed?: boolean, filter?: (q: Filter) => Filter
+  ) {
     const relation = this.relation;
     const subRelation = relations.shift();
+    const filters: Array<(q: Filter) => Filter> = [];
+
+    if (relation.softDelete && !withTrashed) filters.push(q => q.whereNull(relation.DELETED_AT));
+
+    filters.push(this.filter);
 
     if (subRelation) {
       if (!(relation as any)._relations.includes(subRelation))
@@ -58,7 +71,8 @@ class HasMany<T extends Odin = Odin> extends Relation<T> {
           relation.toString(),
           q => relation.prototype[subRelation]()
             .loadCount(
-              this.filter(
+              filters.reduce(
+                (prev, filter) => filter(prev) as any,
                 q
                   .where(this.foreignKey, `${this.model.constructor.toString()}.relation.${this.localKey}`)
                   .aggregate({
@@ -66,15 +80,14 @@ class HasMany<T extends Odin = Odin> extends Relation<T> {
                       relation: "$$ROOT",
                     },
                   })
-              ) as any,
+              ),
               relations,
+              withTrashed,
               filter
             ),
           "relation"
         );
     }
-
-    const filters = [this.filter];
 
     if (filter) filters.push(filter);
 

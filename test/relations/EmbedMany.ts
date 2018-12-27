@@ -20,6 +20,7 @@ const USERS = [
       first: "Ardalan",
       last: "Amini",
     },
+    chat_names: ["chat 1", "chat 2"],
   },
   {
     username: "john",
@@ -28,43 +29,44 @@ const USERS = [
       first: "John",
       last: "Due",
     },
+    chat_names: ["chat 3"],
   },
 ];
 
 const CHATS = [
   {
-    username: "ardalanamini",
     name: "chat 1",
+    message_chats: ["1"],
   },
   {
-    username: "ardalanamini",
     name: "chat 2",
+    message_chats: ["2"],
   },
   {
-    username: "john",
     name: "chat 3",
+    message_chats: [],
   },
 ];
 
 const MESSAGES = [
   {
-    chatname: "chat 1",
+    chat_name: "1",
     message: "1: Hello World",
   },
   {
-    chatname: "chat 1",
+    chat_name: "1",
     message: "2: Hello World",
   },
   {
-    chatname: "chat 2",
+    chat_name: "2",
     message: "3: Hello World",
   },
   {
-    chatname: "chat 2",
+    chat_name: "2",
     message: "4: Hello World",
   },
   {
-    chatname: "chat 2",
+    chat_name: "2",
     message: "5: Hello World",
   },
 ];
@@ -85,11 +87,12 @@ class User extends Odin {
       first: Types.string.min(3).required,
       last: Types.string.min(3),
     },
+    chat_names: Types.array.of(Types.string).default([]),
   };
 
   @Odin.relation
   public chats() {
-    return this.hasMany<Chat>("Chat", "username", "username");
+    return this.embedMany<Chat>("Chat", "chat_names", "name");
   }
 }
 
@@ -97,18 +100,18 @@ class User extends Odin {
 @Odin.register
 class Chat extends Odin {
   public static schema = {
-    username: Types.string.alphanum.min(3).required,
     name: Types.string.required,
+    message_chats: Types.array.of(Types.string).default([]),
   };
 
   @Odin.relation
   public user() {
-    return this.hasOne<User>("User", "username", "username");
+    return this.hasOne<User>("User", "name", "chat_names");
   }
 
   @Odin.relation
   public messages() {
-    return this.hasMany<Message>("Message", "name", "chatname");
+    return this.embedMany<Message>("Message", "message_chats", "chat_name");
   }
 }
 
@@ -116,13 +119,13 @@ class Chat extends Odin {
 @Odin.register
 class Message extends Odin {
   public static schema = {
-    chatname: Types.string.required,
+    chat_name: Types.string.numeral.required,
     message: Types.string.required,
   };
 
   @Odin.relation
   public chat() {
-    return this.hasOne<Chat>("Chat", "chatname", "name");
+    return this.hasOne<Chat>("Chat", "chat_name", "message_chats");
   }
 }
 
@@ -165,7 +168,7 @@ test("Model.with", async () => {
 
   const items = USERS.map(user => ({
     ...user,
-    chats: CHATS.filter(chat => chat.username === user.username),
+    chats: CHATS.filter(chat => user.chat_names.includes(chat.name)),
   }));
 
   const results = await User.with("chats").lean().get();
@@ -181,9 +184,9 @@ test("Model.with (deep)", async () => {
   expect.assertions(4);
 
   const items = USERS.map((user) => {
-    const chats = CHATS.filter(chat => chat.username === user.username).map(chat => ({
+    const chats = CHATS.filter(chat => user.chat_names.includes(chat.name)).map(chat => ({
       ...chat,
-      messages: MESSAGES.filter(message => message.chatname === chat.name),
+      messages: MESSAGES.filter(message => chat.message_chats.includes(message.chat_name)),
     }));
 
     return {
@@ -212,7 +215,7 @@ test("Model.with (deep)", async () => {
 test("Model.has", async () => {
   expect.assertions(1);
 
-  const items = CHATS.filter(chat => array.any(MESSAGES, message => message.chatname === chat.name));
+  const items = CHATS.filter(chat => array.any(MESSAGES, message => chat.message_chats.includes(message.chat_name)));
 
   const results = await Chat.has("messages").lean().get();
 
@@ -226,8 +229,8 @@ test("Model.has [deep]", async () => {
     .filter(user =>
       array.any(MESSAGES, message =>
         CHATS
-          .filter(chat => chat.username === user.username)
-          .findIndex(chat => message.chatname === chat.name) !== -1
+          .filter(chat => user.chat_names.includes(chat.name))
+          .findIndex(chat => chat.message_chats.includes(message.chat_name)) !== -1
       )
     );
 

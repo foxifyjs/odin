@@ -1,11 +1,11 @@
+import * as Schema from "@foxify/schema";
 import Relational from "./base/Relational";
 import Collection from "./Collection";
 import Connect from "./Connect";
 import * as DB from "./DB";
 import events from "./events";
 import GraphQL from "./GraphQL";
-import * as Types from "./types";
-import TypeAny from "./types/Any";
+import Types from "./types";
 import { define, getGetterName, getSetterName, object, string } from "./utils";
 
 const EVENTS: Odin.Event[] = ["create"];
@@ -52,45 +52,8 @@ class Odin<T extends object = any> extends Relational<T> {
     return this._collection;
   }
 
-  public static validate<T = object>(document: T, updating: boolean = false) {
-    const validator = (schema: Odin.Schema, doc: T) => {
-      const value: { [key: string]: any } = {};
-      let errors: { [key: string]: any } | null = {};
-
-      for (const key in schema) {
-        const type = schema[key];
-        let item = (doc as { [key: string]: any })[key];
-
-        if (type instanceof TypeAny) {
-          // Type
-          const validation = type.validate(item, updating);
-
-          if (validation.value) value[key] = validation.value;
-
-          if (validation.errors) errors[key] = validation.errors;
-        } else {
-          // Object
-          if (!item) item = {};
-
-          const validation = validator(type, item);
-
-          if (validation.errors)
-            for (const errorKey in validation.errors)
-              errors[`${key}.${errorKey}`] = validation.errors[errorKey];
-
-          if (object.size(validation.value) > 0) value[key] = validation.value;
-        }
-      }
-
-      if (object.size(errors) === 0) errors = null;
-
-      return {
-        errors,
-        value,
-      };
-    };
-
-    const validation = validator(this._schema, document);
+  public static validate<T extends object = object>(document: T, updating: boolean = false) {
+    const validation = Schema.validate(this._schema, document);
 
     if (validation.errors && updating) {
       object.forEach(validation.errors, (errors, key) => {
@@ -110,9 +73,9 @@ class Odin<T extends object = any> extends Relational<T> {
       throw error;
     }
 
-    const value = validation.value;
+    const value: any = validation.value;
 
-    if (updating && this.timestamps) value[this.UPDATED_AT] = new Date();
+    if (updating && this.timestamps) (value)[this.UPDATED_AT] = new Date();
 
     return value;
   }

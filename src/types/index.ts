@@ -1,41 +1,130 @@
-import TypeArray from "./Array";
-import TypeBoolean from "./Boolean";
-import TypeDate from "./Date";
-import TypeNumber from "./Number";
-import TypeObject from "./Object";
-import TypeObjectId from "./ObjectId";
-import TypeString from "./String";
+import * as Schema from "@foxify/schema";
+import AnyType from "@foxify/schema/dist/Any";
+import ArrayType from "@foxify/schema/dist/Array";
+import ObjectType from "@foxify/schema/dist/Object";
+import * as Base from "graphql";
+import { GraphQLDateTime } from "graphql-iso-date";
+import { object, string } from "../utils";
+import IdType from "./Id";
 
-declare module Type { }
+const { forEach } = object;
+const { isEmpty } = string;
 
-class Type {
-  public static get array() {
-    return new TypeArray();
+/******************** Array ********************/
+
+const ArrayTypeOf = ArrayType.prototype.of;
+ArrayType.prototype.of = function of(type) {
+  (this as any)._of = type;
+
+  return ArrayTypeOf.call(this, type);
+};
+
+/******************** Object ********************/
+
+const ObjectTypeKeys = ObjectType.prototype.keys;
+ObjectType.prototype.keys = function keys(obj) {
+  (this as any)._keys = obj;
+
+  return ObjectTypeKeys.call(this, obj);
+};
+
+/******************** GraphQL ********************/
+
+(AnyType.prototype as any).toGraphQL = function toGraphQL(model: string, key: string = "") {
+  let field: Base.GraphQLType | undefined;
+  let arg: Base.GraphQLInputType | undefined;
+
+  switch (this.constructor.type) {
+    case "Array":
+      const gql = this._of.toGraphQL(model, key);
+
+      field = new Base.GraphQLList(gql.field);
+      arg = new Base.GraphQLList(gql.arg);
+
+      break;
+    case "Boolean":
+      field = Base.GraphQLBoolean;
+      arg = Base.GraphQLBoolean;
+
+      break;
+    case "Number":
+      field = Base.GraphQLInt;
+      arg = Base.GraphQLInt;
+
+      break;
+    case "Object":
+      const fields: any = {};
+      const args: any = {};
+
+      forEach(this._keys, (value, subKey) => {
+        const gql = value.toGraphQL(model, `${key}_${subKey}`);
+
+        fields[subKey] = gql.field;
+        args[subKey] = gql.arg;
+      });
+
+      field = new Base.GraphQLObjectType({
+        fields,
+        name: isEmpty(key) ? model : `${model}_${key}`,
+      });
+      arg = new Base.GraphQLInputObjectType({
+        name: isEmpty(key) ? `${model}_input` : `${model}_${key}_input`,
+        fields: args,
+      });
+
+      break;
+    case "ObjectId":
+      field = Base.GraphQLID;
+      arg = Base.GraphQLID;
+
+      break;
+    case "String":
+      field = Base.GraphQLString;
+      arg = Base.GraphQLString;
+
+      break;
+    case "Date":
+      field = GraphQLDateTime;
+      arg = GraphQLDateTime;
+
+      break;
   }
 
-  public static get boolean() {
-    return new TypeBoolean();
-  }
+  return {
+    field,
+    arg,
+  };
+};
 
-  public static get date() {
-    return new TypeDate();
-  }
+export default {
+  get array() {
+    return Schema.array;
+  },
 
-  public static get number() {
-    return new TypeNumber();
-  }
+  get boolean() {
+    return Schema.boolean;
+  },
 
-  public static get object() {
-    return new TypeObject();
-  }
+  get date() {
+    return Schema.date;
+  },
 
-  public static get id() {
-    return new TypeObjectId();
-  }
+  get id() {
+    return new IdType();
+  },
 
-  public static get string() {
-    return new TypeString();
-  }
-}
+  get number() {
+    return Schema.number;
+  },
 
-export = Type;
+  get object() {
+    return Schema.object;
+  },
+
+  get string() {
+    return Schema.string;
+  },
+
+  // Helpers
+  isType: (arg: any): arg is AnyType => arg instanceof AnyType,
+};

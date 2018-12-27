@@ -3,7 +3,7 @@ import * as Odin from "..";
 import Query from "../base/Query";
 import QueryBuilder from "../base/QueryBuilder";
 import * as DB from "../DB";
-import TypeAny from "../types/Any";
+import Types from "../types";
 import * as utils from "../utils";
 
 const _schema = (model: string, schema: Odin.Schema) => {
@@ -13,10 +13,10 @@ const _schema = (model: string, schema: Odin.Schema) => {
   for (const key in schema) {
     const type = schema[key];
 
-    if (type instanceof TypeAny) {
+    if (Types.isType(type)) {
       // Type
 
-      const gql = type.toGraphQL(model, key);
+      const gql = (type as any).toGraphQL(model, key);
 
       fields[key] = { type: gql.field as any };
       args[key] = { type: gql.arg };
@@ -67,7 +67,7 @@ const _orderBy = (model: string, schema: Odin.Schema) => {
       const type = schema[key];
       const _key = utils.array.compact([keyPrefix, key]).join(".");
 
-      if (type instanceof TypeAny) {
+      if (Types.isType(type)) {
         const ASC = orderByASC(_key);
         values[ASC] = { value: ASC };
 
@@ -126,10 +126,10 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
   public static toGraphQL(): any {
     const name = this.name;
 
-    const multiple = (this as any)._collection;
+    const multiple = this._collection;
     const single = utils.string.pluralize(multiple, 1);
 
-    const schema = _schema(name, (this as any)._schema);
+    const schema = _schema(name, this._schema);
     const args = schema.args;
     const type = new GraphQLBase.GraphQLObjectType({
       name,
@@ -142,9 +142,9 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
     });
 
     const getDB = () => {
-      const db = (this as any).DB.connection((this as any).connection).collection((this as any)._collection);
+      const db = (this as any).DB.connection(this.connection).collection(this._collection);
 
-      if ((this as any).softDelete) return db.whereNull((this as any).DELETED_AT);
+      if (this.softDelete) return db.whereNull(this.DELETED_AT);
 
       return db;
     };
@@ -183,7 +183,7 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
 
           let db = getDB();
 
-          if ((this as any).timestamps) db = db.orderBy("created_at", "desc");
+          if (this.timestamps) db = db.orderBy("created_at", "desc");
 
           const query: DB = utils.object.reduce(
             params,
@@ -217,7 +217,7 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
       name: `${name}Input`,
       fields: utils.object.omit(
         args,
-        ["id", (this as any).CREATED_AT, (this as any).UPDATED_AT, (this as any).DELETED_AT]
+        ["id", this.CREATED_AT, this.UPDATED_AT, this.DELETED_AT]
       ) as any,
     });
 
@@ -231,7 +231,7 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
           const result = await _encapsulate(
-            async () => await ((this as any) as typeof Odin).create(params.data)
+            async () => await this.create(params.data)
           );
 
           return _prepare(result);
@@ -245,7 +245,7 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
           },
         },
         resolve: async (root: any, params: any, options: any, fieldASTs: any) => await _encapsulate(
-          async () => await ((this as any) as typeof Odin).insert(params.data)
+          async () => await this.insert(params.data)
         ),
       },
       [`update_${multiple}`]: {
@@ -262,7 +262,7 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
           const query: Query = utils.object.reduce(
             params.query || {},
             (query, value, key) => query.where(key, value),
-            (this as any) as Odin | Query
+            this
           );
 
           return await _encapsulate(async () => await query.update(params.data));
@@ -279,7 +279,7 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
           const query: Query = utils.object.reduce(
             params.query || {},
             (query, value, key) => query.where(key, value),
-            (this as any) as Odin | Query
+            this
           );
 
           return await query.delete();
@@ -287,7 +287,7 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
       },
     };
 
-    if ((this as any).softDelete)
+    if (this.softDelete)
       mutations[`restore_${multiple}`] = {
         type: GraphQLBase.GraphQLInt,
         args: {
@@ -299,7 +299,7 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
           const query: Query = utils.object.reduce(
             params.query,
             (query, value, key) => query.where(key, value),
-            ((this as any) as typeof Odin).withTrashed()
+            this.withTrashed()
           );
 
           return await query.restore();
