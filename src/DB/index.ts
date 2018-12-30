@@ -142,6 +142,8 @@ class DB<T extends object = any> extends Filter<T> {
 
     this._collection = collection;
 
+    this._query.watch().on("change", console.log);
+
     return this;
   }
 
@@ -630,6 +632,22 @@ class DB<T extends object = any> extends Filter<T> {
     }
 
     return this.increment(field, -count, callback as any) as any;
+  }
+
+  public unset(fields: string[]): Promise<number>;
+  public unset<K extends keyof T>(fields: K[]): Promise<number>;
+  public unset(fields: string[], callback: DB.Callback<number>): void;
+  public unset<K extends keyof T>(fields: K[], callback: DB.Callback<number>): void;
+  public unset(fields: string[], callback?: DB.Callback<number>) {
+    return this._update(
+      {
+        $unset: fields.reduce(
+          (prev, cur) => ({ ...prev, [cur]: 1 }),
+          {}
+        ),
+      },
+      callback as any
+    ) as any;
   }
 
   /********************************** Deletes *********************************/

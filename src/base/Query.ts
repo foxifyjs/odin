@@ -409,6 +409,12 @@ class Query<T extends object = any> extends DB<T> {
     return super.decrement.apply(this, arguments as any) as any;
   }
 
+  public unset(fields: string[]): Promise<number>;
+  public unset(fields: string[], callback: DB.Callback<number>): void;
+  public unset(fields: string[], callback?: DB.Callback<number>) {
+    return super.unset(fields, callback as any) as any;
+  }
+
   /********************************** Deletes *********************************/
 
   public delete(force?: boolean): Promise<number>;

@@ -5,7 +5,9 @@ class MongoEnvironment extends NodeEnvironment {
   async setup() {
     await super.setup();
 
-    this.global.__MONGO_CONNECTION__ = await MongoClient.connect(await global.__MONGOD__.getConnectionString(), {
+    await global.__REPLICA__.waitUntilRunning();
+
+    this.global.__MONGO_CONNECTION__ = await MongoClient.connect(await global.__REPLICA__.getConnectionString(), {
       useNewUrlParser: true
     });
 
