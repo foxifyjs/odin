@@ -54,7 +54,7 @@ We use [SemVer](http://semver.org) for versioning. For the versions available, s
 
 ## Changelog
 
-See the [CHANGELOG.md](CHANGELOG.md) file for details
+See the [CHANGELOG.md](../CHANGELOG.md) file for details
 
 ## Authors
 
@@ -64,7 +64,7 @@ See also the list of [contributors](https://github.com/foxifyjs/odin/contributor
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details
 
 ## Support
 
