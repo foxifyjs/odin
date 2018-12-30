@@ -3,12 +3,10 @@ import Relational from "./base/Relational";
 import Collection from "./Collection";
 import Connect from "./Connect";
 import * as DB from "./DB";
-import events from "./events";
+import EventEmitter from "./DB/EventEmitter";
 import GraphQL from "./GraphQL";
 import Types from "./types";
-import { define, getGetterName, getSetterName, object, string } from "./utils";
-
-const EVENTS: Odin.Event[] = ["create"];
+import { define, getGetterName, getSetterName, initialize, object, prepareToRead, string } from "./utils";
 
 module Odin {
   export type Connection = string;
@@ -23,8 +21,6 @@ module Odin {
     [key: string]: any;
   }
 
-  export type Event = "create";
-
   export type DB = typeof DB;
   export type GraphQL = typeof GraphQL;
   export type Types = typeof Types;
@@ -32,6 +28,10 @@ module Odin {
 }
 
 class Odin<T extends object = any> extends Relational<T> {
+  protected static get _events() {
+    return new EventEmitter(this.connection, this._collection);
+  }
+
   public static Collection = Collection;
   public static Connect = Connect;
   public static DB = DB;
@@ -39,14 +39,6 @@ class Odin<T extends object = any> extends Relational<T> {
   public static Types = Types;
 
   public static isOdin = (arg: any): arg is Odin => arg instanceof Odin;
-
-  public static on<T extends object>(event: Odin.Event, listener: (item: Odin<T>) => void) {
-    if (!EVENTS.includes(event)) throw new TypeError(`Unexpected event "${event}"`);
-
-    events.on(`${this.connection}.${this.toString()}:${event}`, listener);
-
-    return this;
-  }
 
   public static toString() {
     return this._collection;
@@ -78,6 +70,32 @@ class Odin<T extends object = any> extends Relational<T> {
     if (updating && this.timestamps) (value)[this.UPDATED_AT] = new Date();
 
     return value;
+  }
+
+  /********************************** Event **********************************/
+
+  public static on<T extends object>(event: EventEmitter.Event, listener: (item: Odin<T>) => void) {
+    this._events.on(event, item => listener(initialize(this, prepareToRead(item)) as any));
+
+    return this;
+  }
+
+  public static once<T extends object>(event: EventEmitter.Event, listener: (item: Odin<T>) => void) {
+    this._events.once(event, item => listener(initialize(this, prepareToRead(item)) as any));
+
+    return this;
+  }
+
+  public static removeAllListeners(event?: EventEmitter.Event) {
+    this._events.removeAllListeners(event);
+
+    return this;
+  }
+
+  public static removeListener<T extends object>(event: EventEmitter.Event, listener: (data: Odin<T>) => void) {
+    this._events.removeListener(event, item => listener(initialize(this, prepareToRead(item)) as any));
+
+    return this;
   }
 
   constructor(document: Odin.Document & Partial<T> = {}) {

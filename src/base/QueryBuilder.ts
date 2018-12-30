@@ -304,31 +304,29 @@ class QueryBuilder<T extends object = any> extends Base<T> {
     return this.query().delete(callback as any) as any;
   }
 
-  public static destroy(ids: DB.Id | DB.Id[]): Promise<number>;
+  public static destroy(ids: DB.Id | DB.Id[], force?: boolean): Promise<number>;
   public static destroy(ids: DB.Id | DB.Id[], callback: DB.Callback<number>): void;
-  public static destroy(ids: DB.Id | DB.Id[], callback?: DB.Callback<number>) {
+  public static destroy(ids: DB.Id | DB.Id[], force: boolean, callback: DB.Callback<number>): void;
+  public static destroy(ids: DB.Id | DB.Id[], force?: boolean | DB.Callback<number>, callback?: DB.Callback<number>) {
     let query = this.query();
 
     if (Array.isArray(ids)) query = query.whereIn("id", ids);
     else query = query.where("id", ids);
 
-    return query.delete(callback as any) as any;
+    return query.delete(force as any, callback as any) as any;
   }
 
-  public delete(): Promise<number>;
+  public delete(force?: boolean): Promise<number>;
   public delete(callback: DB.Callback<number>): void;
-  public async delete(callback?: DB.Callback<number>) {
+  public delete(force: boolean, callback: DB.Callback<number>): void;
+  public delete(force?: boolean | DB.Callback<number>, callback?: DB.Callback<number>) {
     if (this._isNew) {
       if (callback) return callback(null as any, 0);
 
       return 0;
     }
 
-    const queryBuilder = this.constructor;
-
-    if (callback) return queryBuilder.destroy(this._original.id as string, callback);
-
-    return await queryBuilder.destroy(this._original.id as string);
+    return this.constructor.destroy(this._original.id as string, force as any, callback as any) as any;
   }
 
   /********************************* Restoring ********************************/

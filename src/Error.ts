@@ -1,12 +1,20 @@
 import { MongoCallback, MongoError } from "mongodb";
 import { Callback } from "./DB";
 
-export const safeExec = (base: any, method: string, args: any[], callback?: Callback<any>) => {
+export const safeExec = (
+  base: any, method: string, args: any[], callback?: Callback<any>, listener: (res: any) => void = () => { }
+) => {
   args = args.filter(a => a !== undefined);
 
   if (callback) {
     const cb: MongoCallback<any> = (err, res) => {
       if (err) return callback(new OdinError(err), res);
+
+      try {
+        listener(res);
+      } catch (error) {
+        console.warn(error);
+      }
 
       callback(err, res);
     };
@@ -14,13 +22,19 @@ export const safeExec = (base: any, method: string, args: any[], callback?: Call
     return base[method].apply(base, args.concat([cb]));
   }
 
-  return new Promise(async (resolve, reject) => {
-    try {
-      resolve(await base[method].apply(base, args));
-    } catch (err) {
-      reject(new OdinError(err));
-    }
-  });
+  return base[method].apply(base, args)
+    .then((res: any) => {
+      try {
+        listener(res);
+      } catch (error) {
+        console.warn(error);
+      }
+
+      return res;
+    })
+    .catch((err: any) => {
+      throw new OdinError(err);
+    });
 };
 
 class OdinError extends Error {

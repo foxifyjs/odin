@@ -3,10 +3,12 @@ import * as async from "async";
 import * as mongodb from "mongodb";
 import * as Odin from "..";
 import * as DB from "../DB";
+import EventEmitter from "../DB/EventEmitter";
 import Filter from "../DB/Filter";
-import events from "../events";
 import Relation from "../Relation/Base";
-import { initialize, number, OPERATORS, string } from "../utils";
+import { function as func, initialize, number, OPERATORS, prepareToStore, string } from "../utils";
+
+const { isFunction } = func;
 
 namespace Query {
   export interface Rel {
@@ -31,10 +33,6 @@ class Query<T extends object = any> extends DB<T> {
 
     this._model = model;
     this._relations = relations;
-  }
-
-  protected _emit(event: string, ops: any[]) {
-    ops.forEach(item => events.emit(event, initialize(this._model, this._prepareToRead(item))));
   }
 
   protected _apply_options(withRelations = false) {
@@ -301,50 +299,6 @@ class Query<T extends object = any> extends DB<T> {
 
   /********************************** Inserts *********************************/
 
-  protected async _insertMany(item: T[], callback?: DB.Callback<mongodb.InsertWriteOpResult>) {
-    const event = `${this._model.connection}.${this._model.toString()}:create`;
-
-    if (events.listenerCount(event) === 0)
-      return super._insertMany(item, callback as any) as any;
-
-    if (callback)
-      return super._insertMany(item, (err, res) => {
-        if (err) callback(err, res as any);
-
-        this._emit(event, res.ops);
-
-        callback(err, res);
-      });
-
-    const result = await super._insertMany(item);
-
-    this._emit(event, result.ops);
-
-    return result;
-  }
-
-  protected async _insertOne(item: T, callback?: DB.Callback<mongodb.InsertOneWriteOpResult>) {
-    const event = `${this._model.connection}.${this._model.toString()}:create`;
-
-    if (events.listenerCount(event) === 0)
-      return super._insertOne(item, callback as any) as any;
-
-    if (callback)
-      return super._insertOne(item, (err, res) => {
-        if (err) callback(err, res as any);
-
-        this._emit(event, res.ops);
-
-        callback(err, res);
-      });
-
-    const result = await super._insertOne(item);
-
-    this._emit(event, result.ops);
-
-    return result;
-  }
-
   public insert(items: T[]): Promise<number>;
   public insert(items: T[], callback: DB.Callback<number>): void;
   public insert(items: T[], callback?: DB.Callback<number>) {
@@ -401,15 +355,24 @@ class Query<T extends object = any> extends DB<T> {
 
   protected _update(
     update: { [key: string]: any },
-    callback?: DB.Callback<mongodb.UpdateWriteOpResult>
+    callback?: DB.Callback<mongodb.UpdateWriteOpResult>,
+    soft?: {
+      type: "delete" | "restore",
+      field: string,
+      value?: Date,
+    }
   ): Promise<mongodb.UpdateWriteOpResult> {
-    if (!update.$unset) {
+    if (!soft || soft.type !== "delete") {
       if (!update.$set) update.$set = {};
 
-      update.$set[this._model.UPDATED_AT] = new Date();
+      const value = new Date();
+
+      if (soft) soft.value = value;
+
+      update.$set[this._model.UPDATED_AT] = value;
     }
 
-    return super._update(update, callback);
+    return super._update(update, callback, soft as any);
   }
 
   public update(update: Partial<T>): Promise<number>;
@@ -448,15 +411,40 @@ class Query<T extends object = any> extends DB<T> {
 
   /********************************** Deletes *********************************/
 
-  public delete(): Promise<number>;
+  public delete(force?: boolean): Promise<number>;
   public delete(callback: DB.Callback<number>): void;
-  public delete(callback?: DB.Callback<number>) {
-    this._apply_options();
+  public delete(force: boolean, callback: DB.Callback<number>): void;
+  public async delete(force: boolean | DB.Callback<number> = false, callback?: DB.Callback<number>) {
+    if (isFunction(force)) {
+      callback = force;
+      force = false;
+    }
 
-    if (this._model.softDelete)
-      return super.update.call(this, { [this._model.DELETED_AT]: new Date() } as any, callback as any) as any;
+    // this._apply_options();
 
-    return super.delete.call(this, callback as any);
+    if (!this._model.softDelete || force) {
+      if (callback) return super.delete(callback);
+
+      return await super.delete();
+    }
+
+    const field = this._model.DELETED_AT;
+    const value = new Date();
+
+    const _update = {
+      $set: { [field]: value },
+    };
+
+    const soft = {
+      field,
+      value,
+      type: "delete" as "delete",
+    };
+
+    if (callback)
+      return this._update(_update, (err, res) => (callback as any)(err, res.modifiedCount), soft);
+
+    return (await this._update(_update, undefined, soft)).modifiedCount;
   }
 
   /********************************* Restoring ********************************/
@@ -464,14 +452,25 @@ class Query<T extends object = any> extends DB<T> {
   public restore(): Promise<number>;
   public restore(callback: DB.Callback<number>): void;
   public async restore(callback?: DB.Callback<number>) {
+    const _update = { $unset: { [this._model.DELETED_AT]: "" } };
+
+    const soft = {
+      type: "restore" as "restore",
+      field: this._model.UPDATED_AT,
+    };
+
     if (callback)
-      return this._update({ $unset: { [this._model.DELETED_AT]: "" } }, (err, res) => {
-        if (err) return callback(err, res as any);
+      return this._update(
+        _update,
+        (err, res) => {
+          if (err) return callback(err, res as any);
 
-        callback(err, res.modifiedCount);
-      });
+          callback(err, res.modifiedCount);
+        },
+        soft
+      );
 
-    return (await this._update({ $unset: { [this._model.DELETED_AT]: "" } }, callback)).modifiedCount;
+    return (await this._update(_update, undefined, soft)).modifiedCount;
   }
 }
 

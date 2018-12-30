@@ -1,14 +1,14 @@
 import * as mongodb from "mongodb";
-import * as Odin from "..";
 import { connection as getConnection } from "../Connect";
 import OdinError, { safeExec } from "../Error";
 import {
   array, date, function as func, isID, makeCollectionId, object, prepareKey, string
 } from "../utils";
+import EventEmitter from "./EventEmitter";
 import Filter from "./Filter";
 import Join from "./Join";
 
-const ObjectId = mongodb.ObjectId;
+const { ObjectId } = mongodb;
 
 namespace DB {
   export type Callback<T = any> = (error: OdinError, result: T) => void;
@@ -48,13 +48,13 @@ class DB<T extends object = any> extends Filter<T> {
   protected _mappers: Array<DB.Mapper<T>> = [];
 
   public get pipeline() {
-    return this._pipeline;
+    return this._resetFilters()._pipeline;
   }
 
-  constructor(connection: string) {
+  constructor(protected _connection: string) {
     super();
 
-    this._query = getConnection(connection) as any;
+    this._query = getConnection(_connection) as any;
 
     this.map(this._prepareToRead);
   }
@@ -107,6 +107,12 @@ class DB<T extends object = any> extends Filter<T> {
     };
 
     return this;
+  }
+
+  /********************************** Event **********************************/
+
+  protected _emit(event: EventEmitter.Event, data: T) {
+    return new EventEmitter(this._connection, this._collection).emit(event, data);
   }
 
   /******************************** Collection *******************************/
@@ -492,8 +498,11 @@ class DB<T extends object = any> extends Filter<T> {
   protected _insertMany(items: T[], callback?: DB.Callback<mongodb.InsertWriteOpResult>) {
     items = this._prepareToStore(items);
 
-    return safeExec(this._query, "insertMany", [items], callback);
-    // return this._query.insertMany(items, callback as any) as any;
+    return safeExec(this._query, "insertMany", [items], callback, (saved) => {
+      if (!saved) return;
+
+      saved.ops.forEach((op: any) => this._emit("create", op));
+    });
   }
 
   protected _insertOne(item: T): Promise<mongodb.InsertOneWriteOpResult>;
@@ -501,8 +510,11 @@ class DB<T extends object = any> extends Filter<T> {
   protected _insertOne(item: T, callback?: DB.Callback<mongodb.InsertOneWriteOpResult>) {
     item = this._prepareToStore(item);
 
-    return safeExec(this._query, "insertOne", [item], callback);
-    // return this._query.insertOne(item, callback as any) as any;
+    return safeExec(this._query, "insertOne", [item], callback, (saved) => {
+      if (!saved) return;
+
+      saved.ops.forEach((op: any) => this._emit("create", op));
+    });
   }
 
   public insert(item: T | T[]): Promise<number>;
@@ -534,9 +546,32 @@ class DB<T extends object = any> extends Filter<T> {
 
   protected async _update(
     update: object,
-    callback?: DB.Callback<mongodb.UpdateWriteOpResult>
+    callback?: DB.Callback<mongodb.UpdateWriteOpResult>,
+    soft?: {
+      type: "delete" | "restore",
+      field: string,
+      value: Date,
+    }
   ): Promise<mongodb.UpdateWriteOpResult> {
-    return safeExec(this._query, "updateMany", [this._filtersOnly(), update], callback);
+    const filters = this._filtersOnly();
+
+    return safeExec(this._query, "updateMany", [filters, update], callback, async () => {
+      const aggregation = DB.connection(this._connection)
+        .collection(this._collection)
+        .aggregate({
+          $match: filters,
+        });
+
+      let type: "update" | "delete" | "restore" = "update";
+
+      if (soft) {
+        aggregation.where(soft.field, soft.value);
+
+        type = soft.type;
+      }
+
+      for await (const updated of aggregation.iterate()) this._emit(type, updated);
+    });
   }
 
   public update(update: Partial<T>): Promise<number>;
@@ -602,13 +637,33 @@ class DB<T extends object = any> extends Filter<T> {
   public delete(): Promise<number>;
   public delete(callback: DB.Callback<number>): void;
   public async delete(callback?: DB.Callback<number>) {
-    if (callback) return safeExec(this._query, "deleteMany", [this._filtersOnly()], (err, res) => {
-      if (err) return callback(err, res);
+    const filters = this._filtersOnly();
 
-      callback(err, res.deletedCount);
-    });
+    const aggregation = DB.connection(this._connection)
+      .collection(this._collection)
+      .aggregate({
+        $match: filters,
+      });
 
-    return (await safeExec(this._query, "deleteMany", [this._filtersOnly()])).deletedCount;
+    if (callback) {
+      try {
+        for await (const updated of aggregation.iterate())
+          this._emit("delete", updated);
+      } catch (error) {
+        return callback(error, undefined as any);
+      }
+
+      return safeExec(this._query, "deleteMany", [filters], (err, res) => {
+        if (err) return callback(err, res);
+
+        callback(err, res.deletedCount);
+      });
+    }
+
+    for await (const updated of aggregation.iterate())
+      this._emit("delete", updated);
+
+    return (await safeExec(this._query, "deleteMany", [filters])).deletedCount;
   }
 }
 
