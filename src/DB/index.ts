@@ -142,7 +142,10 @@ class DB<T extends object = any> extends Filter<T> {
 
     this._collection = collection;
 
-    this._query.watch().on("change", console.log);
+    // this._query.watch(
+    //   [{ $match: { operationType: "update" } }],
+    //   { fullDocument: "updateLookup" }
+    // ).on("change", console.log);
 
     return this;
   }
@@ -524,7 +527,7 @@ class DB<T extends object = any> extends Filter<T> {
   public async insert(item: T | T[], callback?: DB.Callback<number>) {
     if (Array.isArray(item)) {
       if (callback)
-        return this._insertMany(item, (err, res) => callback(err, res.insertedCount));
+        return this._insertMany(item, (err, res) => callback(err, res && res.insertedCount));
 
       return (await this._insertMany(item)).insertedCount;
     }
