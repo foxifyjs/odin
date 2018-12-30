@@ -8,7 +8,7 @@ import { array, makeCollectionName, object } from "./utils";
 const MODELS: { [name: string]: typeof Odin | undefined } = {};
 const JSON_SCHEMA_DEFINITIONS: { [key: string]: any } = {};
 
-interface Base<T extends object = {}> {
+interface Base<T extends object = any> {
   constructor: typeof Odin;
 
   id?: DB.Id;
@@ -16,7 +16,7 @@ interface Base<T extends object = {}> {
   [key: string]: any;
 }
 
-class Base<T extends object = {}> {
+class Base<T extends object = any> {
   protected static _relations: string[] = [];
 
   public static connection: Odin.Connection = "default";

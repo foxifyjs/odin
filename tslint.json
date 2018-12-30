@@ -4,7 +4,6 @@
     "tslint:recommended",
     "tslint-config-airbnb"
   ],
-  "jsRules": {},
   "rules": {
     "max-line-length": [true, 120],
     "quotemark": [
@@ -45,6 +44,7 @@
     ],
     "no-angle-bracket-type-assertion": false,
     "no-shadowed-variable": false,
+    "no-increment-decrement": false,
     "member-ordering": [
       false,
       {

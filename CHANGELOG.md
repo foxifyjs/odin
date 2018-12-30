@@ -12,6 +12,14 @@
 
 ---
 
+## [next](https://github.com/foxifyjs/odin/releases/tag/next) - *(2019-__-__)*
+
+- :zap: Added `iterate` method to `DB`, `Odin` & relational methods
+- :zap: Added `delete` method to `Odin` instance
+- :zap: Added `withTrashed` method to relational methods
+- :zap: Added `lean` method to relational methods
+- :boom: Method `restore` in `Odin` instance returns `number` now (it was `boolean` before)
+
 ## [v0.8.0](https://github.com/foxifyjs/odin/releases/tag/v0.8.0) - *(2018-12-27)*
 
 - :beetle: Fixed `embedMany` relation bug

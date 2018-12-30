@@ -43,7 +43,7 @@ class Odin<T extends object = any> extends Relational<T> {
   public static on<T extends object>(event: Odin.Event, listener: (item: Odin<T>) => void) {
     if (!EVENTS.includes(event)) throw new TypeError(`Unexpected event "${event}"`);
 
-    events.on(`${this.name}:${event}`, listener);
+    events.on(`${this.connection}.${this.toString()}:${event}`, listener);
 
     return this;
   }

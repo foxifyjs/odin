@@ -53,7 +53,9 @@ const connect = (connections: connect.Connections) => {
 
     const server = <mongodb.MongoClient>deasync(mongodb.MongoClient.connect)(uri, OPTIONS);
 
-    CONNECTIONS[name] = () => server.db(connection.database);
+    const db = server.db(connection.database);
+
+    CONNECTIONS[name] = () => db;
   });
 };
 

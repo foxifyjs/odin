@@ -190,6 +190,11 @@ class QueryBuilder<T extends object = any> extends Base<T> {
     return this.query().count(callback as any) as any;
   }
 
+  public static iterate<T extends object>(): DB.Iterator<T>;
+  public static iterate() {
+    return this.query().iterate();
+  }
+
   public static get<T extends object>(): Promise<T[]>;
   public static get<T extends object>(callback: DB.Callback<T[]>): void;
   public static get(callback?: DB.Callback<any>) {
@@ -310,24 +315,38 @@ class QueryBuilder<T extends object = any> extends Base<T> {
     return query.delete(callback as any) as any;
   }
 
+  public delete(): Promise<number>;
+  public delete(callback: DB.Callback<number>): void;
+  public async delete(callback?: DB.Callback<number>) {
+    if (this._isNew) {
+      if (callback) return callback(null as any, 0);
+
+      return 0;
+    }
+
+    const queryBuilder = this.constructor;
+
+    if (callback) return queryBuilder.destroy(this._original.id as string, callback);
+
+    return await queryBuilder.destroy(this._original.id as string);
+  }
+
   /********************************* Restoring ********************************/
 
-  public restore(): Promise<boolean>;
-  public restore(callback: DB.Callback<boolean>): void;
-  public async restore(callback?: DB.Callback<boolean>) {
-    const id = (this as any).attributes.id;
+  public restore(): Promise<number>;
+  public restore(callback: DB.Callback<number>): void;
+  public async restore(callback?: DB.Callback<number>) {
+    if (this._isNew) {
+      if (callback) return callback(null as any, 0);
 
-    if (this._isNew || !id) return false;
+      return 0;
+    }
 
-    const queryBuilder = this.constructor.where("id", id);
+    const queryBuilder = this.constructor.where("id", this._original.id);
 
-    if (callback) return queryBuilder.restore((err, res) => {
-      if (err) return callback(err, res as any);
+    if (callback) return queryBuilder.restore(callback);
 
-      callback(err, !!res);
-    });
-
-    return !!(await queryBuilder.restore());
+    return await queryBuilder.restore();
   }
 }
 

@@ -4,9 +4,10 @@ const MONGO_DB_NAME = "jest";
 const MONGOD = new MongodbMemoryServer.default({
   instance: {
     dbName: MONGO_DB_NAME,
+    storageEngine: "wiredTiger",
   },
   binary: {
-    version: "3.6.4",
+    version: "4.0.5",
   },
 });
 

@@ -166,12 +166,26 @@ test("db.value (callback style)", (done) => {
   });
 });
 
+test("db.iterate", async () => {
+  expect.assertions(ITEMS.length * 2);
+
+  let index = 0;
+
+  for await (const item of DB.collection(COLLECTION).iterate())
+    expect(item).toEqual(ITEMS[index++]);
+
+  index = 0;
+
+  for await (const item of DB.collection(COLLECTION).iterate(["name"]))
+    expect(item).toEqual({ name: ITEMS[index++].name });
+});
+
 test("db.get (async/await style)", async () => {
   expect.assertions(1);
 
   const result = await DB.collection(COLLECTION).get();
 
-  expect(result).toEqual([...ITEMS]);
+  expect(result).toEqual(ITEMS);
 });
 
 test("db.get (callback style)", (done) => {

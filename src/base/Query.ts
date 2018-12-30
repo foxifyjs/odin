@@ -38,8 +38,8 @@ class Query<T extends object = any> extends DB<T> {
   }
 
   protected _apply_options(withRelations = false) {
-    if (this._model.softDelete && !this._withTrashed)
-      this.whereNull(this._model.DELETED_AT);
+    // if (this._model.softDelete && !this._withTrashed)
+    //   this.whereNull(this._model.DELETED_AT);
 
     if (withRelations) this._relations
       .forEach(({ relation, relations }) => relation.load(this as any, relations, this._withTrashed));
@@ -50,9 +50,11 @@ class Query<T extends object = any> extends DB<T> {
   /******************************* With Trashed *******************************/
 
   public withTrashed() {
+    if (!this._model.softDelete && this._withTrashed) return this;
+
     this._withTrashed = true;
 
-    return this;
+    return this.whereNotNull(this._model.DELETED_AT);
   }
 
   /*********************************** Lean ***********************************/
@@ -198,6 +200,19 @@ class Query<T extends object = any> extends DB<T> {
     return super.count.apply(this, arguments as any) as any;
   }
 
+  public iterate(): DB.Iterator<T> {
+    const iterator = super.iterate();
+    const next = iterator.next;
+
+    iterator.next = async () => {
+      const item = await next();
+
+      return item && initialize(this._model, item) as any;
+    };
+
+    return iterator;
+  }
+
   public get(): Promise<T[]>;
   public get(callback: DB.Callback<T[]>): void;
   public async get(callback?: DB.Callback<T[]>) {
@@ -287,7 +302,7 @@ class Query<T extends object = any> extends DB<T> {
   /********************************** Inserts *********************************/
 
   protected async _insertMany(item: T[], callback?: DB.Callback<mongodb.InsertWriteOpResult>) {
-    const event = `${this._model.name}:create`;
+    const event = `${this._model.connection}.${this._model.toString()}:create`;
 
     if (events.listenerCount(event) === 0)
       return super._insertMany(item, callback as any) as any;
@@ -309,7 +324,7 @@ class Query<T extends object = any> extends DB<T> {
   }
 
   protected async _insertOne(item: T, callback?: DB.Callback<mongodb.InsertOneWriteOpResult>) {
-    const event = `${this._model.name}:create`;
+    const event = `${this._model.connection}.${this._model.toString()}:create`;
 
     if (events.listenerCount(event) === 0)
       return super._insertOne(item, callback as any) as any;

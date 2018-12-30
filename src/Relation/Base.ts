@@ -57,6 +57,20 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
     filter?: (q: Filter) => Filter
   ): DB<T> | Join<T>;
 
+  /******************************* With Trashed *******************************/
+
+  public withTrashed<T extends object>(): Query<T>;
+  public withTrashed() {
+    return this._query().withTrashed();
+  }
+
+  /*********************************** Lean ***********************************/
+
+  public lean<T extends object>(): Query<T>;
+  public lean() {
+    return this._query().lean();
+  }
+
   /****************************** With Relations ******************************/
 
   public with(...relations: string[]): Query<T>;
@@ -174,6 +188,11 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
     const query = this._query();
 
     return query.count.apply(query, arguments as any) as any;
+  }
+
+  public iterate<T extends object>(): DB.Iterator<T>;
+  public iterate() {
+    return this._query().iterate();
   }
 
   public get(): Promise<T[]>;

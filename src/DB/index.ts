@@ -30,6 +30,12 @@ namespace DB {
   export type GroupQuery<T extends object = any> = (query: GroupQueryObject<T>) => void;
 
   export type Mapper<T extends object = any> = (item: T, index: number, items: T[]) => any;
+
+  export interface Iterator<T extends object = any> {
+    hasNext: () => Promise<boolean>;
+    next: () => Promise<T | undefined>;
+    [Symbol.asyncIterator]: () => AsyncIterator<T>;
+  }
 }
 
 class DB<T extends object = any> extends Filter<T> {
@@ -316,6 +322,37 @@ class DB<T extends object = any> extends Filter<T> {
     if (callback) return this.count((err, res) => callback(err, res !== 0));
 
     return (await this.count()) !== 0;
+  }
+
+  public iterate(fields?: string[]): DB.Iterator<T> {
+    this._resetFilters();
+
+    if (fields) this.aggregate({
+      $project: fields.reduce(
+        (prev, cur) => (prev[prepareKey(cur)] = 1, prev),
+        { _id: 0 } as { [key: string]: any }
+      ),
+    });
+
+    const cursor = this._aggregate();
+
+    const iterator = {
+      hasNext: () => cursor.hasNext(),
+      next: () => cursor.next(),
+      [Symbol.asyncIterator]: () => ({
+        next: async (): Promise<{ value: T, done: boolean }> => {
+          if (await iterator.hasNext())
+            return {
+              value: await iterator.next(),
+              done: false,
+            };
+
+          return { done: true } as any;
+        },
+      }),
+    };
+
+    return iterator;
   }
 
   public get<K extends keyof T>(fields?: Array<K | string>): Promise<T[]>;
