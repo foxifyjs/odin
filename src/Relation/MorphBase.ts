@@ -19,7 +19,7 @@ abstract class MorphBase<T extends Odin = Odin, A = undefined> extends Relation<
 
   protected _query(relations?: string[]): Query<T> {
     return super._query(relations)
-      .where(`${this.type}_type`, this.model.constructor.name);
+      .where(`${this.type}_type`, this.model.constructor.toString());
   }
 }
 

@@ -6,6 +6,7 @@ import Types from "./types";
 import { array, makeCollectionName, object } from "./utils";
 
 const MODELS: { [name: string]: typeof Odin | undefined } = {};
+const COLLECTIONS: { [name: string]: typeof Odin | undefined } = {};
 const JSON_SCHEMA_DEFINITIONS: { [key: string]: any } = {};
 
 interface Base<T extends object = any> {
@@ -69,7 +70,11 @@ class Base<T extends object = any> {
   }
 
   public static get models() {
-    return MODELS;
+    return { ...MODELS };
+  }
+
+  public static get collections() {
+    return { ...COLLECTIONS };
   }
 
   public static register = (...models: Array<typeof Odin>) => {
@@ -77,6 +82,7 @@ class Base<T extends object = any> {
       if (MODELS[model.name]) throw new Error(`Model "${model.name}" already exists`);
 
       MODELS[model.name] = model;
+      COLLECTIONS[model.toString()] = model;
     });
   }
 

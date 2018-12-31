@@ -36,7 +36,7 @@ class MorphOne<T extends Odin = Odin> extends MorphBase<T, "MorphOne"> {
         filters.reduce(
           (prev, filter) => filter(prev) as any,
           q.where(this.foreignKey, `${constructor.toString()}.${this.localKey}`)
-            .where(`${this.type}_type`, constructor.name)
+            .where(`${this.type}_type`, constructor.toString())
             .limit(1)
         )
       ),
@@ -71,7 +71,7 @@ class MorphOne<T extends Odin = Odin> extends MorphBase<T, "MorphOne"> {
                 (prev, filter) => filter(prev) as any,
                 q
                   .where(this.foreignKey, `${constructor.toString()}.relation.${this.localKey}`)
-                  .where(`${this.type}_type`, constructor.name)
+                  .where(`${this.type}_type`, constructor.toString())
                   .limit(1)
                   .aggregate({
                     $project: {
@@ -94,7 +94,7 @@ class MorphOne<T extends Odin = Odin> extends MorphBase<T, "MorphOne"> {
         q => filters.reduce(
           (prev, filter) => filter(prev) as any,
           q.where(this.foreignKey, `${constructor.toString()}.relation.${this.localKey}`)
-            .where(`${this.type}_type`, constructor.name)
+            .where(`${this.type}_type`, constructor.toString())
             .limit(1)
         ),
         "relation"
