@@ -2,7 +2,7 @@ import * as mongodb from "mongodb";
 import { connection as getConnection } from "../Connect";
 import OdinError, { safeExec } from "../Error";
 import {
-  array, date, function as func, isID, makeCollectionId, object, prepareKey, string
+  array, date, function as func, isID, makeCollectionId, object, prepareKey, prepareToRead, prepareToStore, string,
 } from "../utils";
 import EventEmitter from "./EventEmitter";
 import Filter from "./Filter";
@@ -56,45 +56,7 @@ class DB<T extends object = any> extends Filter<T> {
 
     this._query = getConnection(_connection) as any;
 
-    this.map(this._prepareToRead);
-  }
-
-  protected _prepareToRead = (document: any): any => {
-    if (
-      !document ||
-      !(object.isObject(document) || typeof document === "object") ||
-      date.isDate(document)
-    ) return document;
-
-    if (Array.isArray(document)) return document.map(this._prepareToRead);
-
-    return object.mapValues(
-      object.mapKeys(document, (value, key) => key === "_id" ? "id" : key),
-      (value, key) => isID(key as string) ?
-        value && value.toString() :
-        this._prepareToRead(value)
-    );
-  }
-
-  protected _prepareToStore = (document: any): any => {
-    if (
-      !document ||
-      !(object.isObject(document) || typeof document === "object") ||
-      date.isDate(document)
-    ) return document;
-
-    if (Array.isArray(document)) return document.map(this._prepareToStore);
-
-    return object.mapValues(
-      object.mapKeys(document, (value, key) => key === "id" ? "_id" : key),
-      (value, key) => isID(key as string) ?
-        (
-          ObjectId.isValid(value) ?
-            new ObjectId(value) :
-            this._prepareToStore(value)
-        ) :
-        this._prepareToStore(value)
-    );
+    this.map(prepareToRead);
   }
 
   protected _resetFilters() {
@@ -501,7 +463,7 @@ class DB<T extends object = any> extends Filter<T> {
   protected _insertMany(items: T[]): Promise<mongodb.InsertWriteOpResult>;
   protected _insertMany(items: T[], callback: DB.Callback<mongodb.InsertWriteOpResult>): void;
   protected _insertMany(items: T[], callback?: DB.Callback<mongodb.InsertWriteOpResult>) {
-    items = this._prepareToStore(items);
+    items = prepareToStore(items);
 
     return safeExec(this._query, "insertMany", [items], callback, (saved) => {
       if (!saved) return;
@@ -513,7 +475,7 @@ class DB<T extends object = any> extends Filter<T> {
   protected _insertOne(item: T): Promise<mongodb.InsertOneWriteOpResult>;
   protected _insertOne(item: T, callback: DB.Callback<mongodb.InsertOneWriteOpResult>): void;
   protected _insertOne(item: T, callback?: DB.Callback<mongodb.InsertOneWriteOpResult>) {
-    item = this._prepareToStore(item);
+    item = prepareToStore(item);
 
     return safeExec(this._query, "insertOne", [item], callback, (saved) => {
       if (!saved) return;
@@ -583,7 +545,7 @@ class DB<T extends object = any> extends Filter<T> {
   public update(update: Partial<T>, callback: DB.Callback<number>): void;
   public async update(update: Partial<T>, callback?: DB.Callback<number>) {
     const _update = {
-      $set: this._prepareToStore(update),
+      $set: prepareToStore(update),
     };
 
     if (callback)

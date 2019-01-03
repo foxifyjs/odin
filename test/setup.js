@@ -1,28 +1,51 @@
-const MongodbMemoryServer = require("mongodb-memory-server");
+const fs = require("fs");
+const rimraf = require("rimraf");
+const path = require("path");
+const portfinder = require("portfinder");
+const mongodb = require("mongodb");
+const {
+  ReplSet,
+  Server,
+  Sharded
+} = require("mongodb-topology-manager");
 
-// const MONGOD = new MongodbMemoryServer.default({
-//   instance: {
-//     storageEngine: "wiredTiger",
-//   },
-//   binary: {
-//     version: "4.0.5",
-//   },
-// });
+const dbpath = path.resolve(__dirname, "db");
 
-const REPLICA = new MongodbMemoryServer.MongoMemoryReplSet({
-  instanceOpts: [{
-    storageEngine: "wiredTiger",
-  }],
-  replSet: {
-    storageEngine: "wiredTiger",
-    count: 1,
-  },
-  binary: {
-    version: "4.0.5",
-  },
+const prepare = () => new Promise((resolve, reject) => {
+  if (fs.existsSync(dbpath)) {
+    rimraf(dbpath, (err) => {
+      if (err) return reject(err);
+
+      resolve();
+    });
+  } else {
+    fs.mkdirSync(dbpath);
+    resolve();
+  }
 });
 
-module.exports = () => {
-  // global.__MONGOD__ = MONGOD;
-  global.__REPLICA__ = REPLICA;
-};
+const DB_NAME = "odin_test";
+
+module.exports = async () => {
+  await prepare();
+
+  const server = new Server("mongod", {
+    dbpath,
+    port: await portfinder.getPortPromise(),
+    storageEngine: "wiredTiger",
+  });
+
+  await server.discover();
+
+  await server.purge();
+
+  await server.start();
+
+  global.__CONNECTION__ = await mongodb.connect(
+    `mongodb://localhost:${server.port}/${DB_NAME}`, {
+      useNewUrlParser: true
+    }
+  );
+
+  global.__DB_NAME__ = DB_NAME;
+}

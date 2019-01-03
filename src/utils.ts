@@ -122,7 +122,7 @@ export const OPERATORS: { [operator: string]: string } = {
   ">": "gt",
 };
 
-export const isID = (id: string) => /(Id$|_id$|^id$)/.test(id);
+export const isID = (id: string) => /(Id$|_id$|^id$|_ids$|Ids$)/.test(id);
 
 export const prepareKey = (id: string) => id === "id" ? "_id" : id;
 
@@ -147,10 +147,15 @@ export const prepareToRead = (document: any): any => {
 
   return object.mapValues(
     object.mapKeys(document, (value, key) => key === "_id" ? "id" : key),
-    (value, key) => isID(key as string) ?
-      value && value.toString() :
-      prepareToRead(value)
-  );
+    (value, key) => {
+      if (!value) return value;
+
+      if (!isID(key)) return prepareToRead(value);
+
+      if (Array.isArray(value)) return value.map(v => v.toString());
+
+      return value.toString();
+    });
 };
 
 export const prepareToStore = (document: any): any => {
@@ -164,12 +169,11 @@ export const prepareToStore = (document: any): any => {
 
   return object.mapValues(
     object.mapKeys(document, (value, key) => key === "id" ? "_id" : key),
-    (value, key) => isID(key as string) ?
-      (
-        ObjectId.isValid(value) ?
-          new ObjectId(value) :
-          prepareToStore(value)
-      ) :
-      prepareToStore(value)
-  );
+    (value, key) => {
+      if (!isID(key)) return prepareToStore(value);
+
+      if (ObjectId.isValid(value)) return new ObjectId(value);
+
+      return prepareToStore(value);
+    });
 };

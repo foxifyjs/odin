@@ -62,13 +62,14 @@
     "@foxify/schema": "^1.0.1",
     "@types/async": "^2.0.50",
     "@types/deasync": "^0.1.0",
-    "@types/jest": "^23.3.10",
+    "@types/jest": "^23.3.11",
     "codecov": "^3.1.0",
     "dotenv": "^6.2.0",
     "fs-readdir-recursive": "^1.1.0",
     "jest": "^23.6.0",
-    "mongodb-memory-server": "^2.9.1",
-    "rimraf": "^2.6.2",
+    "mongodb-topology-manager": "^2.1.0",
+    "portfinder": "^1.0.20",
+    "rimraf": "^2.6.3",
     "ts-jest": "^23.10.5",
     "tslint": "^5.12.0",
     "tslint-config-airbnb": "^5.11.1",
@@ -88,6 +89,7 @@
     },
     "testMatch": [
       "<rootDir>/test/**/*\\.ts"
-    ]
+    ],
+    "bail": true
   }
 }

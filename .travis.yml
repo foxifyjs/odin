@@ -11,6 +11,9 @@ node_js:
   - "9"
   - "8"
 
+services:
+  - mongodb
+
 script:
   - npm run codecov
 

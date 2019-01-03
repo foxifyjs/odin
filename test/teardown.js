@@ -1,6 +1,5 @@
 module.exports = async () => {
-  // await global.__MONGOD__.stop();
-  await global.__REPLICA__.stop();
+  await __CONNECTION__.close();
 
   process.exit(0);
 };
