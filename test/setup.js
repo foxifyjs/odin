@@ -1,4 +1,5 @@
 const http = require("http");
+const os = require("os");
 const fs = require("fs");
 const {
   execSync
@@ -17,13 +18,13 @@ const mongod_path = path.resolve(__dirname, "mongodb");
 const dbpath = path.resolve(__dirname, "db");
 
 const download = () => new Promise(async (resolve, reject) => {
-  const dl_version = "mongodb-linux-x86_64-latest.tgz";
+  const dl_version = `mongodb-${os.platform()}-x86_64-latest.tgz`;
   const dl_path = path.resolve(__dirname, dl_version);
 
   const file = fs.createWriteStream(dl_path);
 
   http
-    .get(`http://fastdl.mongodb.org/linux/${dl_version}`, (res) => {
+    .get(`http://fastdl.mongodb.org/${os.platform()}/${dl_version}`, (res) => {
       res.pipe(file);
 
       file.on('finish', () => {
