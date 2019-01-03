@@ -35,12 +35,12 @@ const CHATS = [
   {
     name: "1",
     chatable_id: "ardalanamini",
-    chatable_type: "User",
+    chatable_type: "users",
   },
   {
     name: "2",
     chatable_id: "123",
-    chatable_type: "Something",
+    chatable_type: "something",
   },
 ];
 
@@ -148,7 +148,7 @@ test("Model.with", async () => {
 
   const items = USERS.map(user => ({
     ...user,
-    chat: CHATS.filter(chat => chat.chatable_id === user.username && chat.chatable_type === "User")[0],
+    chat: CHATS.filter(chat => chat.chatable_id === user.username && chat.chatable_type === "users")[0],
   }));
 
   const results = await User.with("chat").lean().get();
@@ -164,7 +164,7 @@ test("Model.with deep", async () => {
   expect.assertions(4);
 
   const items = USERS.map((user) => {
-    const chat = CHATS.filter(chat => chat.chatable_id === user.username && chat.chatable_type === "User")[0];
+    const chat = CHATS.filter(chat => chat.chatable_id === user.username && chat.chatable_type === "users")[0];
 
     if (chat) (chat as any).message = MESSAGES.filter(message => message.chatname === chat.name)[0];
 
@@ -195,7 +195,7 @@ test("Model.has", async () => {
   expect.assertions(1);
 
   const items = USERS.filter(
-    user => array.any(CHATS, chat => chat.chatable_id === user.username && chat.chatable_type === "User")
+    user => array.any(CHATS, chat => chat.chatable_id === user.username && chat.chatable_type === "users")
   );
 
   const results = await User.has("chat").lean().get();
@@ -210,7 +210,7 @@ test("Model.has [deep]", async () => {
     .filter(user =>
       array.any(MESSAGES, message =>
         CHATS
-          .filter(chat => chat.chatable_id === user.username && chat.chatable_type === "User")
+          .filter(chat => chat.chatable_id === user.username && chat.chatable_type === "users")
           .findIndex(chat => message.chatname === chat.name) !== -1
       )
     );
