@@ -89,7 +89,6 @@
     },
     "testMatch": [
       "<rootDir>/test/**/*\\.ts"
-    ],
-    "bail": true
+    ]
   }
 }
