@@ -20,6 +20,7 @@
 - :zap: Added `withTrashed` method to relational methods
 - :zap: Added `lean` method to relational methods
 - :boom: Method `restore` in `Odin` instance returns `number` now (it was `boolean` before)
+- :beetle: Fixed bug with `^.+_ids$` fields not casting to array of `ObjectId` while saving
 
 ## [v0.8.0](https://github.com/foxifyjs/odin/releases/tag/v0.8.0) - *(2018-12-27)*
 
