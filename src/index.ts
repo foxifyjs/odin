@@ -8,7 +8,7 @@ import GraphQL from "./GraphQL";
 import Types from "./types";
 import { define, getGetterName, getSetterName, initialize, object, prepareToRead, string } from "./utils";
 
-module Odin {
+namespace Odin {
   export type Connection = string;
 
   export interface Schema {
@@ -74,7 +74,8 @@ class Odin<T extends object = any> extends Relational<T> {
 
   /********************************** Event **********************************/
 
-  public static on<T extends object>(event: EventEmitter.Event, listener: (item: Odin<T>) => void) {
+  // public static on<T extends object>(event: EventEmitter.Event, listener: (item: Odin<T>) => void) {
+  public static on<T extends object>(event: "create", listener: (item: Odin<T>) => void) {
     this._events.on(event, item => listener(initialize(this, prepareToRead(item)) as any));
 
     return this;

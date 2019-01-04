@@ -6,10 +6,10 @@ os:
   - osx
 
 node_js:
-  - "11"
-  - "10"
-  - "9"
   - "8"
+  - "9"
+  - "10"
+  - "11"
 
 script:
   - npm run codecov

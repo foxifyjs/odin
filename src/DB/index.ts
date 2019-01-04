@@ -1,14 +1,14 @@
+import * as assert from "assert";
 import * as mongodb from "mongodb";
 import { connection as getConnection } from "../Connect";
 import OdinError, { safeExec } from "../Error";
 import {
-  array, date, function as func, isID, makeCollectionId, object, prepareKey, prepareToRead, prepareToStore, string,
+  array, function as func, makeCollectionId, object, prepareKey,
+  prepareToRead, prepareToStore, string,
 } from "../utils";
 import EventEmitter from "./EventEmitter";
 import Filter from "./Filter";
 import Join from "./Join";
-
-const { ObjectId } = mongodb;
 
 namespace DB {
   export type Callback<T = any> = (error: OdinError, result: T) => void;
@@ -54,6 +54,11 @@ class DB<T extends object = any> extends Filter<T> {
   constructor(protected _connection: string) {
     super();
 
+    assert(
+      string.isString(_connection),
+      `Expected "connection" to be string, got ${typeof _connection}`
+    );
+
     this._query = getConnection(_connection) as any;
 
     this.map(prepareToRead);
@@ -97,8 +102,11 @@ class DB<T extends object = any> extends Filter<T> {
   }
 
   public collection(collection: string) {
-    if (!(this._query as any).collection)
-      throw new Error("Can't change collection name in the middle of query");
+    assert((this._query as any).collection, "Can't change collection name in the middle of query");
+    assert(
+      string.isString(collection),
+      `Expected "collection" to be string, got ${typeof collection}`
+    );
 
     this._query = ((this._query as any) as mongodb.Db).collection(collection);
 
@@ -129,6 +137,11 @@ class DB<T extends object = any> extends Filter<T> {
     query: DB.JoinQuery<T> = q => q.where(makeCollectionId(collection), `${collection}.id`),
     as: string = collection
   ) {
+    assert(
+      string.isString(collection),
+      `Expected "collection" to be string, got ${typeof collection}`
+    );
+
     const join: Join = query(new Join(this._collection, collection, as)) as any;
 
     this.aggregate(join.pipeline);
@@ -138,8 +151,13 @@ class DB<T extends object = any> extends Filter<T> {
 
   /********* Mapping, Ordering, Grouping, Limit, Offset & Pagination *********/
 
-  public map(fn: DB.Mapper<T>) {
-    this._mappers.push(fn);
+  public map(mapper: DB.Mapper<T>) {
+    assert(
+      func.isFunction(mapper),
+      `Expected "mapper" to be a function, got ${typeof mapper}`
+    );
+
+    this._mappers.push(mapper);
 
     return this;
   }
@@ -249,6 +267,8 @@ class DB<T extends object = any> extends Filter<T> {
   /*********************************** Read **********************************/
 
   private _aggregate(options?: mongodb.CollectionAggregationOptions) {
+    this._resetFilters();
+
     return this._mappers.reduce(
       (query: any, mapper) => query.map(mapper),
       this._query.aggregate(
@@ -298,8 +318,6 @@ class DB<T extends object = any> extends Filter<T> {
   }
 
   public iterate(fields?: string[]): DB.Iterator<T> {
-    this._resetFilters();
-
     if (fields) this.aggregate({
       $project: fields.reduce(
         (prev, cur) => (prev[prepareKey(cur)] = 1, prev),
@@ -314,9 +332,11 @@ class DB<T extends object = any> extends Filter<T> {
       next: () => cursor.next(),
       [Symbol.asyncIterator]: () => ({
         next: async (): Promise<{ value: T, done: boolean }> => {
-          if (await iterator.hasNext())
+          const value = await iterator.next();
+
+          if (value)
             return {
-              value: await iterator.next(),
+              value,
               done: false,
             };
 
@@ -336,8 +356,6 @@ class DB<T extends object = any> extends Filter<T> {
       callback = fields;
       fields = undefined;
     }
-
-    this._resetFilters();
 
     if (fields) this.aggregate({
       $project: fields.reduce(
@@ -379,7 +397,6 @@ class DB<T extends object = any> extends Filter<T> {
     return safeExec(
       this
         .map((item: any) => keys.reduce((prev, key) => prev[key], item))
-        ._resetFilters()
         .aggregate({
           $project: {
             _id: 0,
@@ -522,23 +539,7 @@ class DB<T extends object = any> extends Filter<T> {
   ): Promise<mongodb.UpdateWriteOpResult> {
     const filters = this._filtersOnly();
 
-    return safeExec(this._query, "updateMany", [filters, update], callback, async () => {
-      const aggregation = DB.connection(this._connection)
-        .collection(this._collection)
-        .aggregate({
-          $match: filters,
-        });
-
-      let type: "update" | "delete" | "restore" = "update";
-
-      if (soft) {
-        aggregation.where(soft.field, soft.value);
-
-        type = soft.type;
-      }
-
-      for await (const updated of aggregation.iterate()) this._emit(type, updated);
-    });
+    return safeExec(this._query, "updateMany", [filters, update], callback);
   }
 
   public update(update: Partial<T>): Promise<number>;
@@ -622,29 +623,11 @@ class DB<T extends object = any> extends Filter<T> {
   public async delete(callback?: DB.Callback<number>) {
     const filters = this._filtersOnly();
 
-    const aggregation = DB.connection(this._connection)
-      .collection(this._collection)
-      .aggregate({
-        $match: filters,
-      });
+    if (callback) return safeExec(this._query, "deleteMany", [filters], (err, res) => {
+      if (err) return callback(err, res);
 
-    if (callback) {
-      try {
-        for await (const updated of aggregation.iterate())
-          this._emit("delete", updated);
-      } catch (error) {
-        return callback(error, undefined as any);
-      }
-
-      return safeExec(this._query, "deleteMany", [filters], (err, res) => {
-        if (err) return callback(err, res);
-
-        callback(err, res.deletedCount);
-      });
-    }
-
-    for await (const updated of aggregation.iterate())
-      this._emit("delete", updated);
+      callback(err, res.deletedCount);
+    });
 
     return (await safeExec(this._query, "deleteMany", [filters])).deletedCount;
   }

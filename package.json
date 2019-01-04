@@ -52,6 +52,7 @@
     "graphql": "^0.13.2",
     "graphql-iso-date": "^3.6.1",
     "mongodb": "^3.1.10",
+    "mongodb-memory-server": "^2.9.1",
     "prototyped.js": "^0.21.0",
     "verifications": "^0.3.0"
   },
@@ -67,8 +68,6 @@
     "dotenv": "^6.2.0",
     "fs-readdir-recursive": "^1.1.0",
     "jest": "^23.6.0",
-    "mongodb-topology-manager": "^2.1.0",
-    "portfinder": "^1.0.20",
     "rimraf": "^2.6.3",
     "ts-jest": "^23.10.5",
     "tslint": "^5.12.0",

@@ -218,78 +218,78 @@ test("Model.on('create')", async () => {
   expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(item);
 });
 
-test("Model.on('update')", async () => {
-  expect.assertions(3);
+// test("Model.on('update')", async () => {
+//   expect.assertions(3);
 
-  const item = ITEMS[0];
+//   const item = ITEMS[0];
 
-  User.on("update", (result) => {
-    expect(result).toBeInstanceOf(User);
-    expect(utils.object.omit(result.toJSON(), ["created_at", "updated_at"]))
-      .toEqual({ ...item, username: "updated" });
+//   User.on("update", (result) => {
+//     expect(result).toBeInstanceOf(User);
+//     expect(utils.object.omit(result.toJSON(), ["created_at", "updated_at"]))
+//       .toEqual({ ...item, username: "updated" });
 
-    User.removeAllListeners("update");
-  });
+//     User.removeAllListeners("update");
+//   });
 
-  const result = await User.where("id", (item as any).id).update({ username: "updated" });
+//   const result = await User.where("id", (item as any).id).update({ username: "updated" });
 
-  expect(result).toBe(1);
-});
+//   expect(result).toBe(1);
+// });
 
-test("Model.on('delete') [soft]", async () => {
-  expect.assertions(3);
+// test("Model.on('delete') [soft]", async () => {
+//   expect.assertions(3);
 
-  const item = ITEMS[0];
+//   const item = ITEMS[0];
 
-  User.on("delete", (result) => {
-    expect(result).toBeInstanceOf(User);
-    expect(utils.object.omit(result.toJSON(), ["created_at", "deleted_at"]))
-      .toEqual(item);
+//   User.on("delete", (result) => {
+//     expect(result).toBeInstanceOf(User);
+//     expect(utils.object.omit(result.toJSON(), ["created_at", "deleted_at"]))
+//       .toEqual(item);
 
-    User.removeAllListeners("delete");
-  });
+//     User.removeAllListeners("delete");
+//   });
 
-  const result = await User.where("id", (item as any).id).delete();
+//   const result = await User.where("id", (item as any).id).delete();
 
-  expect(result).toBe(1);
-});
+//   expect(result).toBe(1);
+// });
 
-test("Model.on('delete') [force]", async () => {
-  expect.assertions(3);
+// test("Model.on('delete') [force]", async () => {
+//   expect.assertions(3);
 
-  const item = ITEMS[0];
+//   const item = ITEMS[0];
 
-  User.on("delete", (result) => {
-    expect(result).toBeInstanceOf(User);
-    expect(utils.object.omit(result.toJSON(), ["created_at"]))
-      .toEqual(item);
+//   User.on("delete", (result) => {
+//     expect(result).toBeInstanceOf(User);
+//     expect(utils.object.omit(result.toJSON(), ["created_at"]))
+//       .toEqual(item);
 
-    User.removeAllListeners("delete");
-  });
+//     User.removeAllListeners("delete");
+//   });
 
-  const result = await User.where("id", (item as any).id).delete(true);
+//   const result = await User.where("id", (item as any).id).delete(true);
 
-  expect(result).toBe(1);
-});
+//   expect(result).toBe(1);
+// });
 
-test("Model.on('restore')", async () => {
-  expect.assertions(4);
+// test("Model.on('restore')", async () => {
+//   expect.assertions(4);
 
-  const item = ITEMS[0];
+//   const item = ITEMS[0];
 
-  User.on("restore", (result) => {
-    expect(result).toBeInstanceOf(User);
-    expect(utils.object.omit(result.toJSON(), ["created_at", "updated_at"]))
-      .toEqual(item);
+//   User.on("restore", (result) => {
+//     expect(result).toBeInstanceOf(User);
+//     expect(utils.object.omit(result.toJSON(), ["created_at", "updated_at"]))
+//       .toEqual(item);
 
-    User.removeAllListeners("restore");
-  });
+//     User.removeAllListeners("restore");
+//   });
 
-  const result1 = await User.where("id", (item as any).id).delete();
+//   const result1 = await User.where("id", (item as any).id).delete();
 
-  expect(result1).toBe(1);
+//   expect(result1).toBe(1);
 
-  const result2 = await User.where("id", (item as any).id).restore();
+//   const result2 = await User.where("id", (item as any).id).restore();
 
-  expect(result2).toBe(1);
-});
+//   expect(result2).toBe(1);
+// });

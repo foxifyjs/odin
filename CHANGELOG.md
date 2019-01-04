@@ -14,7 +14,6 @@
 
 ## [next](https://github.com/foxifyjs/odin/releases/tag/next) - *(2019-__-__)*
 
-- :zap: Added `update`, `delete` & `restore` hooks to `Odin`
 - :zap: Added `iterate` method to `DB`, `Odin` & relational methods
 - :zap: Added `unset` method to `DB`
 - :zap: Added `delete` method to `Odin` instance
