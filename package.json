@@ -1,6 +1,6 @@
 {
   "name": "@foxify/odin",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Active Record Model",
   "author": "Ardalan Amini <ardalanamini22@gmail.com> [https://github.com/ardalanamini]",
   "contributors": [
@@ -63,7 +63,7 @@
     "@foxify/schema": "^1.0.1",
     "@types/async": "^2.0.50",
     "@types/deasync": "^0.1.0",
-    "@types/jest": "^23.3.11",
+    "@types/jest": "^23.3.12",
     "codecov": "^3.1.0",
     "dotenv": "^6.2.0",
     "fs-readdir-recursive": "^1.1.0",

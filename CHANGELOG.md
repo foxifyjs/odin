@@ -12,7 +12,7 @@
 
 ---
 
-## [next](https://github.com/foxifyjs/odin/releases/tag/next) - *(2019-__-__)*
+## [v0.9.0](https://github.com/foxifyjs/odin/releases/tag/v0.9.0) - *(2019-01-07)*
 
 - :zap: Added `iterate` method to `DB`, `Odin` & relational methods
 - :zap: Added `unset` method to `DB`
