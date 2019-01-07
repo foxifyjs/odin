@@ -83,6 +83,7 @@ class EmbedMany<T extends Odin = any> extends HasMany<T> {
                   })
               ),
               relations,
+              withTrashed,
               filter
             ),
           "relation"

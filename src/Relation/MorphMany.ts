@@ -76,6 +76,7 @@ class MorphMany<T extends Odin = Odin> extends MorphBase<T> {
                   })
               ),
               relations,
+              withTrashed,
               filter
             ),
           "relation"

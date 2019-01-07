@@ -87,6 +87,7 @@ class HasOne<T extends Odin = Odin> extends Relation<T, "HasOne"> {
                   })
               ),
               relations,
+              withTrashed,
               filter
             ),
           "relation"

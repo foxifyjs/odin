@@ -246,12 +246,12 @@ test("Model.whereHas [deep]", async () => {
           .filter(chat => chat.username === user.username)
           .findIndex(chat => message.chatname === chat.name &&
             MESSAGES.findIndex(message => chat.name === message.chatname
-              && /5/.test(message.message)) !== -1) !== -1
+              && /6/.test(message.message)) !== -1) !== -1
       )
     );
 
   const results = await User
-    .whereHas("chats.messages", q => q.whereLike("message", "5"))
+    .whereHas("chats.messages", q => q.whereLike("message", "6"))
     .lean()
     .get();
 

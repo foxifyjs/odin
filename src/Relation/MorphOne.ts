@@ -80,6 +80,7 @@ class MorphOne<T extends Odin = Odin> extends MorphBase<T, "MorphOne"> {
                   })
               ) as any,
               relations,
+              withTrashed,
               filter
             ),
           "relation"
