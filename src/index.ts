@@ -57,7 +57,7 @@ class Odin<T extends object = any> extends Relational<T> {
 
       if (object.size(validation.errors) === 0) validation.errors = null;
 
-      value = object.mapValues(document, (value, key) => value[key]);
+      value = object.mapValues(document, (value, key, values: any) => values[key]);
     }
 
     if (validation.errors) {
