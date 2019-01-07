@@ -65,9 +65,10 @@ class Odin<T extends object = any> extends Relational<T> {
       throw error;
     }
 
-    const value: any = validation.value;
+    const values: any = validation.value;
+    const value: any = object.mapValues(document, (value, key) => values[key]);
 
-    if (updating && this.timestamps) (value)[this.UPDATED_AT] = new Date();
+    if (updating && this.timestamps) value[this.UPDATED_AT] = new Date();
 
     return value;
   }
