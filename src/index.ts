@@ -47,6 +47,8 @@ class Odin<T extends object = any> extends Relational<T> {
   public static validate<T extends object = object>(document: T, updating: boolean = false) {
     const validation = Schema.validate(this._schema, document);
 
+    let value: any = validation.value;
+
     if (validation.errors && updating) {
       object.forEach(validation.errors, (errors, key) => {
         if (errors.length === 1 && errors[0] === "Must be provided")
@@ -54,6 +56,8 @@ class Odin<T extends object = any> extends Relational<T> {
       });
 
       if (object.size(validation.errors) === 0) validation.errors = null;
+
+      value = object.mapValues(document, (value, key) => value[key]);
     }
 
     if (validation.errors) {
@@ -64,9 +68,6 @@ class Odin<T extends object = any> extends Relational<T> {
 
       throw error;
     }
-
-    const values: any = validation.value;
-    const value: any = object.mapValues(document, (value, key) => values[key]);
 
     if (updating && this.timestamps) value[this.UPDATED_AT] = new Date();
 
