@@ -170,10 +170,12 @@ export const prepareToStore = (document: any): any => {
   return object.mapValues(
     object.mapKeys(document, (value, key) => key === "id" ? "_id" : key),
     (value, key) => {
+      if (!value) return value;
+
       if (!isID(key)) return prepareToStore(value);
 
-      if (ObjectId.isValid(value)) return new ObjectId(value);
+      if (Array.isArray(value)) return value.map(v => new ObjectId(v));
 
-      return prepareToStore(value);
+      return new ObjectId(value);
     });
 };
