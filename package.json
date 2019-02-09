@@ -45,7 +45,7 @@
     "@types/graphql": "^0.13.4",
     "@types/graphql-iso-date": "^3.3.1",
     "@types/mongodb": "^3.1.19",
-    "@types/node": "^10.12.21",
+    "@types/node": "^10.12.24",
     "async": "^2.6.1",
     "caller-id": "^0.1.0",
     "deasync": "^0.1.14",
@@ -66,13 +66,13 @@
     "codecov": "^3.1.0",
     "dotenv": "^6.2.0",
     "fs-readdir-recursive": "^1.1.0",
-    "jest": "^24.1.0",
+    "jest": "^23.6.0",
     "mongodb-memory-server": "^3.0.0",
     "rimraf": "^2.6.3",
     "ts-jest": "^23.10.5",
     "tslint": "^5.12.1",
     "tslint-config-airbnb": "^5.11.1",
-    "typescript": "^3.3.1"
+    "typescript": "^3.3.3"
   },
   "jest": {
     "globalSetup": "<rootDir>/test/setup.js",

@@ -1,6 +1,6 @@
 import * as mongodb from "mongodb";
 import * as DB from ".";
-import { function as func, OPERATORS, prepareKey, prepareValue, string } from "../utils";
+import { function as func, OPERATORS, prepareKey, string } from "../utils";
 
 namespace Filter {
   export interface Filters<T = any> {
@@ -48,7 +48,6 @@ class Filter<T extends object = any> {
 
   protected _where(field: string, operator: string, value: any) {
     field = prepareKey(field);
-    value = prepareValue(field, value);
 
     return this._push_filter("and", {
       [field]: {
@@ -59,7 +58,6 @@ class Filter<T extends object = any> {
 
   protected _or_where(field: string, operator: string, value: any) {
     field = prepareKey(field);
-    value = prepareValue(field, value);
 
     return this._push_filter("or", {
       [field]: {
