@@ -20,7 +20,11 @@ class MorphTo<T extends Odin = Odin> extends MorphOne<T> {
     super(model, relation, localKey, foreignKey, type, filter, caller);
   }
 
-  public load(query: DB<T> | Join<T>, relations: Relation.Relation[], withTrashed?: boolean, filter?: (q: Filter) => Filter) {
+  public load(
+    query: DB<T> | Join<T>, relations: Relation.Relation[],
+    withTrashed?: boolean,
+    filter?: (q: Filter) => Filter
+  ) {
     const constructor = this.model.constructor;
     const relation = this.relation;
     const name = this.as;
