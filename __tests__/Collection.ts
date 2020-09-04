@@ -33,7 +33,7 @@ it("Should create collection with the given indexes (async/await)", async () => 
 it("Should create collection with the given indexes (callback)", (done) => {
   expect.assertions(1);
 
-  const collection = new Collection("tests");
+  const collection = new Collection("tests2");
 
   collection
     .index({ field_1: 1, field_2: -1 }, { name: "field_1_field_2", background: true, unique: true })
