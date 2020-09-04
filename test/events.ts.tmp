@@ -1,0 +1,207 @@
+import * as Odin from "../src";
+import * as utils from "../src/utils";
+
+declare global {
+  namespace NodeJS {
+    interface Global {
+      __MONGO_DB_NAME__: string;
+      __REPLICA_CONNECTION__: any;
+    }
+  }
+}
+
+const COLLECTION = "users";
+const ITEMS = [
+  {
+    username: "ardalanamini",
+    email: "ardalanamini22@gmail.com",
+    name: {
+      first: "Ardalan",
+      last: "Amini",
+    },
+  },
+  {
+    username: "john",
+    email: "johndue@example.com",
+    name: {
+      first: "John",
+      last: "Due",
+    },
+  },
+];
+
+Odin.Connect({
+  replica: {
+    database: global.__MONGO_DB_NAME__,
+    connection: global.__REPLICA_CONNECTION__,
+  },
+});
+
+// beforeAll((done) => {
+//   Odin.DB.connection("replica").collection(COLLECTION).insert(ITEMS, (err) => {
+//     if (err) throw err;
+
+//     Odin.DB.connection("replica").collection(COLLECTION).get((err, items) => {
+//       if (err) throw err;
+
+//       ITEMS.length = 0;
+
+//       ITEMS.push(...items);
+
+//       done();
+//     });
+//   });
+// });
+
+// afterEach((done) => {
+//   Odin.DB.connection("replica").collection(COLLECTION).delete((err) => {
+//     if (err) throw err;
+
+//     Odin.DB.connection("replica").collection(COLLECTION).insert(ITEMS, (err) => {
+//       if (err) throw err;
+
+//       done();
+//     });
+//   });
+// });
+
+afterAll((done) => {
+  Odin.DB.connection("replica").collection(COLLECTION).delete((err) => {
+    if (err) throw err;
+
+    done();
+  });
+});
+
+interface Schema {
+  username: string;
+  email: string;
+  name: {
+    first: string;
+    last: string;
+  };
+}
+
+@Odin.register
+class User extends Odin<Schema> {
+  public static connection = "replica";
+
+  public static schema = {
+    username: User.Types.string.alphanum.min(3).required,
+    email: User.Types.string.email.required,
+    name: {
+      first: User.Types.string.min(3).required,
+      last: User.Types.string.min(3),
+    },
+  };
+
+  public static softDelete = true;
+}
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+jest.setTimeout(10 * 1000);
+
+test("Model.on('create')", async (done) => {
+  expect.assertions(4);
+
+  const item = utils.object.omit(ITEMS[0], ["id"]);
+
+  User.on("create", (result) => {
+    expect(result).toBeInstanceOf(User);
+    expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(item);
+
+    User.removeAllListeners("create");
+
+    done();
+  });
+
+  const result = await User.create(item);
+
+  console.log("HR");
+
+  console.time();
+
+  await sleep(4000);
+
+  console.timeEnd();
+
+  expect(result).toBeInstanceOf(Odin);
+  expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(item);
+});
+
+// test("Model.on('update')", async () => {
+//   expect.assertions(3);
+
+//   const item = ITEMS[0];
+
+//   User.on("update", (result) => {
+//     expect(result).toBeInstanceOf(User);
+//     expect(utils.object.omit(result.toJSON(), ["created_at", "updated_at"]))
+//       .toEqual({ ...item, username: "updated" });
+
+//     User.removeAllListeners("update");
+//   });
+
+//   const result = await User.where("id", (item as any).id).update({ username: "updated" });
+
+//   expect(result).toBe(1);
+// });
+
+// test("Model.on('delete') [soft]", async () => {
+//   expect.assertions(3);
+
+//   const item = ITEMS[0];
+
+//   User.on("delete", (result) => {
+//     expect(result).toBeInstanceOf(User);
+//     expect(utils.object.omit(result.toJSON(), ["created_at", "deleted_at"]))
+//       .toEqual(item);
+
+//     User.removeAllListeners("delete");
+//   });
+
+//   const result = await User.where("id", (item as any).id).delete();
+
+//   expect(result).toBe(1);
+// });
+
+// test("Model.on('delete') [force]", async () => {
+//   expect.assertions(3);
+
+//   const item = ITEMS[0];
+
+//   User.on("delete", (result) => {
+//     expect(result).toBeInstanceOf(User);
+//     expect(utils.object.omit(result.toJSON(), ["created_at"]))
+//       .toEqual(item);
+
+//     User.removeAllListeners("delete");
+//   });
+
+//   const result = await User.where("id", (item as any).id).delete(true);
+
+//   expect(result).toBe(1);
+// });
+
+// test("Model.on('restore')", async () => {
+//   expect.assertions(4);
+
+//   const item = ITEMS[0];
+
+//   User.on("restore", (result) => {
+//     expect(result).toBeInstanceOf(User);
+//     expect(utils.object.omit(result.toJSON(), ["created_at", "updated_at"]))
+//       .toEqual(item);
+
+//     User.removeAllListeners("restore");
+//   });
+
+//   const result1 = await User.where("id", (item as any).id).delete();
+
+//   expect(result1).toBe(1);
+
+//   const result2 = await User.where("id", (item as any).id).restore();
+
+//   expect(result2).toBe(1);
+// });

@@ -326,7 +326,7 @@ class QueryBuilder<T extends object = any> extends Base<T> {
       return 0;
     }
 
-    return this.constructor.destroy(this._original.id as string, force as any, callback as any) as any;
+    return this.constructor.destroy(this._original.id as DB.Id, force as any, callback as any) as any;
   }
 
   /********************************* Restoring ********************************/

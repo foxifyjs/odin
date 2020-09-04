@@ -17,7 +17,7 @@ namespace DB {
 
   export type Order = "asc" | "desc";
 
-  export type Id = string;
+  export type Id = mongodb.ObjectId;
 
   export type FilterQuery<T extends object = any> = (query: Filter<T>) => Filter<T>;
 
@@ -179,7 +179,7 @@ class DB<T extends object = any> extends Filter<T> {
   //       }
 
   //       MATCH[field] = {
-  //         [`$${OPERATORS[operator]}`]: prepareValue(field, value),
+  //         [`$${OPERATORS[operator]}`]: value,
   //       };
 
   //       return QUERY;
@@ -521,9 +521,9 @@ class DB<T extends object = any> extends Filter<T> {
   public insertGetId(item: T, callback: DB.Callback<DB.Id>): void;
   public async insertGetId(item: T, callback?: DB.Callback<DB.Id>) {
     if (callback)
-      return this._insertOne(item, (err, res) => callback(err, res.insertedId.toString()));
+      return this._insertOne(item, (err, res) => callback(err, res.insertedId));
 
-    return (await this._insertOne(item)).insertedId.toString();
+    return (await this._insertOne(item)).insertedId;
   }
 
   /********************************** Updates *********************************/

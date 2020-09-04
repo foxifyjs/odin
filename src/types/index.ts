@@ -2,12 +2,13 @@ import * as Schema from "@foxify/schema";
 import AnyType from "@foxify/schema/dist/Any";
 import ArrayType from "@foxify/schema/dist/Array";
 import ObjectType from "@foxify/schema/dist/Object";
+import * as assert from "assert";
 import * as Base from "graphql";
 import { GraphQLDateTime } from "graphql-iso-date";
 import { object, string } from "../utils";
 import IdType from "./Id";
 
-const { forEach } = object;
+const { forEach, flatten } = object;
 const { isEmpty } = string;
 
 /******************** Array ********************/
@@ -26,6 +27,34 @@ ObjectType.prototype.keys = function keys(obj) {
   (this as any)._keys = obj;
 
   return ObjectTypeKeys.call(this, obj);
+};
+
+/******************** Ids ********************/
+
+(AnyType.prototype as any).ids = function ids() {
+  assert(this.constructor.type === "Object");
+
+  const result: { [key: string]: true } = {};
+
+  forEach(this._keys, (value, key) => {
+    switch (value.constructor.type) {
+      case "ObjectId":
+        result[key] = true;
+        break;
+      case "Array":
+        const subType = value._of.constructor.type;
+        if (subType === "ObjectId") result[key] = true;
+        else if (subType === "Object") result[key] = value.ids();
+        break;
+      case undefined:
+        value = Schema.object.keys(value);
+      case "Object":
+        result[key] = value.ids();
+        break;
+    }
+  });
+
+  return flatten(result);
 };
 
 /******************** GraphQL ********************/

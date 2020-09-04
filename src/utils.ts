@@ -124,58 +124,38 @@ export const OPERATORS: { [operator: string]: string } = {
 
 export const isID = (id: string) => /(Id$|_id$|^id$|_ids$|Ids$)/.test(id);
 
-export const prepareKey = (id: string) => id === "id" ? "_id" : id;
+export const prepareKeyToRead = (key: string) => key === "_id" ? "id" : key;
 
-export const prepareValue = (field: string, value: any) => {
-  if (!isID(field)) return value;
-
-  if (Array.isArray(value)) return value.map(v => new ObjectId(v));
-
-  if (!ObjectId.isValid(value)) return value;
-
-  return new ObjectId(value);
-};
+export const prepareKey = (key: string) => key === "id" ? "_id" : key;
 
 export const prepareToRead = (document: any): any => {
-  if (
-    !document ||
-    !(object.isObject(document) || typeof document === "object") ||
-    date.isDate(document)
-  ) return document;
-
   if (Array.isArray(document)) return document.map(prepareToRead);
 
+  if (
+    !document ||
+    date.isDate(document) ||
+    Buffer.isBuffer(document) ||
+    !(object.isObject(document) || typeof document === "object") ||
+    ObjectId.isValid(document)
+  ) return document;
+
   return object.mapValues(
-    object.mapKeys(document, (value, key) => key === "_id" ? "id" : key),
-    (value, key) => {
-      if (!value) return value;
-
-      if (!isID(key)) return prepareToRead(value);
-
-      if (Array.isArray(value)) return value.map(v => v.toString());
-
-      return value.toString();
-    });
+    object.mapKeys(document, (value, key) => prepareKeyToRead(key)),
+    (value, key) => prepareToRead(value));
 };
 
 export const prepareToStore = (document: any): any => {
-  if (
-    !document ||
-    !(object.isObject(document) || typeof document === "object") ||
-    date.isDate(document)
-  ) return document;
-
   if (Array.isArray(document)) return document.map(prepareToStore);
 
+  if (
+    !document ||
+    date.isDate(document) ||
+    Buffer.isBuffer(document) ||
+    !(object.isObject(document) || typeof document === "object") ||
+    ObjectId.isValid(document)
+  ) return document;
+
   return object.mapValues(
-    object.mapKeys(document, (value, key) => key === "id" ? "_id" : key),
-    (value, key) => {
-      if (!value) return value;
-
-      if (!isID(key)) return prepareToStore(value);
-
-      if (Array.isArray(value)) return value.map(v => new ObjectId(v));
-
-      return new ObjectId(value);
-    });
+    object.mapKeys(document, (value, key) => prepareKey(key)),
+    (value, key) => prepareToStore(value));
 };

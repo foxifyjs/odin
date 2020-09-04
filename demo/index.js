@@ -10,12 +10,13 @@ console.log(`Connecting...`);
 
 const start = time();
 
-Model.connections({
+Model.Connect({
     default: {
-        driver: env.DRIVER,
         database: env.DATABASE,
-        user: env.USER,
-        password: env.PASSWORD
+        auth: {
+            user: env.USER,
+            password: env.PASSWORD
+        },
     }
 })
 

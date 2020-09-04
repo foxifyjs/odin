@@ -143,14 +143,14 @@ class MorphOne<T extends Odin = Odin> extends MorphBase<T, "MorphOne"> {
       return this.first((err, res) => {
         if (err) return callback(err, undefined as any);
 
-        if (res.id !== id) return callback(error as any, undefined as any);
+        if (res && !(res.id as DB.Id).equals(id)) return callback(error as any, undefined as any);
 
         super.save(item, callback);
       });
 
     const first = await this.first();
 
-    if (first && first.id !== id) throw error;
+    if (first && !(first.id as DB.Id).equals(id)) throw error;
 
     return await super.save(item);
   }

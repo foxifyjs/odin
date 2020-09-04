@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb";
 import * as Odin from "../../src";
 import { array } from "../../src/utils";
 
@@ -101,7 +102,7 @@ class User extends Odin {
 
   @Odin.relation
   public chats() {
-    return this.morphMany<Chat>("Chat", "username");
+    return this.morphMany<Chat>("Chat");
   }
 }
 
@@ -109,14 +110,14 @@ class User extends Odin {
 @Odin.register
 class Chat extends Odin {
   public static schema = {
-    chatable_id: Types.string.alphanum.min(3).required,
+    chatable_id: Types.id.required,
     chatable_type: Types.string.required,
     name: Types.string.required,
   };
 
   @Odin.relation
   public user() {
-    return this.hasOne<User>("User", "user", "chatable_id");
+    return this.hasOne<User>("User", "chatable_id");
   }
 
   @Odin.relation
@@ -147,7 +148,14 @@ const refresh = async (done: jest.DoneCallback) => {
   USERS.push(...users);
 
   await Chat.delete();
-  await Chat.insert(CHATS);
+  await Chat.insert(CHATS.map(chat => ({
+    ...chat,
+    chatable_id: (
+      chat.chatable_type === "users" &&
+      users.find(user => user.username === chat.chatable_id) &&
+      users.find(user => user.username === chat.chatable_id).id
+    ) || new ObjectId(),
+  })));
   const chats: any[] = await Chat.lean().get();
   CHATS.length = 0;
   CHATS.push(...chats);
@@ -176,9 +184,9 @@ afterAll(async (done) => {
 test("Model.with", async () => {
   expect.assertions(2);
 
-  const items = USERS.map(user => ({
+  const items = USERS.map((user: any) => ({
     ...user,
-    chats: CHATS.filter(chat => chat.chatable_id === user.username && chat.chatable_type === "users"),
+    chats: CHATS.filter(chat => chat.chatable_id.toString() === user.id.toString() && chat.chatable_type === "users"),
   }));
 
   const results = await User.with("chats").lean().get();
@@ -194,7 +202,8 @@ test("Model.with [deep]", async () => {
   expect.assertions(4);
 
   const items = USERS.map((user) => {
-    const chats = CHATS.filter(chat => chat.chatable_id === user.username && chat.chatable_type === "users")
+    const chats = CHATS.filter(chat => chat.chatable_id.toString() === (user as any).id.toString()
+      && chat.chatable_type === "users")
       .map(chat => ({
         ...chat,
         messages: MESSAGES.filter(message => message.chat === chat.name),
@@ -240,7 +249,7 @@ test("Model.has [deep]", async () => {
     .filter(user =>
       array.any(MESSAGES, message =>
         CHATS
-          .filter(chat => chat.chatable_id === user.username && chat.chatable_type === "users")
+          .filter(chat => chat.chatable_id.toString() === (user as any).id.toString() && chat.chatable_type === "users")
           .findIndex(chat => message.chat === chat.name) !== -1
       )
     );
