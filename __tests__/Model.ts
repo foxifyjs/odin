@@ -218,7 +218,7 @@ test("Model.on('create')", async () => {
   expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(item);
 });
 
-// test("Model.on('update')", async () => {
+// __tests__("Model.on('update')", async () => {
 //   expect.assertions(3);
 
 //   const item = ITEMS[0];
@@ -236,7 +236,7 @@ test("Model.on('create')", async () => {
 //   expect(result).toBe(1);
 // });
 
-// test("Model.on('delete') [soft]", async () => {
+// __tests__("Model.on('delete') [soft]", async () => {
 //   expect.assertions(3);
 
 //   const item = ITEMS[0];
@@ -254,7 +254,7 @@ test("Model.on('create')", async () => {
 //   expect(result).toBe(1);
 // });
 
-// test("Model.on('delete') [force]", async () => {
+// __tests__("Model.on('delete') [force]", async () => {
 //   expect.assertions(3);
 
 //   const item = ITEMS[0];
@@ -272,7 +272,7 @@ test("Model.on('create')", async () => {
 //   expect(result).toBe(1);
 // });
 
-// test("Model.on('restore')", async () => {
+// __tests__("Model.on('restore')", async () => {
 //   expect.assertions(4);
 
 //   const item = ITEMS[0];

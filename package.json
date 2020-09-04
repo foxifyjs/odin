@@ -51,8 +51,7 @@
     "deasync": "^0.1.14",
     "graphql": "^0.13.2",
     "graphql-iso-date": "^3.6.1",
-    "mongodb": "^3.1.10",
-    "mongodb-memory-server": "^2.9.1",
+    "mongodb": "^3.6.1",
     "prototyped.js": "^0.21.0",
     "verifications": "^0.3.0"
   },
@@ -63,31 +62,17 @@
     "@foxify/schema": "^1.0.1",
     "@types/async": "^2.0.50",
     "@types/deasync": "^0.1.0",
-    "@types/jest": "^23.3.12",
+    "@types/jest": "^26.0.13",
     "codecov": "^3.1.0",
     "dotenv": "^6.2.0",
     "fs-readdir-recursive": "^1.1.0",
-    "jest": "^23.6.0",
+    "jest": "^26.4.2",
+    "jest-environment-node": "^26.3.0",
+    "mongodb-memory-server": "^6.6.7",
     "rimraf": "^2.6.3",
-    "ts-jest": "^23.10.5",
+    "ts-jest": "^26.3.0",
     "tslint": "^5.12.0",
     "tslint-config-airbnb": "^5.11.1",
     "typescript": "^3.2.2"
-  },
-  "jest": {
-    "globalSetup": "<rootDir>/test/setup.js",
-    "globalTeardown": "<rootDir>/test/teardown.js",
-    "testEnvironment": "<rootDir>/test/environment.js",
-    "moduleFileExtensions": [
-      "ts",
-      "js",
-      "node"
-    ],
-    "transform": {
-      "^.+\\.ts$": "ts-jest"
-    },
-    "testMatch": [
-      "<rootDir>/test/**/*\\.ts"
-    ]
   }
 }

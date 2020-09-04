@@ -6,7 +6,7 @@ const DB_NAME = "odin_test";
 const MONGOD = new Server.default({
   autoStart: false,
   binary: {
-    version: "4.0.5",
+    version: "4.4.0",
   },
   instance: {
     dbName: DB_NAME,
