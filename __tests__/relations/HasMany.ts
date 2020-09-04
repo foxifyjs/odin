@@ -93,7 +93,6 @@ class User extends Odin {
   }
 }
 
-// tslint:disable-next-line:max-classes-per-file
 @Odin.register
 class Chat extends Odin {
   public static schema = {
@@ -112,7 +111,6 @@ class Chat extends Odin {
   }
 }
 
-// tslint:disable-next-line:max-classes-per-file
 @Odin.register
 class Message extends Odin {
   public static schema = {
@@ -163,9 +161,9 @@ afterAll(async (done) => {
 test("Model.with", async () => {
   expect.assertions(2);
 
-  const items = USERS.map(user => ({
+  const items = USERS.map((user) => ({
     ...user,
-    chats: CHATS.filter(chat => chat.username === user.username),
+    chats: CHATS.filter((chat) => chat.username === user.username),
   }));
 
   const results = await User.with("chats").lean().get();
@@ -181,10 +179,12 @@ test("Model.with (deep)", async () => {
   expect.assertions(4);
 
   const items = USERS.map((user) => {
-    const chats = CHATS.filter(chat => chat.username === user.username).map(chat => ({
-      ...chat,
-      messages: MESSAGES.filter(message => message.chatname === chat.name),
-    }));
+    const chats = CHATS.filter((chat) => chat.username === user.username).map(
+      (chat) => ({
+        ...chat,
+        messages: MESSAGES.filter((message) => message.chatname === chat.name),
+      }),
+    );
 
     return {
       ...user,
@@ -212,7 +212,9 @@ test("Model.with (deep)", async () => {
 test("Model.has", async () => {
   expect.assertions(1);
 
-  const items = CHATS.filter(chat => array.any(MESSAGES, message => message.chatname === chat.name));
+  const items = CHATS.filter((chat) =>
+    array.any(MESSAGES, (message) => message.chatname === chat.name),
+  );
 
   const results = await Chat.has("messages").lean().get();
 
@@ -222,14 +224,15 @@ test("Model.has", async () => {
 test("Model.has [deep]", async () => {
   expect.assertions(1);
 
-  const items = USERS
-    .filter(user =>
-      array.any(MESSAGES, message =>
-        CHATS
-          .filter(chat => chat.username === user.username)
-          .findIndex(chat => message.chatname === chat.name) !== -1
-      )
-    );
+  const items = USERS.filter((user) =>
+    array.any(
+      MESSAGES,
+      (message) =>
+        CHATS.filter((chat) => chat.username === user.username).findIndex(
+          (chat) => message.chatname === chat.name,
+        ) !== -1,
+    ),
+  );
 
   const results = await User.has("chats.messages").lean().get();
 
@@ -239,19 +242,24 @@ test("Model.has [deep]", async () => {
 test("Model.whereHas [deep]", async () => {
   expect.assertions(1);
 
-  const items = USERS
-    .filter(user =>
-      array.any(MESSAGES, message =>
-        CHATS
-          .filter(chat => chat.username === user.username)
-          .findIndex(chat => message.chatname === chat.name &&
-            MESSAGES.findIndex(message => chat.name === message.chatname
-              && /6/.test(message.message)) !== -1) !== -1
-      )
-    );
+  const items = USERS.filter((user) =>
+    array.any(
+      MESSAGES,
+      (message) =>
+        CHATS.filter((chat) => chat.username === user.username).findIndex(
+          (chat) =>
+            message.chatname === chat.name &&
+            MESSAGES.findIndex(
+              (message) =>
+                chat.name === message.chatname && /6/.test(message.message),
+            ) !== -1,
+        ) !== -1,
+    ),
+  );
 
-  const results = await User
-    .whereHas("chats.messages", q => q.whereLike("message", "6"))
+  const results = await User.whereHas("chats.messages", (q) =>
+    q.whereLike("message", "6"),
+  )
     .lean()
     .get();
 

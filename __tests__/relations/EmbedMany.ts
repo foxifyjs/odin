@@ -96,7 +96,6 @@ class User extends Odin {
   }
 }
 
-// tslint:disable-next-line:max-classes-per-file
 @Odin.register
 class Chat extends Odin {
   public static schema = {
@@ -115,7 +114,6 @@ class Chat extends Odin {
   }
 }
 
-// tslint:disable-next-line:max-classes-per-file
 @Odin.register
 class Message extends Odin {
   public static schema = {
@@ -166,9 +164,9 @@ afterAll(async (done) => {
 test("Model.with", async () => {
   expect.assertions(2);
 
-  const items = USERS.map(user => ({
+  const items = USERS.map((user) => ({
     ...user,
-    chats: CHATS.filter(chat => user.chat_names.includes(chat.name)),
+    chats: CHATS.filter((chat) => user.chat_names.includes(chat.name)),
   }));
 
   const results = await User.with("chats").lean().get();
@@ -184,9 +182,13 @@ test("Model.with (deep)", async () => {
   expect.assertions(4);
 
   const items = USERS.map((user) => {
-    const chats = CHATS.filter(chat => user.chat_names.includes(chat.name)).map(chat => ({
+    const chats = CHATS.filter((chat) =>
+      user.chat_names.includes(chat.name),
+    ).map((chat) => ({
       ...chat,
-      messages: MESSAGES.filter(message => chat.message_chats.includes(message.chat_name)),
+      messages: MESSAGES.filter((message) =>
+        chat.message_chats.includes(message.chat_name),
+      ),
     }));
 
     return {
@@ -215,7 +217,11 @@ test("Model.with (deep)", async () => {
 test("Model.has", async () => {
   expect.assertions(1);
 
-  const items = CHATS.filter(chat => array.any(MESSAGES, message => chat.message_chats.includes(message.chat_name)));
+  const items = CHATS.filter((chat) =>
+    array.any(MESSAGES, (message) =>
+      chat.message_chats.includes(message.chat_name),
+    ),
+  );
 
   const results = await Chat.has("messages").lean().get();
 
@@ -225,14 +231,17 @@ test("Model.has", async () => {
 test("Model.has [deep]", async () => {
   expect.assertions(1);
 
-  const items = USERS
-    .filter(user =>
-      array.any(MESSAGES, message =>
-        CHATS
-          .filter(chat => user.chat_names.includes(chat.name))
-          .findIndex(chat => chat.message_chats.includes(message.chat_name)) !== -1
-      )
-    );
+  const items = USERS.filter((user) =>
+    array.any(
+      MESSAGES,
+      (message) =>
+        CHATS.filter((chat) =>
+          user.chat_names.includes(chat.name),
+        ).findIndex((chat) =>
+          chat.message_chats.includes(message.chat_name),
+        ) !== -1,
+    ),
+  );
 
   const results = await User.has("chats.messages").lean().get();
 
