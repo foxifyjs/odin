@@ -8,7 +8,7 @@ Odin is an implementation of [**Active Record**](https://en.wikipedia.org/wiki/A
 [![Tested With Jest](https://img.shields.io/badge/tested_with-jest-99424f.svg)](https://github.com/facebook/jest)
 [![Pull Requests](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)](https://github.com/foxifyjs/odin/pulls)
 [![License](https://img.shields.io/github/license/foxifyjs/odin.svg)](https://github.com/foxifyjs/odin/blob/master/LICENSE)
-[![Build Status](https://api.travis-ci.com/foxifyjs/odin.svg?branch=master)](https://travis-ci.com/foxifyjs/odin)
+[![Build Status](https://github.com/foxifyjs/odin/workflows/Test/badge.svg)](https://github.com/foxifyjs/odin/actions)
 [![Coverage Status](https://codecov.io/gh/foxifyjs/odin/branch/master/graph/badge.svg)](https://codecov.io/gh/foxifyjs/odin)
 [![Package Quality](http://npm.packagequality.com/shield/%40foxify%2Fodin.svg)](http://packagequality.com/#?package=@foxify/odin)
 [![Dependencies Status](https://david-dm.org/foxifyjs/odin.svg)](https://david-dm.org/foxifyjs/odin)
@@ -112,7 +112,7 @@ See the [CHANGELOG.md](CHANGELOG.md) file for details
 
 ## Authors
 
-- **Ardalan Amini** - *Owner/Developer* - [@ardalanamini](https://github.com/ardalanamini)
+- **Ardalan Amini** - *Core Maintainer* - [@ardalanamini](https://github.com/ardalanamini)
 
 See also the list of [contributors](https://github.com/foxifyjs/odin/contributors) who participated in this project.
 
