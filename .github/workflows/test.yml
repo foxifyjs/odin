@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
-        node-version: [8.x, 10.x, 12.x, 14.x]
+        node-version: [10.x, 12.x, 14.x]
 
     env:
       OS: ${{ matrix.os }}
