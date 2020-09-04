@@ -2,10 +2,11 @@
   "name": "@foxify/odin",
   "version": "0.9.4",
   "description": "Active Record Model",
-  "author": "Ardalan Amini <ardalanamini22@gmail.com> [https://github.com/ardalanamini]",
-  "contributors": [
-    "Ardalan Amini <ardalanamini22@gmail.com> [https://github.com/ardalanamini]"
-  ],
+  "author": {
+    "name": "Ardalan Amini",
+    "email": "ardalanamini22@gmail.com",
+    "url": "https://ardalanamini.com"
+  },
   "license": "MIT",
   "homepage": "https://github.com/foxifyjs/odin#readme",
   "repository": {
@@ -22,8 +23,7 @@
     "prepublishOnly": "npm run lint && npm test && node scripts/prepare.js",
     "lint": "tslint -p tsconfig.json -c tslint.json --exclude '**/*.d.ts'",
     "test": "jest --runInBand",
-    "coverage": "npm test -- --coverage",
-    "codecov": "npm run coverage && codecov"
+    "coverage": "npm test -- --coverage"
   },
   "files": [
     "dist"
@@ -63,7 +63,6 @@
     "@types/async": "^2.4.1",
     "@types/deasync": "^0.1.0",
     "@types/jest": "^26.0.13",
-    "codecov": "^3.2.0",
     "dotenv": "^6.2.0",
     "fs-readdir-recursive": "^1.1.0",
     "jest": "^26.4.2",
