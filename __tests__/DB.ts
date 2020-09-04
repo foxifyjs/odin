@@ -403,7 +403,7 @@ test("db.avg (callback style)", (done) => {
   });
 });
 
-// test("db.groupBy", (done) => {
+// __tests__("db.groupBy", (done) => {
 //   DB.collection(COLLECTION).groupBy("style", (q) => q.having("num", ">=", 10)).get((err, res) => {
 //     expect(err).toBe(null);
 
