@@ -73,7 +73,7 @@ afterAll((done) => {
   });
 });
 
-interface Schema {
+interface Schema extends Record<string, any> {
   username: string;
   email: string;
   name: {
@@ -117,7 +117,9 @@ test("model.save (async/await style)", async () => {
   const result = await user.save();
 
   expect(result).toBeInstanceOf(User);
-  expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(item);
+  expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(
+    item,
+  );
 });
 
 test("model.save (callback style)", (done) => {
@@ -139,7 +141,9 @@ test("model.save (callback style)", (done) => {
 test("Model.insert (async/await style)", async () => {
   expect.assertions(1);
 
-  const result = await User.insert(ITEMS.map(item => utils.object.omit(item, ["id"])));
+  const result = await User.insert(
+    ITEMS.map((item) => utils.object.omit(item, ["id"])),
+  );
 
   expect(result).toBe(ITEMS.length);
 });
@@ -147,28 +151,33 @@ test("Model.insert (async/await style)", async () => {
 test("Model.insert (callback style)", (done) => {
   expect.assertions(2);
 
-  User.insert(ITEMS.map(item => utils.object.omit(item, ["id"])), (err, res) => {
-    expect(err).toBe(null);
-    expect(res).toBe(ITEMS.length);
+  User.insert(
+    ITEMS.map((item) => utils.object.omit(item, ["id"])),
+    (err, res) => {
+      expect(err).toBe(null);
+      expect(res).toBe(ITEMS.length);
 
-    done();
-  });
+      done();
+    },
+  );
 });
 
 test("Model.create (async/await style)", async () => {
   expect.assertions(2);
 
-  const item = utils.object.omit(ITEMS[0], ["id"]);
+  const item = utils.object.omit(ITEMS[0], ["id"]) as Record<string, unknown>;
 
   const result = await User.create(item);
 
   expect(result).toBeInstanceOf(Odin);
 
-  expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(item);
+  expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(
+    item,
+  );
 });
 
 test("Model.create (callback style)", (done) => {
-  const item = utils.object.omit(ITEMS[0], ["id"]);
+  const item = utils.object.omit(ITEMS[0], ["id"]) as Record<string, unknown>;
 
   User.create(item, (err, res) => {
     expect(err).toBe(null);
@@ -203,11 +212,13 @@ test("Model.insert (callback style)", (done) => {
 test("Model.on('create')", async () => {
   expect.assertions(4);
 
-  const item = utils.object.omit(ITEMS[0], ["id"]);
+  const item = utils.object.omit(ITEMS[0], ["id"]) as Record<string, unknown>;
 
   User.on("create", (result) => {
     expect(result).toBeInstanceOf(User);
-    expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(item);
+    expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(
+      item,
+    );
 
     User.removeAllListeners("create");
   });
@@ -215,7 +226,9 @@ test("Model.on('create')", async () => {
   const result = await User.create(item);
 
   expect(result).toBeInstanceOf(Odin);
-  expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(item);
+  expect(utils.object.omit(result.toJSON(), ["id", "created_at"])).toEqual(
+    item,
+  );
 });
 
 // __tests__("Model.on('update')", async () => {

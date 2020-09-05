@@ -21,20 +21,16 @@ export const initialize = (Model: typeof Odin, document: Odin.Document) => {
  * @param {(value?: any) => any} func
  */
 export function define(
-  obj: object,
+  obj: Record<string, unknown>,
   method: "get" | "set",
   name: string,
-  func: (value?: any) => any
+  func: (value?: any) => any,
 ) {
-  Object.defineProperty(
-    obj,
-    name,
-    {
-      configurable: true,
-      enumerable: true,
-      [method]: func,
-    }
-  );
+  Object.defineProperty(obj, name, {
+    configurable: true,
+    enumerable: true,
+    [method]: func,
+  });
 }
 
 /**
@@ -94,7 +90,8 @@ export const makeCollectionType = (name: string) => {
  * @example
  * makeCollectionId("users"); // user_id
  */
-export const makeCollectionId = (name: string) => `${makeCollectionType(name)}_id`;
+export const makeCollectionId = (name: string) =>
+  `${makeCollectionType(name)}_id`;
 
 /**
  * Generates the polymorphic collection name
@@ -103,7 +100,8 @@ export const makeCollectionId = (name: string) => `${makeCollectionType(name)}_i
  * @example
  * makeMorphType("accounts"); // accountable
  */
-export const makeMorphType = (name: string) => `${makeCollectionType(name)}able`;
+export const makeMorphType = (name: string) =>
+  `${makeCollectionType(name)}able`;
 
 /**
  * Gets the name of the caller method of the given function
@@ -124,9 +122,9 @@ export const OPERATORS: { [operator: string]: string } = {
 
 export const isID = (id: string) => /(Id$|_id$|^id$|_ids$|Ids$)/.test(id);
 
-export const prepareKeyToRead = (key: string) => key === "_id" ? "id" : key;
+export const prepareKeyToRead = (key: string) => (key === "_id" ? "id" : key);
 
-export const prepareKey = (key: string) => key === "id" ? "_id" : key;
+export const prepareKey = (key: string) => (key === "id" ? "_id" : key);
 
 export const prepareToRead = (document: any): any => {
   if (Array.isArray(document)) return document.map(prepareToRead);
@@ -137,11 +135,13 @@ export const prepareToRead = (document: any): any => {
     Buffer.isBuffer(document) ||
     !(object.isObject(document) || typeof document === "object") ||
     ObjectId.isValid(document)
-  ) return document;
+  )
+    return document;
 
   return object.mapValues(
     object.mapKeys(document, (value, key) => prepareKeyToRead(key)),
-    (value, key) => prepareToRead(value));
+    (value, key) => prepareToRead(value),
+  );
 };
 
 export const prepareToStore = (document: any): any => {
@@ -153,9 +153,11 @@ export const prepareToStore = (document: any): any => {
     Buffer.isBuffer(document) ||
     !(object.isObject(document) || typeof document === "object") ||
     ObjectId.isValid(document)
-  ) return document;
+  )
+    return document;
 
   return object.mapValues(
     object.mapKeys(document, (value, key) => prepareKey(key)),
-    (value, key) => prepareToStore(value));
+    (value, key) => prepareToStore(value),
+  );
 };

@@ -2,14 +2,22 @@ import * as assert from "assert";
 import * as async from "async";
 import * as mongodb from "mongodb";
 import * as Odin from "..";
-import * as DB from "../DB";
+import DB, { Operator, JoinQuery, Callback, Iterator, Id } from "../DB";
 import EventEmitter from "../DB/EventEmitter";
 import Filter from "../DB/Filter";
 import Relation from "../Relation/Base";
-import { function as func, initialize, number, OPERATORS, prepareToStore, string } from "../utils";
+import {
+  function as func,
+  initialize,
+  number,
+  OPERATORS,
+  prepareToStore,
+  string,
+} from "../utils";
 
 const { isFunction } = func;
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Query {
   export interface Rel {
     relation: Relation;
@@ -17,7 +25,7 @@ namespace Query {
   }
 }
 
-class Query<T extends object = any> extends DB<T> {
+class Query<T extends Record<string, unknown> = any> extends DB<T> {
   protected readonly _model: typeof Odin;
 
   protected readonly _relations: Query.Rel[];
@@ -39,8 +47,10 @@ class Query<T extends object = any> extends DB<T> {
     // if (this._model.softDelete && !this._withTrashed)
     //   this.whereNull(this._model.DELETED_AT);
 
-    if (withRelations) this._relations
-      .forEach(({ relation, relations }) => relation.load(this as any, relations, this._withTrashed));
+    if (withRelations)
+      this._relations.forEach(({ relation, relations }) =>
+        relation.load(this as any, relations, this._withTrashed),
+      );
 
     return this;
   }
@@ -66,18 +76,27 @@ class Query<T extends object = any> extends DB<T> {
   /****************************** Has & WhereHas ******************************/
 
   public has(relation: string, count?: number): this;
-  public has(relation: string, operator: DB.Operator, count?: number): this;
-  public has(relation: string, operator: DB.Operator | number = ">=", count: number = 1) {
+  public has(relation: string, operator: Operator, count?: number): this;
+  public has(relation: string, operator: Operator | number = ">=", count = 1) {
     return this.whereHas(relation, undefined as any, operator as any, count);
   }
 
-  public whereHas(relation: string, filter: (q: Filter) => Filter, count?: number): this;
-  public whereHas(relation: string, filter: (q: Filter) => Filter, operator: DB.Operator, count?: number): this;
   public whereHas(
     relation: string,
     filter: (q: Filter) => Filter,
-    operator: DB.Operator | number = ">=",
-    count: number = 1
+    count?: number,
+  ): this;
+  public whereHas(
+    relation: string,
+    filter: (q: Filter) => Filter,
+    operator: Operator,
+    count?: number,
+  ): this;
+  public whereHas(
+    relation: string,
+    filter: (q: Filter) => Filter,
+    operator: Operator | number = ">=",
+    count = 1,
   ) {
     if (number.isNumber(operator)) {
       count = operator;
@@ -89,7 +108,9 @@ class Query<T extends object = any> extends DB<T> {
     const currentRelation = relations.shift() as string;
 
     if (!(this._model as any)._relations.includes(currentRelation))
-      throw new Error(`Relation '${currentRelation}' does not exist on '${this._model.name}' Model`);
+      throw new Error(
+        `Relation '${currentRelation}' does not exist on '${this._model.name}' Model`,
+      );
 
     this.aggregate({
       $project: {
@@ -99,14 +120,22 @@ class Query<T extends object = any> extends DB<T> {
     });
 
     // join relation
-    this._model.prototype[currentRelation]().loadCount(this, relations, this._withTrashed, filter);
+    this._model.prototype[currentRelation]().loadCount(
+      this,
+      relations,
+      this._withTrashed,
+      filter,
+    );
 
     if (relationsCount > 1) {
       const projector = (length: number): any => {
         const isFirst = length === relationsCount;
         length = length - 1;
 
-        if (length === 0) return { $concatArrays: ["$$value", { $ifNull: ["$$this.relation", []] }] };
+        if (length === 0)
+          return {
+            $concatArrays: ["$$value", { $ifNull: ["$$this.relation", []] }],
+          };
 
         return {
           $reduce: {
@@ -140,13 +169,11 @@ class Query<T extends object = any> extends DB<T> {
       //     },
       //   },
       // }
-      { // filter data according to count and operator
+      {
+        // filter data according to count and operator
         $match: {
           $expr: {
-            [`$${OPERATORS[operator]}`]: [
-              { $size: `$relation` },
-              count,
-            ],
+            [`$${OPERATORS[operator]}`]: [{ $size: "$relation" }, count],
           },
         },
       },
@@ -154,13 +181,17 @@ class Query<T extends object = any> extends DB<T> {
         $replaceRoot: {
           newRoot: "$data",
         },
-      }
+      },
     );
   }
 
   /*********************************** Joins **********************************/
 
-  public join(collection: string | typeof Odin, query?: DB.JoinQuery<T>, as?: string) {
+  public join(
+    collection: string | typeof Odin,
+    query?: JoinQuery<T>,
+    as?: string,
+  ) {
     if (!string.isString(collection)) {
       const model = collection;
       collection = model.toString();
@@ -170,7 +201,8 @@ class Query<T extends object = any> extends DB<T> {
       this.map((item: any) => {
         const joined = item[as as string];
 
-        if (Array.isArray(joined)) item[as as string] = joined.map((i: any) => initialize(model, i));
+        if (Array.isArray(joined))
+          item[as as string] = joined.map((i: any) => initialize(model, i));
         else item[as as string] = joined && initialize(model, joined);
 
         return item;
@@ -183,38 +215,39 @@ class Query<T extends object = any> extends DB<T> {
   /*********************************** Read ***********************************/
 
   public exists(): Promise<boolean>;
-  public exists(callback: DB.Callback<boolean>): void;
-  public exists() {
+  public exists(callback: Callback<boolean>): void;
+  public exists(callback?: Callback<boolean>) {
     this._apply_options(true).lean();
 
-    return super.exists.apply(this, arguments as any) as any;
+    return super.exists(callback as any) as any;
   }
 
   public count(): Promise<number>;
-  public count(callback: DB.Callback<number>): void;
-  public count() {
+  public count(callback: Callback<number>): void;
+  public count(callback?: Callback<number>) {
     this._apply_options(true).lean();
 
-    return super.count.apply(this, arguments as any) as any;
+    return super.count(callback as any) as any;
   }
 
-  public iterate(): DB.Iterator<T> {
+  public iterate(): Iterator<T> {
     const iterator = super.iterate();
     const next = iterator.next;
 
     iterator.next = async () => {
       const item = await next();
 
-      return item && initialize(this._model, item) as any;
+      return item && (initialize(this._model, item) as any);
     };
 
     return iterator;
   }
 
   public get(): Promise<T[]>;
-  public get(callback: DB.Callback<T[]>): void;
-  public async get(callback?: DB.Callback<T[]>) {
-    const iterator = (item: any, cb: any) => cb(undefined, initialize(this._model, item));
+  public get(callback: Callback<T[]>): void;
+  public async get(callback?: Callback<T[]>) {
+    const iterator = (item: any, cb: any) =>
+      cb(undefined, initialize(this._model, item));
 
     this._apply_options(true);
 
@@ -222,89 +255,86 @@ class Query<T extends object = any> extends DB<T> {
       return super.get((err, res) => {
         if (err || this._lean) return callback(err, res as any);
 
-        async.map(
-          res,
-          iterator,
-          callback as any
-        );
+        async.map(res, iterator, callback as any);
       });
 
     if (this._lean) return await super.get();
 
     let items: T[] = [];
 
-    async.map(
-      await super.get() as any[],
-      iterator,
-      (err, res) => {
-        if (err) throw err;
+    async.map((await super.get()) as any[], iterator, (err, res) => {
+      if (err) throw err;
 
-        items = res as any[];
-      }
-    );
+      items = res as any[];
+    });
 
     return items;
   }
 
   public first(): Promise<T>;
-  public first(callback: DB.Callback<T>): void;
-  public async first(callback?: DB.Callback<T>) {
+  public first(callback: Callback<T>): void;
+  public async first(callback?: Callback<T>) {
     this.limit(1);
 
-    if (callback) return this.get((err, res) =>
-      (callback as DB.Callback<T>)(err, res && res[0]));
+    if (callback)
+      return this.get((err, res) =>
+        (callback as Callback<T>)(err, res && res[0]),
+      );
 
     return (await this.get())[0];
   }
 
   public value(field: string): Promise<any>;
-  public value(field: string, callback: DB.Callback<any>): void;
-  public value() {
+  public value(field: string, callback: Callback<any>): void;
+  public value(field: string, callback?: Callback<any>) {
     this._apply_options(true);
 
-    return super.value.apply(this, arguments as any) as any;
+    return super.value(field, callback as any) as any;
   }
 
   public pluck(field: string): Promise<any>;
-  public pluck(field: string, callback: DB.Callback<any>): void;
-  public pluck() {
+  public pluck(field: string, callback: Callback<any>): void;
+  public pluck(field: string, callback?: Callback<any>) {
     this._apply_options(true);
 
-    return super.pluck.apply(this, arguments as any) as any;
+    return super.pluck(field, callback as any) as any;
   }
 
   public max(field: string): Promise<any>;
-  public max(field: string, callback: DB.Callback<any>): void;
-  public max() {
+  public max(field: string, callback: Callback<any>): void;
+  public max(field: string, callback?: Callback<any>) {
     this._apply_options(true).lean();
 
-    return super.max.apply(this, arguments as any) as any;
+    return super.max(field, callback as any) as any;
   }
 
   public min(field: string): Promise<any>;
-  public min(field: string, callback: DB.Callback<any>): void;
-  public min() {
+  public min(field: string, callback: Callback<any>): void;
+  public min(field: string, callback?: Callback<any>) {
     this._apply_options(true).lean();
 
-    return super.min.apply(this, arguments as any) as any;
+    return super.min(field, callback as any) as any;
   }
 
   public avg(field: string): Promise<any>;
-  public avg(field: string, callback: DB.Callback<any>): void;
-  public avg() {
+  public avg(field: string, callback: Callback<any>): void;
+  public avg(field: string, callback?: Callback<any>) {
     this._apply_options(true).lean();
 
-    return super.avg.apply(this, arguments as any) as any;
+    return super.avg(field, callback as any) as any;
   }
 
   /********************************** Inserts *********************************/
 
   public insert(items: T[]): Promise<number>;
-  public insert(items: T[], callback: DB.Callback<number>): void;
-  public insert(items: T[], callback?: DB.Callback<number>) {
+  public insert(items: T[], callback: Callback<number>): void;
+  public insert(items: T[], callback?: Callback<number>) {
     const model = this._model;
 
-    assert(Array.isArray(items), `Expected 'items' to be an array, '${typeof items}' given`);
+    assert(
+      Array.isArray(items),
+      `Expected 'items' to be an array, '${typeof items}' given`,
+    );
 
     const iterator = (item: T, cb: any) => {
       try {
@@ -314,32 +344,25 @@ class Query<T extends object = any> extends DB<T> {
       }
     };
 
-    if (callback) return (async as any).map(
-      items,
-      iterator,
-      (err: any, res: T[]) => {
+    if (callback)
+      return (async as any).map(items, iterator, (err: any, res: T[]) => {
         if (err) return callback(err, undefined as any);
 
         super.insert(res, callback);
-      }
-    );
+      });
 
-    (async as any).map(
-      items,
-      iterator,
-      (err: any, res: T[]) => {
-        if (err) throw err;
+    (async as any).map(items, iterator, (err: any, res: T[]) => {
+      if (err) throw err;
 
-        items = res;
-      }
-    );
+      items = res;
+    });
 
     return super.insert(items);
   }
 
-  public insertGetId(item: T): Promise<DB.Id>;
-  public insertGetId(item: T, callback: DB.Callback<DB.Id>): void;
-  public async insertGetId(item: T, callback?: DB.Callback<DB.Id>) {
+  public insertGetId(item: T): Promise<Id>;
+  public insertGetId(item: T, callback: Callback<Id>): void;
+  public async insertGetId(item: T, callback?: Callback<Id>) {
     try {
       item = this._model.validate<T>(item) as any;
     } catch (err) {
@@ -348,19 +371,19 @@ class Query<T extends object = any> extends DB<T> {
       throw err;
     }
 
-    return await super.insertGetId(item, callback as any) as any;
+    return (await super.insertGetId(item, callback as any)) as any;
   }
 
   /********************************** Updates *********************************/
 
   protected _update(
     update: { [key: string]: any },
-    callback?: DB.Callback<mongodb.UpdateWriteOpResult>,
+    callback?: Callback<mongodb.UpdateWriteOpResult>,
     soft?: {
-      type: "delete" | "restore",
-      field: string,
-      value?: Date,
-    }
+      type: "delete" | "restore";
+      field: string;
+      value?: Date;
+    },
   ): Promise<mongodb.UpdateWriteOpResult> {
     if (!soft || soft.type !== "delete") {
       if (!update.$set) update.$set = {};
@@ -376,8 +399,8 @@ class Query<T extends object = any> extends DB<T> {
   }
 
   public update(update: Partial<T>): Promise<number>;
-  public update(update: Partial<T>, callback: DB.Callback<number>): void;
-  public update(update: Partial<T>, callback?: DB.Callback<number>) {
+  public update(update: Partial<T>, callback: Callback<number>): void;
+  public update(update: Partial<T>, callback?: Callback<number>) {
     try {
       update = this._model.validate(update, true) as any;
     } catch (err) {
@@ -392,35 +415,48 @@ class Query<T extends object = any> extends DB<T> {
   }
 
   public increment(field: string, count?: number): Promise<number>;
-  public increment(field: string, callback: DB.Callback<number>): void;
-  public increment(field: string, count: number, callback: DB.Callback<number>): void;
+  public increment(field: string, callback: Callback<number>): void;
+  public increment(
+    field: string,
+    count: number,
+    callback: Callback<number>,
+  ): void;
   public increment() {
     this._apply_options();
 
+    // eslint-disable-next-line prefer-rest-params
     return super.increment.apply(this, arguments as any) as any;
   }
 
   public decrement(field: string, count?: number): Promise<number>;
-  public decrement(field: string, callback: DB.Callback<number>): void;
-  public decrement(field: string, count: number, callback: DB.Callback<number>): void;
+  public decrement(field: string, callback: Callback<number>): void;
+  public decrement(
+    field: string,
+    count: number,
+    callback: Callback<number>,
+  ): void;
   public decrement() {
     this._apply_options();
 
+    // eslint-disable-next-line prefer-rest-params
     return super.decrement.apply(this, arguments as any) as any;
   }
 
   public unset(fields: string[]): Promise<number>;
-  public unset(fields: string[], callback: DB.Callback<number>): void;
-  public unset(fields: string[], callback?: DB.Callback<number>) {
+  public unset(fields: string[], callback: Callback<number>): void;
+  public unset(fields: string[], callback?: Callback<number>) {
     return super.unset(fields, callback as any) as any;
   }
 
   /********************************** Deletes *********************************/
 
   public delete(force?: boolean): Promise<number>;
-  public delete(callback: DB.Callback<number>): void;
-  public delete(force: boolean, callback: DB.Callback<number>): void;
-  public async delete(force: boolean | DB.Callback<number> = false, callback?: DB.Callback<number>) {
+  public delete(callback: Callback<number>): void;
+  public delete(force: boolean, callback: Callback<number>): void;
+  public async delete(
+    force: boolean | Callback<number> = false,
+    callback?: Callback<number>,
+  ) {
     if (isFunction(force)) {
       callback = force;
       force = false;
@@ -444,11 +480,15 @@ class Query<T extends object = any> extends DB<T> {
     const soft = {
       field,
       value,
-      type: "delete" as "delete",
+      type: "delete" as const,
     };
 
     if (callback)
-      return this._update(_update, (err, res) => (callback as any)(err, res.modifiedCount), soft);
+      return this._update(
+        _update,
+        (err, res) => (callback as any)(err, res.modifiedCount),
+        soft,
+      );
 
     return (await this._update(_update, undefined, soft)).modifiedCount;
   }
@@ -456,12 +496,12 @@ class Query<T extends object = any> extends DB<T> {
   /********************************* Restoring ********************************/
 
   public restore(): Promise<number>;
-  public restore(callback: DB.Callback<number>): void;
-  public async restore(callback?: DB.Callback<number>) {
+  public restore(callback: Callback<number>): void;
+  public async restore(callback?: Callback<number>) {
     const _update = { $unset: { [this._model.DELETED_AT]: "" } };
 
     const soft = {
-      type: "restore" as "restore",
+      type: "restore" as const,
       field: this._model.UPDATED_AT,
     };
 
@@ -473,7 +513,7 @@ class Query<T extends object = any> extends DB<T> {
 
           callback(err, res.modifiedCount);
         },
-        soft
+        soft,
       );
 
     return (await this._update(_update, undefined, soft)).modifiedCount;

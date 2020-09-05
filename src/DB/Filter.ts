@@ -1,17 +1,16 @@
 import * as mongodb from "mongodb";
-import * as DB from ".";
+import { FilterQuery, Operator } from ".";
 import { function as func, OPERATORS, prepareKey, string } from "../utils";
 
-namespace Filter {
-  export interface Filters<T = any> {
-    $and?: Array<mongodb.FilterQuery<T>>;
-    $or?: Array<mongodb.FilterQuery<T>>;
-    [operator: string]: any;
-  }
+export interface Filters<T = any> {
+  $and?: Array<mongodb.FilterQuery<T>>;
+  $or?: Array<mongodb.FilterQuery<T>>;
+
+  [operator: string]: any;
 }
 
-class Filter<T extends object = any> {
-  protected _filter: Filter.Filters = {
+export default class Filter<T extends Record<string, unknown> = any> {
+  protected _filter: Filters = {
     $and: [],
   };
 
@@ -68,12 +67,20 @@ class Filter<T extends object = any> {
 
   /******************************* Where Clauses ******************************/
 
-  public where(query: DB.FilterQuery): this;
+  public where(query: FilterQuery): this;
   public where<K extends keyof T>(field: K, value: T[K]): this;
   public where(field: string, value: any): this;
-  public where<K extends keyof T>(field: K, operator: DB.Operator, value: T[K]): this;
-  public where(field: string, operator: DB.Operator, value: any): this;
-  public where(field: string | DB.FilterQuery, operator?: DB.Operator | any, value?: any) {
+  public where<K extends keyof T>(
+    field: K,
+    operator: Operator,
+    value: T[K],
+  ): this;
+  public where(field: string, operator: Operator, value: any): this;
+  public where(
+    field: string | FilterQuery,
+    operator?: Operator | any,
+    value?: any,
+  ) {
     if (func.isFunction(field)) {
       const filter: Filter = field(new Filter()) as any;
 
@@ -88,12 +95,20 @@ class Filter<T extends object = any> {
     return this._where(field, OPERATORS[operator], value);
   }
 
-  public orWhere(query: DB.FilterQuery): this;
+  public orWhere(query: FilterQuery): this;
   public orWhere<K extends keyof T>(field: K, value: T[K]): this;
   public orWhere(field: string, value: any): this;
-  public orWhere<K extends keyof T>(field: K, operator: DB.Operator, value: T[K]): this;
-  public orWhere(field: string, operator: DB.Operator, value: any): this;
-  public orWhere(field: string | DB.FilterQuery, operator?: DB.Operator | any, value?: any) {
+  public orWhere<K extends keyof T>(
+    field: K,
+    operator: Operator,
+    value: T[K],
+  ): this;
+  public orWhere(field: string, operator: Operator, value: any): this;
+  public orWhere(
+    field: string | FilterQuery,
+    operator?: Operator | any,
+    value?: any,
+  ) {
     if (func.isFunction(field)) {
       const filter: Filter = field(new Filter()) as any;
 
@@ -116,7 +131,10 @@ class Filter<T extends object = any> {
     return this._where(field, "regex", value);
   }
 
-  public whereNotLike<K extends keyof T>(field: K, value: string | RegExp): this;
+  public whereNotLike<K extends keyof T>(
+    field: K,
+    value: string | RegExp,
+  ): this;
   public whereNotLike(field: string, value: string | RegExp): this;
   public whereNotLike(field: string, value: string | RegExp) {
     if (!(value instanceof RegExp)) value = new RegExp(value, "i");
@@ -144,31 +162,35 @@ class Filter<T extends object = any> {
     return this._where(field, "nin", values);
   }
 
-  public whereBetween<K extends keyof T>(field: K, start: T[K], end: T[K]): this;
+  public whereBetween<K extends keyof T>(
+    field: K,
+    start: T[K],
+    end: T[K],
+  ): this;
   public whereBetween(field: string, start: any, end: any): this;
   public whereBetween(field: string, start: any, end: any) {
-    return this._where(field, "gte", start)
-      ._where(field, "lte", end);
+    return this._where(field, "gte", start)._where(field, "lte", end);
   }
 
-  public whereNotBetween<K extends keyof T>(field: K, start: T[K], end: T[K]): this;
+  public whereNotBetween<K extends keyof T>(
+    field: K,
+    start: T[K],
+    end: T[K],
+  ): this;
   public whereNotBetween(field: string, start: any, end: any): this;
   public whereNotBetween(field: string, start: any, end: any) {
-    return this._where(field, "lt", start)
-      ._or_where(field, "gt", end);
+    return this._where(field, "lt", start)._or_where(field, "gt", end);
   }
 
-  public whereNull<K extends keyof T>(field: T[K]): this;
+  public whereNull<K extends keyof T>(field: K): this;
   public whereNull(field: string): this;
   public whereNull(field: string) {
     return this._where(field, "eq", null);
   }
 
-  public whereNotNull<K extends keyof T>(field: T[K]): this;
+  public whereNotNull<K extends keyof T>(field: K): this;
   public whereNotNull(field: string): this;
   public whereNotNull(field: string) {
     return this._where(field, "ne", null);
   }
 }
-
-export default Filter;

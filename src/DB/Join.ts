@@ -1,9 +1,16 @@
-import * as DB from ".";
-import { array, makeCollectionId, object, OPERATORS, prepareKey, string } from "../utils";
+import { JoinQuery, Order } from ".";
+import {
+  array,
+  makeCollectionId,
+  object,
+  OPERATORS,
+  prepareKey,
+  string,
+} from "../utils";
 import Filter from "./Filter";
 
-class Join<T extends object = any> extends Filter<T> {
-  protected _pipeline: object[] = [];
+class Join<T extends Record<string, unknown> = any> extends Filter<T> {
+  protected _pipeline: Record<string, unknown>[] = [];
 
   protected _let: { [key: string]: any } = {};
 
@@ -23,7 +30,7 @@ class Join<T extends object = any> extends Filter<T> {
   constructor(
     protected _ancestor: string,
     protected _collection: string,
-    protected _as: string = _collection
+    protected _as: string = _collection,
   ) {
     super();
   }
@@ -46,7 +53,7 @@ class Join<T extends object = any> extends Filter<T> {
   protected _shouldPushExpr(value: any) {
     if (!string.isString(value)) return false;
 
-    return new RegExp(`^\\$?${this._ancestor}\..+`).test(value);
+    return new RegExp(`^\\$?${this._ancestor}\\..+`).test(value);
   }
 
   protected _where(field: string, operator: string, value: any) {
@@ -91,7 +98,9 @@ class Join<T extends object = any> extends Filter<T> {
 
   /********************************** Extra **********************************/
 
-  public aggregate(...objects: object[] | object[][]) {
+  public aggregate(
+    ...objects: Record<string, unknown>[] | Record<string, unknown>[][]
+  ) {
     this._resetFilters();
 
     this._pipeline.push(...array.deepFlatten(objects));
@@ -103,8 +112,9 @@ class Join<T extends object = any> extends Filter<T> {
 
   public join(
     collection: string,
-    query: DB.JoinQuery<T> = q => q.where(makeCollectionId(collection), `${collection}.id`),
-    as: string = collection
+    query: JoinQuery<T> = (q) =>
+      q.where(makeCollectionId(collection), `${collection}.id`),
+    as: string = collection,
   ) {
     const join: Join = query(new Join(this._collection, collection, as)) as any;
 
@@ -115,14 +125,21 @@ class Join<T extends object = any> extends Filter<T> {
 
   /********* Mapping, Ordering, Grouping, Limit, Offset & Pagination *********/
 
-  public orderBy<K extends keyof T>(field: K, order?: DB.Order): this;
-  public orderBy(field: string, order?: DB.Order): this;
+  public orderBy<K extends keyof T>(field: K, order?: Order): this;
+  public orderBy(field: string, order?: Order): this;
   public orderBy(fields: { [field: string]: "asc" | "desc" }): this;
-  public orderBy(fields: string | { [field: string]: "asc" | "desc" }, order?: DB.Order) {
+  public orderBy(
+    fields: string | { [field: string]: "asc" | "desc" },
+    order?: Order,
+  ) {
     const $sort: { [field: string]: 1 | -1 } = {};
 
-    if (string.isString(fields)) $sort[fields] = (order === "desc" ? -1 : 1);
-    else object.forEach(fields, (value, field) => $sort[field] = (value === "desc" ? -1 : 1));
+    if (string.isString(fields)) $sort[fields] = order === "desc" ? -1 : 1;
+    else
+      object.forEach(
+        fields,
+        (value, field) => ($sort[field] = value === "desc" ? -1 : 1),
+      );
 
     return this.aggregate({ $sort });
   }
@@ -144,9 +161,7 @@ class Join<T extends object = any> extends Filter<T> {
   }
 
   public paginate(page = 0, limit = 10) {
-    return this
-      .skip(page * limit)
-      .limit(limit);
+    return this.skip(page * limit).limit(limit);
   }
 
   /******************************* Where Clauses ******************************/

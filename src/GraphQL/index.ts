@@ -1,17 +1,15 @@
 import * as Base from "graphql";
 import * as Odin from "..";
 
-module GraphQL {
-  export interface Queries {
-    [query: string]: any;
-  }
+export interface Queries {
+  [query: string]: any;
 }
 
 type GraphQL = (...models: Array<typeof Odin>) => Base.GraphQLSchema;
 
 const GraphQL: GraphQL = (...models) => {
-  const queries: GraphQL.Queries = {};
-  const mutations: GraphQL.Queries = {};
+  const queries: Queries = {};
+  const mutations: Queries = {};
 
   models.forEach((Odin) => {
     const gql = Odin.toGraphQL();

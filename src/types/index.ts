@@ -42,12 +42,14 @@ ObjectType.prototype.keys = function keys(obj) {
         result[key] = true;
         break;
       case "Array":
+        // eslint-disable-next-line no-case-declarations
         const subType = value._of.constructor.type;
         if (subType === "ObjectId") result[key] = true;
         else if (subType === "Object") result[key] = value.ids();
         break;
       case undefined:
         value = Schema.object.keys(value);
+      // eslint-disable-next-line no-fallthrough
       case "Object":
         result[key] = value.ids();
         break;
@@ -59,12 +61,16 @@ ObjectType.prototype.keys = function keys(obj) {
 
 /******************** GraphQL ********************/
 
-(AnyType.prototype as any).toGraphQL = function toGraphQL(model: string, key: string = "") {
+(AnyType.prototype as any).toGraphQL = function toGraphQL(
+  model: string,
+  key = "",
+) {
   let field: Base.GraphQLType | undefined;
   let arg: Base.GraphQLInputType | undefined;
 
   switch (this.constructor.type) {
     case "Array":
+      // eslint-disable-next-line no-case-declarations
       const gql = this._of.toGraphQL(model, key);
 
       field = new Base.GraphQLList(gql.field);
@@ -82,7 +88,9 @@ ObjectType.prototype.keys = function keys(obj) {
 
       break;
     case "Object":
+      // eslint-disable-next-line no-case-declarations
       const fields: any = {};
+      // eslint-disable-next-line no-case-declarations
       const args: any = {};
 
       forEach(this._keys, (value, subKey) => {

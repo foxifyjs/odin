@@ -2,12 +2,13 @@ import * as GraphQLBase from "graphql";
 import * as Odin from "..";
 import Query from "../base/Query";
 import QueryBuilder from "../base/QueryBuilder";
-import * as DB from "../DB";
+import DB from "../DB";
 import Types from "../types";
+import { string } from "../utils";
 import * as utils from "../utils";
 
 const _schema = (model: string, schema: Odin.Schema) => {
-  const fields: GraphQL.Schema = {};
+  const fields: Schema = {};
   const args: any = {};
 
   for (const key in schema) {
@@ -48,14 +49,15 @@ const _schema = (model: string, schema: Odin.Schema) => {
   };
 };
 
-const _projection = (fieldASTs: any) => fieldASTs.selectionSet.selections.reduce(
-  (projections: any, selection: any) => {
-    projections.push(selection.name.value);
+const _projection = (fieldASTs: any) =>
+  fieldASTs.selectionSet.selections.reduce(
+    (projections: any, selection: any) => {
+      projections.push(selection.name.value);
 
-    return projections;
-  },
-  []
-);
+      return projections;
+    },
+    [],
+  );
 
 const _orderBy = (model: string, schema: Odin.Schema) => {
   const orderByASC = (key: string) => `${key}_ASC`;
@@ -79,7 +81,7 @@ const _orderBy = (model: string, schema: Odin.Schema) => {
 
       utils.object.forEach(
         getValues(schema, _key),
-        (value, key) => values[key] = value
+        (value, key) => (values[key] = value),
       );
     }
 
@@ -100,29 +102,31 @@ const _encapsulate = async (fn: () => Promise<any>) => {
   } catch (err) {
     if (err instanceof Error) throw err;
 
-    const errorMessage = utils.object.reduce(
-      err,
-      (prev, message, field) => {
-        prev.push(`[${field}]: ${message}`);
+    const errorMessage = utils.object
+      .reduce(
+        err,
+        (prev, message, field) => {
+          prev.push(`[${field}]: ${message}`);
 
-        return prev;
-      },
-      []
-    ).join(", ");
+          return prev;
+        },
+        [],
+      )
+      .join(", ");
 
     throw new Error(errorMessage);
   }
 };
 
-module GraphQL {
-  export interface Schema {
-    [key: string]: {
-      type: GraphQLBase.GraphQLOutputType,
-    };
-  }
+export interface Schema {
+  [key: string]: {
+    type: GraphQLBase.GraphQLOutputType;
+  };
 }
 
-class GraphQL<T extends object = {}> extends QueryBuilder<T> {
+export default class GraphQL<
+  T extends Record<string, unknown> = Record<string, unknown>
+> extends QueryBuilder<T> {
   public static toGraphQL(): any {
     const name = this.name;
 
@@ -142,7 +146,9 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
     });
 
     const getDB = () => {
-      const db = (this as any).DB.connection(this.connection).collection(this._collection);
+      const db = (this as any).DB.connection(this.connection).collection(
+        this._collection,
+      );
 
       if (this.softDelete) return db.whereNull(this.DELETED_AT);
 
@@ -153,12 +159,17 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
       [single]: {
         type,
         args,
-        resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
+        resolve: async (
+          root: any,
+          params: any,
+          options: any,
+          fieldASTs: any,
+        ) => {
           const projection = _projection(fieldASTs.fieldNodes[0]);
           const query: DB = utils.object.reduce(
             params,
             (query, value, key) => query.where(key, value),
-            getDB()
+            getDB(),
           );
 
           return await query.first(projection);
@@ -178,7 +189,12 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
             type: _orderBy(name, (this as any)._schema),
           },
         },
-        resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
+        resolve: async (
+          root: any,
+          params: any,
+          options: any,
+          fieldASTs: any,
+        ) => {
           const projection = _projection(fieldASTs.fieldNodes[0]);
 
           let db = getDB();
@@ -200,7 +216,7 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
                   return query.where(key as string, value);
               }
             },
-            db
+            db,
           );
 
           return await query.get(projection);
@@ -215,10 +231,12 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
 
     const inputType = new GraphQLBase.GraphQLInputObjectType({
       name: `${name}Input`,
-      fields: utils.object.omit(
-        args,
-        ["id", this.CREATED_AT, this.UPDATED_AT, this.DELETED_AT]
-      ) as any,
+      fields: utils.object.omit(args, [
+        "id",
+        this.CREATED_AT,
+        this.UPDATED_AT,
+        this.DELETED_AT,
+      ]) as any,
     });
 
     const mutations = {
@@ -229,9 +247,14 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
             type: new GraphQLBase.GraphQLNonNull(inputType),
           },
         },
-        resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
+        resolve: async (
+          root: any,
+          params: any,
+          options: any,
+          fieldASTs: any,
+        ) => {
           const result = await _encapsulate(
-            async () => await this.create(params.data)
+            async () => await this.create(params.data),
           );
 
           return _prepare(result);
@@ -241,12 +264,13 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
         type: GraphQLBase.GraphQLInt,
         args: {
           data: {
-            type: new GraphQLBase.GraphQLList(new GraphQLBase.GraphQLNonNull(inputType)),
+            type: new GraphQLBase.GraphQLList(
+              new GraphQLBase.GraphQLNonNull(inputType),
+            ),
           },
         },
-        resolve: async (root: any, params: any, options: any, fieldASTs: any) => await _encapsulate(
-          async () => await this.insert(params.data)
-        ),
+        resolve: async (root: any, params: any, options: any, fieldASTs: any) =>
+          await _encapsulate(async () => await this.insert(params.data)),
       },
       [`update_${multiple}`]: {
         type: GraphQLBase.GraphQLInt,
@@ -258,14 +282,21 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
             type: new GraphQLBase.GraphQLNonNull(inputType),
           },
         },
-        resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
+        resolve: async (
+          root: any,
+          params: any,
+          options: any,
+          fieldASTs: any,
+        ) => {
           const query: Query = utils.object.reduce(
             params.query || {},
             (query, value, key) => query.where(key, value),
-            this
+            this,
           );
 
-          return await _encapsulate(async () => await query.update(params.data));
+          return await _encapsulate(
+            async () => await query.update(params.data),
+          );
         },
       },
       [`delete_${multiple}`]: {
@@ -275,11 +306,16 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
             type: queryInputType,
           },
         },
-        resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
+        resolve: async (
+          root: any,
+          params: any,
+          options: any,
+          fieldASTs: any,
+        ) => {
           const query: Query = utils.object.reduce(
             params.query || {},
             (query, value, key) => query.where(key, value),
-            this
+            this,
           );
 
           return await query.delete();
@@ -295,11 +331,16 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
             type: queryInputType,
           },
         },
-        resolve: async (root: any, params: any, options: any, fieldASTs: any) => {
+        resolve: async (
+          root: any,
+          params: any,
+          options: any,
+          fieldASTs: any,
+        ) => {
           const query: Query = utils.object.reduce(
             params.query,
             (query, value, key) => query.where(key, value),
-            this.withTrashed()
+            this.withTrashed(),
           );
 
           return await query.restore();
@@ -312,5 +353,3 @@ class GraphQL<T extends object = {}> extends QueryBuilder<T> {
     };
   }
 }
-
-export default GraphQL;
