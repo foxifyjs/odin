@@ -1,5 +1,5 @@
 import * as Odin from ".";
-import * as DB from "./DB";
+import { Id } from "./DB";
 import HasOne from "./Relation/HasOne";
 import MorphOne from "./Relation/MorphOne";
 import Types from "./types";
@@ -9,15 +9,15 @@ const MODELS: { [name: string]: typeof Odin | undefined } = {};
 const COLLECTIONS: { [name: string]: typeof Odin | undefined } = {};
 const JSON_SCHEMA_DEFINITIONS: { [key: string]: any } = {};
 
-interface Base<T extends object = any> {
+interface Base<T extends Record<string, unknown> = any> {
   constructor: typeof Odin;
 
-  id?: DB.Id;
+  id?: Id;
 
   [key: string]: any;
 }
 
-class Base<T extends object = any> {
+class Base<T extends Record<string, unknown> = any> {
   protected static _relations: string[] = [];
 
   public static connection: Odin.Connection = "default";
@@ -26,9 +26,9 @@ class Base<T extends object = any> {
 
   public static schema: Odin.Schema = {};
 
-  public static timestamps: boolean = true;
+  public static timestamps = true;
 
-  public static softDelete: boolean = false;
+  public static softDelete = false;
 
   public static CREATED_AT = "created_at";
   public static UPDATED_AT = "updated_at";
@@ -51,8 +51,7 @@ class Base<T extends object = any> {
       schema[this.UPDATED_AT] = Types.date;
     }
 
-    if (this.softDelete)
-      schema[this.DELETED_AT] = Types.date;
+    if (this.softDelete) schema[this.DELETED_AT] = Types.date;
 
     return schema;
   }
@@ -63,6 +62,7 @@ class Base<T extends object = any> {
   public relations: { [key: string]: any } = {};
 
   public attributes: Odin.Document = {};
+
   // public attributes: Odin.Document & Partial<T> = {};
 
   protected get _isNew() {
@@ -79,34 +79,41 @@ class Base<T extends object = any> {
 
   public static register = (...models: Array<typeof Odin>) => {
     models.forEach((model) => {
-      if (MODELS[model.name]) throw new Error(`Model "${model.name}" already exists`);
+      if (MODELS[model.name])
+        throw new Error(`Model "${model.name}" already exists`);
 
       MODELS[model.name] = model;
       COLLECTIONS[model.toString()] = model;
     });
-  }
+  };
 
   public static relation = (target: any, relation: string, descriptor: any) => {
-    target.constructor._relations = target.constructor._relations.concat([relation]);
-  }
+    target.constructor._relations = target.constructor._relations.concat([
+      relation,
+    ]);
+  };
 
   public static initializeJsonSchema = () => {
     object.forEach(MODELS, (model) => {
       JSON_SCHEMA_DEFINITIONS[model.name] = model.toJsonSchema(false);
     });
-  }
+  };
 
   public static toJsonSchema(definitions = true) {
-    if (definitions) return {
-      definitions: JSON_SCHEMA_DEFINITIONS,
-      ref: {
-        $ref: `#/definitions/${this.name}`,
-      },
-    };
+    if (definitions)
+      return {
+        definitions: JSON_SCHEMA_DEFINITIONS,
+        ref: {
+          $ref: `#/definitions/${this.name}`,
+        },
+      };
 
     const hidden = this.hidden;
 
-    const jsonSchemaGenerator = (schema: Odin.Schema, ancestors: string[] = []) => {
+    const jsonSchemaGenerator = (
+      schema: Odin.Schema,
+      ancestors: string[] = [],
+    ) => {
       const properties: { [key: string]: any } = {};
       const required: string[] = [];
 
@@ -123,9 +130,10 @@ class Base<T extends object = any> {
           let schemaType: string = (type as any).constructor.type.toLowerCase();
 
           if (
-            (type.constructor as any).type === "ObjectId"
-            || (type.constructor as any).type === "Date"
-          ) schemaType = "string";
+            (type.constructor as any).type === "ObjectId" ||
+            (type.constructor as any).type === "Date"
+          )
+            schemaType = "string";
 
           properties[key] = {
             type: schemaType,
@@ -134,10 +142,8 @@ class Base<T extends object = any> {
           if ((type.constructor as any).type === "Array") {
             let ofSchemaType: string = (type as any)._of.constructor.type.toLowerCase();
 
-            if (
-              ofSchemaType === "objectid"
-              || ofSchemaType === "date"
-            ) ofSchemaType = "string";
+            if (ofSchemaType === "objectid" || ofSchemaType === "date")
+              ofSchemaType = "string";
 
             properties[key].items = {
               type: ofSchemaType,
@@ -189,9 +195,10 @@ class Base<T extends object = any> {
       jsonSchema.required.push(this.CREATED_AT);
     }
 
-    if (this.softDelete) jsonSchema.properties[this.DELETED_AT] = {
-      type: "string",
-    };
+    if (this.softDelete)
+      jsonSchema.properties[this.DELETED_AT] = {
+        type: "string",
+      };
 
     this._relations.forEach((relation) => {
       const proto = this.prototype[relation].call(this.prototype);

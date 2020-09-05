@@ -1,11 +1,13 @@
+/* eslint-disable prefer-rest-params,prefer-spread */
 import * as async from "async";
 import * as Odin from "..";
 import Query from "../base/Query";
-import * as DB from "../DB";
+import DB, { Operator, JoinQuery, Order, Callback, Iterator } from "../DB";
 import Filter from "../DB/Filter";
 import Join from "../DB/Join";
-import { getCallerFunctionName } from "../utils";
+import { getCallerFunctionName, string } from "../utils";
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Relation {
   export interface Relation {
     name: string;
@@ -26,8 +28,8 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
     public readonly relation: typeof Odin,
     public readonly localKey: string,
     public readonly foreignKey: string,
-    protected readonly filter: (q: Filter<T>) => Filter<T> = q => q,
-    caller: (...args: any[]) => any
+    protected readonly filter: (q: Filter<T>) => Filter<T> = (q) => q,
+    caller: (...args: any[]) => any,
   ) {
     this.as = getCallerFunctionName(caller);
   }
@@ -37,60 +39,62 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
 
     if (relations) query = query.with(...relations);
 
-    return this.filter((query as Query<T>).where(
-      this.foreignKey,
-      this.model.getAttribute(this.localKey)
-    )) as any;
+    return this.filter(
+      (query as Query<T>).where(
+        this.foreignKey,
+        this.model.getAttribute(this.localKey),
+      ),
+    ) as any;
   }
 
   public abstract load(
     query: DB<T> | Join<T>,
     relations: Relation.Relation[],
     withTrashed?: boolean,
-    filter?: (q: Filter) => Filter
+    filter?: (q: Filter) => Filter,
   ): DB<T> | Join<T>;
 
   public abstract loadCount(
     query: DB<T> | Join<T>,
     relations: string[],
     withTrashed?: boolean,
-    filter?: (q: Filter) => Filter
+    filter?: (q: Filter) => Filter,
   ): DB<T> | Join<T>;
 
   /******************************* With Trashed *******************************/
 
-  public withTrashed<T extends object>(): Query<T>;
+  public withTrashed<T extends Record<string, unknown>>(): Query<T>;
   public withTrashed() {
     return this._query().withTrashed();
   }
 
   /*********************************** Lean ***********************************/
 
-  public lean<T extends object>(): Query<T>;
+  public lean<T extends Record<string, unknown>>(): Query<T>;
   public lean() {
     return this._query().lean();
   }
 
   /****************************** With Relations ******************************/
 
-  public with(...relations: string[]): Query<T>;
-  public with() {
-    return this._query.call(this, arguments as any);
+  public with(...relations: string[]): Query<T> {
+    return this._query(relations);
   }
 
   /*********************************** Joins **********************************/
 
-  public join(collection: string | typeof Odin, query?: DB.JoinQuery<T>, as?: string): Query<T>;
-  public join() {
-    const query = this._query();
-
-    return query.join.apply(query, arguments as any);
+  public join(
+    collection: string | typeof Odin,
+    query?: JoinQuery<T>,
+    as?: string,
+  ): Query<T> {
+    return this._query().join(collection, query, as);
   }
 
   /******************************* Where Clauses ******************************/
 
   public where(field: string, value: any): Query<T>;
-  public where(field: string, operator: DB.Operator, value: any): Query<T>;
+  public where(field: string, operator: Operator, value: any): Query<T>;
   public where() {
     const query = this._query();
 
@@ -141,7 +145,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
 
   /******************** Ordering, Grouping, Limit & Offset ********************/
 
-  public orderBy(field: string, order?: DB.Order): Query<T>;
+  public orderBy(field: string, order?: Order): Query<T>;
   public orderBy() {
     const query = this._query();
 
@@ -175,7 +179,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   /*********************************** Read ***********************************/
 
   public exists(): Promise<boolean>;
-  public exists(callback: DB.Callback<boolean>): void;
+  public exists(callback: Callback<boolean>): void;
   public exists() {
     const query = this._query();
 
@@ -183,20 +187,20 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public count(): Promise<number>;
-  public count(callback: DB.Callback<number>): void;
+  public count(callback: Callback<number>): void;
   public count() {
     const query = this._query();
 
     return query.count.apply(query, arguments as any) as any;
   }
 
-  public iterate<T extends object>(): DB.Iterator<T>;
+  public iterate<T extends Record<string, unknown>>(): Iterator<T>;
   public iterate() {
     return this._query().iterate();
   }
 
   public get(): Promise<T[]>;
-  public get(callback: DB.Callback<T[]>): void;
+  public get(callback: Callback<T[]>): void;
   public get() {
     const query = this._query();
 
@@ -204,7 +208,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public first(): Promise<T>;
-  public first(callback: DB.Callback<T>): void;
+  public first(callback: Callback<T>): void;
   public first() {
     const query = this._query();
 
@@ -212,7 +216,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public value(field: string): Promise<any>;
-  public value(field: string, callback: DB.Callback<any>): void;
+  public value(field: string, callback: Callback<any>): void;
   public value() {
     const query = this._query();
 
@@ -220,13 +224,13 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public pluck(field: string): Promise<any>;
-  public pluck(field: string, callback: DB.Callback<any>): void;
+  public pluck(field: string, callback: Callback<any>): void;
   public pluck() {
     return this.value.apply(this, arguments as any) as any;
   }
 
   public max(field: string): Promise<any>;
-  public max(field: string, callback: DB.Callback<any>): void;
+  public max(field: string, callback: Callback<any>): void;
   public max() {
     const query = this._query();
 
@@ -234,7 +238,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public min(field: string): Promise<any>;
-  public min(field: string, callback: DB.Callback<any>): void;
+  public min(field: string, callback: Callback<any>): void;
   public min() {
     const query = this._query();
 
@@ -244,8 +248,14 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   /********************************** Inserts *********************************/
 
   public insert(items: T[]): Promise<A extends undefined ? number : any>;
-  public insert(items: T[], callback: DB.Callback<A extends undefined ? number : any>): void;
-  public async insert(items: T[], callback?: DB.Callback<A extends undefined ? number : any>) {
+  public insert(
+    items: T[],
+    callback: Callback<A extends undefined ? number : any>,
+  ): void;
+  public async insert(
+    items: T[],
+    callback?: Callback<A extends undefined ? number : any>,
+  ) {
     const foreignKey = this.foreignKey;
     const localAttribute = this.model.getAttribute(this.localKey);
 
@@ -260,7 +270,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
           if (err) callback(err, undefined as any);
 
           this._query().insert(newItems as T[], callback as any);
-        }
+        },
       );
 
     async.map(
@@ -273,15 +283,15 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
         if (err) throw err;
 
         items = newItems as T[];
-      }
+      },
     );
 
     return await this._query().insert(items);
   }
 
   public create(item: T): Promise<T>;
-  public create(item: T, callback: DB.Callback<T>): void;
-  public async create(item: T, callback?: DB.Callback<T>) {
+  public create(item: T, callback: Callback<T>): void;
+  public async create(item: T, callback?: Callback<T>) {
     item = {
       ...(item as any),
       [this.foreignKey]: this.model.getAttribute(this.localKey),
@@ -294,16 +304,16 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
         this.where("id", res).first(callback);
       });
 
-    return await this.where("id", await this._query().insertGetId(item)).first();
+    return await this.where(
+      "id",
+      await this._query().insertGetId(item),
+    ).first();
   }
 
   public save(model: T): Promise<T>;
-  public save(model: T, callback: DB.Callback<T>): void;
-  public save(model: T, callback?: DB.Callback<T>) {
-    model.setAttribute(
-      this.foreignKey,
-      this.model.getAttribute(this.localKey)
-    );
+  public save(model: T, callback: Callback<T>): void;
+  public save(model: T, callback?: Callback<T>) {
+    model.setAttribute(this.foreignKey, this.model.getAttribute(this.localKey));
 
     return model.save(callback as any) as Promise<T> | void;
   }
@@ -311,7 +321,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   /********************************** Updates *********************************/
 
   public update(update: T): Promise<number>;
-  public update(update: T, callback: DB.Callback<number>): void;
+  public update(update: T, callback: Callback<number>): void;
   public update() {
     const query = this._query();
 
@@ -319,8 +329,12 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public increment(field: string, count?: number): Promise<number>;
-  public increment(field: string, callback: DB.Callback<number>): void;
-  public increment(field: string, count: number, callback: DB.Callback<number>): void;
+  public increment(field: string, callback: Callback<number>): void;
+  public increment(
+    field: string,
+    count: number,
+    callback: Callback<number>,
+  ): void;
   public increment() {
     const query = this._query();
 
@@ -328,8 +342,12 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public decrement(field: string, count?: number): Promise<number>;
-  public decrement(field: string, callback: DB.Callback<number>): void;
-  public decrement(field: string, count: number, callback: DB.Callback<number>): void;
+  public decrement(field: string, callback: Callback<number>): void;
+  public decrement(
+    field: string,
+    count: number,
+    callback: Callback<number>,
+  ): void;
   public decrement() {
     const query = this._query();
 
@@ -339,7 +357,7 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   /********************************** Deletes *********************************/
 
   public delete(): Promise<number>;
-  public delete(callback: DB.Callback<number>): void;
+  public delete(callback: Callback<number>): void;
   public delete() {
     const query = this._query();
 

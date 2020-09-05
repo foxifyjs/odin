@@ -76,7 +76,6 @@ class User extends Odin {
   }
 }
 
-// tslint:disable-next-line:max-classes-per-file
 @Odin.register
 class Chat extends Odin {
   public static schema = {
@@ -96,7 +95,6 @@ class Chat extends Odin {
   }
 }
 
-// tslint:disable-next-line:max-classes-per-file
 @Odin.register
 class Message extends Odin {
   public static schema = {
@@ -118,14 +116,16 @@ const refresh = async (done: jest.DoneCallback) => {
   USERS.push(...users);
 
   await Chat.delete();
-  await Chat.insert(CHATS.map(chat => ({
-    ...chat,
-    chatable_id: (
-      chat.chatable_type === "users" &&
-      users.find(user => user.username === chat.chatable_id) &&
-      users.find(user => user.username === chat.chatable_id).id
-    ) || new ObjectId(),
-  })));
+  await Chat.insert(
+    CHATS.map((chat) => ({
+      ...chat,
+      chatable_id:
+        (chat.chatable_type === "users" &&
+          users.find((user) => user.username === chat.chatable_id) &&
+          users.find((user) => user.username === chat.chatable_id).id) ||
+        new ObjectId(),
+    })),
+  );
   const chats: any[] = await Chat.lean().get();
   CHATS.length = 0;
   CHATS.push(...chats);
@@ -154,10 +154,13 @@ afterAll(async (done) => {
 test("Model.with", async () => {
   expect.assertions(2);
 
-  const items = USERS.map(user => ({
+  const items = USERS.map((user) => ({
     ...user,
-    chat: CHATS.filter(chat => chat.chatable_id.toString() === (user as any).id.toString()
-      && chat.chatable_type === "users")[0],
+    chat: CHATS.filter(
+      (chat) =>
+        chat.chatable_id.toString() === (user as any).id.toString() &&
+        chat.chatable_type === "users",
+    )[0],
   }));
 
   const results = await User.with("chat").lean().get();
@@ -173,10 +176,16 @@ test("Model.with deep", async () => {
   expect.assertions(4);
 
   const items = USERS.map((user) => {
-    const chat = CHATS.filter(chat => chat.chatable_id.toString() === (user as any).id.toString()
-      && chat.chatable_type === "users")[0];
+    const chat = CHATS.filter(
+      (chat) =>
+        chat.chatable_id.toString() === (user as any).id.toString() &&
+        chat.chatable_type === "users",
+    )[0];
 
-    if (chat) (chat as any).message = MESSAGES.filter(message => message.chatname === chat.name)[0];
+    if (chat)
+      (chat as any).message = MESSAGES.filter(
+        (message) => message.chatname === chat.name,
+      )[0];
 
     return {
       ...user,
@@ -204,9 +213,13 @@ test("Model.with deep", async () => {
 test("Model.has", async () => {
   expect.assertions(1);
 
-  const items = USERS.filter(
-    user => array.any(CHATS, chat => chat.chatable_id.toString() === (user as any).id.toString()
-      && chat.chatable_type === "users")
+  const items = USERS.filter((user) =>
+    array.any(
+      CHATS,
+      (chat) =>
+        chat.chatable_id.toString() === (user as any).id.toString() &&
+        chat.chatable_type === "users",
+    ),
   );
 
   const results = await User.has("chat").lean().get();
@@ -217,14 +230,17 @@ test("Model.has", async () => {
 test("Model.has [deep]", async () => {
   expect.assertions(1);
 
-  const items = USERS
-    .filter(user =>
-      array.any(MESSAGES, message =>
-        CHATS
-          .filter(chat => chat.chatable_id.toString() === (user as any).id.toString() && chat.chatable_type === "users")
-          .findIndex(chat => message.chatname === chat.name) !== -1
-      )
-    );
+  const items = USERS.filter((user) =>
+    array.any(
+      MESSAGES,
+      (message) =>
+        CHATS.filter(
+          (chat) =>
+            chat.chatable_id.toString() === (user as any).id.toString() &&
+            chat.chatable_type === "users",
+        ).findIndex((chat) => message.chatname === chat.name) !== -1,
+    ),
+  );
 
   const results = await User.has("chat.message").lean().get();
 

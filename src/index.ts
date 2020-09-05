@@ -2,12 +2,21 @@ import * as Schema from "@foxify/schema";
 import Relational from "./base/Relational";
 import Collection from "./Collection";
 import Connect from "./Connect";
-import * as DB from "./DB";
-import EventEmitter from "./DB/EventEmitter";
+import DB, { Id } from "./DB";
+import EventEmitter, { Event } from "./DB/EventEmitter";
 import GraphQL from "./GraphQL";
 import Types from "./types";
-import { define, getGetterName, getSetterName, initialize, object, prepareToRead, string } from "./utils";
+import {
+  define,
+  getGetterName,
+  getSetterName,
+  initialize,
+  object,
+  prepareToRead,
+  string,
+} from "./utils";
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Odin {
   export type Connection = string;
 
@@ -16,7 +25,7 @@ namespace Odin {
   }
 
   export interface Document {
-    id?: DB.Id;
+    id?: Id;
 
     [key: string]: any;
   }
@@ -27,7 +36,7 @@ namespace Odin {
   export type Connect = typeof Connect;
 }
 
-class Odin<T extends object = any> extends Relational<T> {
+class Odin<T extends Record<string, unknown> = any> extends Relational<T> {
   protected static get _events() {
     return new EventEmitter(this.connection, this._collection);
   }
@@ -44,7 +53,10 @@ class Odin<T extends object = any> extends Relational<T> {
     return this._collection;
   }
 
-  public static validate<T extends object = object>(document: T, updating: boolean = false) {
+  public static validate<T extends Record<string, unknown> = any>(
+    document: T,
+    updating = false,
+  ) {
     const validation = Schema.validate(this._schema, document);
 
     let value: any = validation.value;
@@ -57,7 +69,10 @@ class Odin<T extends object = any> extends Relational<T> {
 
       if (object.size(validation.errors) === 0) validation.errors = null;
 
-      value = object.mapValues(document, (value, key, values: any) => values[key]);
+      value = object.mapValues(
+        document,
+        (value, key, values: any) => values[key],
+      );
     }
 
     if (validation.errors) {
@@ -77,26 +92,41 @@ class Odin<T extends object = any> extends Relational<T> {
   /********************************** Event **********************************/
 
   // public static on<T extends object>(event: EventEmitter.Event, listener: (item: Odin<T>) => void) {
-  public static on<T extends object>(event: "create", listener: (item: Odin<T>) => void) {
-    this._events.on(event, item => listener(initialize(this, prepareToRead(item)) as any));
+  public static on<T extends Record<string, unknown>>(
+    event: "create",
+    listener: (item: Odin<T>) => void,
+  ) {
+    this._events.on(event, (item) =>
+      listener(initialize(this, prepareToRead(item)) as any),
+    );
 
     return this;
   }
 
-  public static once<T extends object>(event: EventEmitter.Event, listener: (item: Odin<T>) => void) {
-    this._events.once(event, item => listener(initialize(this, prepareToRead(item)) as any));
+  public static once<T extends Record<string, unknown>>(
+    event: Event,
+    listener: (item: Odin<T>) => void,
+  ) {
+    this._events.once(event, (item) =>
+      listener(initialize(this, prepareToRead(item)) as any),
+    );
 
     return this;
   }
 
-  public static removeAllListeners(event?: EventEmitter.Event) {
+  public static removeAllListeners(event?: Event) {
     this._events.removeAllListeners(event);
 
     return this;
   }
 
-  public static removeListener<T extends object>(event: EventEmitter.Event, listener: (data: Odin<T>) => void) {
-    this._events.removeListener(event, item => listener(initialize(this, prepareToRead(item)) as any));
+  public static removeListener<T extends Record<string, unknown>>(
+    event: Event,
+    listener: (data: Odin<T>) => void,
+  ) {
+    this._events.removeListener(event, (item) =>
+      listener(initialize(this, prepareToRead(item)) as any),
+    );
 
     return this;
   }
@@ -116,7 +146,8 @@ class Odin<T extends object = any> extends Relational<T> {
 
       const setterName = getSetterName(attr);
       const setter = this[setterName] || ((origin: any) => origin);
-      define(this, "set", attr, value => this.attributes[attr] = setter(value));
+      define(this, "set", attr, (value) =>
+        (this.attributes[attr] = setter(value)));
       setters.push(setterName);
     }
 
@@ -127,7 +158,7 @@ class Odin<T extends object = any> extends Relational<T> {
         const relation = this[key]().relation;
 
         if (Array.isArray(value)) {
-          this.relations[key] = value.map(item => new relation(item));
+          this.relations[key] = value.map((item) => new relation(item));
 
           return;
         }
@@ -158,7 +189,7 @@ class Odin<T extends object = any> extends Relational<T> {
    * @returns {*}
    */
   public getAttribute<K extends keyof T>(attribute: K): T[K];
-  public getAttribute(attribute: string): any;
+  public getAttribute(attribute: string): unknown;
   public getAttribute(attribute: string) {
     return object.get(this.attributes, attribute);
   }
@@ -174,7 +205,7 @@ class Odin<T extends object = any> extends Relational<T> {
     object.set(this.attributes, attribute, value);
   }
 
-  public toJSON(): object {
+  public toJSON(): Record<string, unknown> {
     const hidden = this.constructor.hidden;
 
     if (hidden.includes("*")) return {};
@@ -184,13 +215,13 @@ class Odin<T extends object = any> extends Relational<T> {
 
       const getter = this[getGetterName(attr)];
 
-      return (getter ? getter(value) : value);
+      return getter ? getter(value) : value;
     });
 
     const relations = object.mapValues(this.relations, (value, attr) => {
       if (hidden.includes(attr)) return undefined;
 
-      if (Array.isArray(value)) return value.map(v => v.toJSON());
+      if (Array.isArray(value)) return value.map((v) => v.toJSON());
 
       return value && value.toJSON();
     });

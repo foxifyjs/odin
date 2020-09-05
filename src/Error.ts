@@ -2,9 +2,13 @@ import { MongoCallback, MongoError } from "mongodb";
 import { Callback } from "./DB";
 
 export const safeExec = (
-  base: any, method: string, args: any[], callback?: Callback<any>, listener: (res: any) => void = () => { }
+  base: any,
+  method: string,
+  args: any[],
+  callback?: Callback<any>,
+  listener: (res: any) => void = () => void 0,
 ) => {
-  args = args.filter(a => a !== undefined);
+  args = args.filter((a) => a !== undefined);
 
   if (callback) {
     const cb: MongoCallback<any> = (err, res) => {
@@ -19,10 +23,10 @@ export const safeExec = (
       callback(err, res);
     };
 
-    return base[method].apply(base, args.concat([cb]));
+    return base[method](...args.concat([cb]));
   }
 
-  return base[method].apply(base, args)
+  return base[method](...args)
     .then((res: any) => {
       try {
         listener(res);
@@ -38,9 +42,10 @@ export const safeExec = (
 };
 
 class OdinError extends Error {
-  public static isOdinError = (arg: any): arg is OdinError => arg instanceof OdinError;
+  public static isOdinError = (arg: any): arg is OdinError =>
+    arg instanceof OdinError;
 
-  public mongodb?: { message: string, code?: number };
+  public mongodb?: { message: string; code?: number };
 
   public code: number;
 
