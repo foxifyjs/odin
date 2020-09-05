@@ -21,7 +21,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "npm run build -- --watch",
-    "prepublishOnly": "npm run lint && npm test && node scripts/prepare.js",
+    "prepublishOnly": "node scripts/prepare.js",
     "lint": "eslint src",
     "format": "npm run format:prettier && npm run format:eslint",
     "format:prettier": "prettier --write src",
