@@ -1,17 +1,8 @@
 import * as Odin from "..";
 import Base from "../Base";
-import DB, {
-  Operator,
-  JoinQuery,
-  FilterQuery,
-  Order,
-  Callback,
-  Iterator,
-  Id,
-} from "../DB";
+import { Operator, JoinQuery, FilterQuery, Order, Iterator, Id } from "../DB";
 import Filter from "../DB/Filter";
 import Relation from "../Relation/Base";
-import { string } from "../utils";
 import Query from "./Query";
 
 const generateRelations = (relations: string[][]): Relation.Relation[] => {
@@ -266,16 +257,12 @@ class QueryBuilder<T extends Record<string, unknown> = any> extends Base<T> {
 
   /*********************************** Read ***********************************/
 
-  public static exists<T>(): Promise<boolean>;
-  public static exists<T>(callback: Callback<boolean>): void;
-  public static exists(callback?: Callback<boolean>) {
-    return this.query().exists(callback as any) as any;
+  public static exists(): Promise<boolean> {
+    return this.query().exists();
   }
 
-  public static count(): Promise<number>;
-  public static count(callback: Callback<number>): void;
-  public static count(callback?: Callback<number>) {
-    return this.query().count(callback as any) as any;
+  public static count(): Promise<number> {
+    return this.query().count();
   }
 
   public static iterate<T extends Record<string, unknown>>(): Iterator<T>;
@@ -284,126 +271,77 @@ class QueryBuilder<T extends Record<string, unknown> = any> extends Base<T> {
   }
 
   public static get<T extends Record<string, unknown>>(): Promise<T[]>;
-  public static get<T extends Record<string, unknown>>(
-    callback: Callback<T[]>,
-  ): void;
-  public static get(callback?: Callback<any>) {
-    return this.query().get(callback as any) as any;
+  public static get() {
+    return this.query().get();
   }
 
   public static first<T extends Record<string, unknown>>(): Promise<
     ThisType<T>
   >;
-  public static first<T extends Record<string, unknown>>(
-    callback: Callback<ThisType<T>>,
-  ): void;
-  public static first(callback?: Callback<any>) {
-    return this.query().first(callback as any) as any;
+  public static first() {
+    return this.query().first();
   }
 
   public static find<T extends Record<string, unknown>>(
     ids: Id | Id[],
   ): Promise<Odin<T>>;
-  public static find<T extends Record<string, unknown>>(
-    ids: Id | Id[],
-    callback: Callback<Odin<T>>,
-  ): void;
-  public static find(ids: Id | Id[], callback?: Callback<any>) {
-    return this.findBy("id", ids, callback as any) as any;
+  public static find(ids: Id | Id[]) {
+    return this.findBy("id", ids);
   }
 
   public static findBy<T extends Record<string, unknown>>(
     field: string,
     values: any | any[],
   ): Promise<Odin<T>>;
-  public static findBy<T extends Record<string, unknown>>(
-    field: string,
-    values: any | any[],
-    callback: Callback<Odin<T>>,
-  ): void;
-  public static findBy(
-    field: string,
-    value: any | any[],
-    callback?: Callback<any>,
-  ) {
-    if (Array.isArray(value))
-      return this.query()
-        .whereIn(field, value)
-        .first(callback as any);
+  public static findBy(field: string, value: any | any[]) {
+    if (Array.isArray(value)) return this.query().whereIn(field, value).first();
 
-    return this.query()
-      .where(field, value)
-      .first(callback as any) as any;
+    return this.query().where(field, value).first();
   }
 
   public static value<T>(field: string): Promise<any>;
-  public static value<T>(field: string, callback: Callback<any>): void;
-  public static value(field: string, callback?: Callback<any>) {
-    return this.query().value(field, callback as any) as any;
+  public static value(field: string) {
+    return this.query().value(field);
   }
 
   public static pluck<T>(field: string): Promise<any>;
-  public static pluck<T>(field: string, callback: Callback<any>): void;
-  public static pluck(field: string, callback?: Callback<any>) {
-    return this.value(field, callback as any) as any;
+  public static pluck(field: string) {
+    return this.value(field);
   }
 
   public static max<T>(field: string): Promise<any>;
-  public static max<T>(field: string, callback: Callback<any>): void;
-  public static max(field: string, callback?: Callback<any>) {
-    return this.query().max(field, callback as any) as any;
+  public static max(field: string) {
+    return this.query().max(field);
   }
 
   public static min<T>(field: string): Promise<any>;
-  public static min<T>(field: string, callback: Callback<any>): void;
-  public static min(field: string, callback?: Callback<any>) {
-    return this.query().min(field, callback as any) as any;
+  public static min(field: string) {
+    return this.query().min(field);
   }
 
   /********************************** Inserts *********************************/
 
   public static insert<T>(items: T[]): Promise<number>;
-  public static insert<T>(items: T[], callback: Callback<number>): void;
-  public static insert(items: any[], callback?: Callback<number>) {
-    return this.query().insert(items, callback as any) as any;
+  public static insert(items: any[]) {
+    return this.query().insert(items);
   }
 
   public static create<T extends Record<string, unknown>>(
     item: T,
   ): Promise<Odin<T>>;
-  public static create<T extends Record<string, unknown>>(
-    item: T,
-    callback: Callback<Odin<T>>,
-  ): void;
-  public static async create(item: any, callback?: Callback<any>) {
-    if (callback)
-      return this.query().insertGetId(item, (err, res) => {
-        if (err) return callback(err, res);
-
-        this.find(res, callback);
-      });
-
+  public static async create(item: any) {
     return await this.find(await this.query().insertGetId(item));
   }
 
   /********************************** Updates *********************************/
 
   public save(): Promise<this>;
-  public save(callback: Callback<this>): void;
-  public async save(callback?: Callback<this>) {
+  public async save() {
     const queryBuilder = this.constructor;
 
-    if (this._isNew)
-      return queryBuilder.create((this as any).attributes, callback as any);
+    if (this._isNew) return queryBuilder.create((this as any).attributes);
 
     const query = queryBuilder.where("id", (this as any).attributes.id);
-
-    if (callback)
-      return query.update((this as any).attributes, (err, res) => {
-        if (err) return callback(err, res as any);
-
-        queryBuilder.find((this as any).attributes.id as Id, callback as any);
-      });
 
     await query.update((this as any).attributes);
 
@@ -412,66 +350,31 @@ class QueryBuilder<T extends Record<string, unknown> = any> extends Base<T> {
 
   /********************************** Deletes *********************************/
 
-  public static delete(): Promise<number>;
-  public static delete(callback: Callback<number>): void;
-  public static delete(callback?: Callback<number>) {
-    return this.query().delete(callback as any) as any;
+  public static delete(): Promise<number> {
+    return this.query().delete();
   }
 
-  public static destroy(ids: Id | Id[], force?: boolean): Promise<number>;
-  public static destroy(ids: Id | Id[], callback: Callback<number>): void;
-  public static destroy(
-    ids: Id | Id[],
-    force: boolean,
-    callback: Callback<number>,
-  ): void;
-  public static destroy(
-    ids: Id | Id[],
-    force?: boolean | Callback<number>,
-    callback?: Callback<number>,
-  ) {
+  public static destroy(ids: Id | Id[], force?: boolean): Promise<number> {
     let query = this.query();
 
     if (Array.isArray(ids)) query = query.whereIn("id", ids);
     else query = query.where("id", ids);
 
-    return query.delete(force as any, callback as any) as any;
+    return query.delete(force);
   }
 
-  public delete(force?: boolean): Promise<number>;
-  public delete(callback: Callback<number>): void;
-  public delete(force: boolean, callback: Callback<number>): void;
-  public delete(
-    force?: boolean | Callback<number>,
-    callback?: Callback<number>,
-  ) {
-    if (this._isNew) {
-      if (callback) return callback(null as any, 0);
+  public async delete(force?: boolean): Promise<number> {
+    if (this._isNew) return 0;
 
-      return 0;
-    }
-
-    return this.constructor.destroy(
-      this._original.id as Id,
-      force as any,
-      callback as any,
-    ) as any;
+    return this.constructor.destroy(this._original.id as Id, force);
   }
 
   /********************************* Restoring ********************************/
 
-  public restore(): Promise<number>;
-  public restore(callback: Callback<number>): void;
-  public async restore(callback?: Callback<number>) {
-    if (this._isNew) {
-      if (callback) return callback(null as any, 0);
-
-      return 0;
-    }
+  public async restore(): Promise<number> {
+    if (this._isNew) return 0;
 
     const queryBuilder = this.constructor.where("id", this._original.id);
-
-    if (callback) return queryBuilder.restore(callback);
 
     return await queryBuilder.restore();
   }

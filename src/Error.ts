@@ -1,30 +1,12 @@
-import { MongoCallback, MongoError } from "mongodb";
-import { Callback } from "./DB";
+import { MongoError } from "mongodb";
 
 export const safeExec = (
   base: any,
   method: string,
   args: any[],
-  callback?: Callback<any>,
   listener: (res: any) => void = () => void 0,
 ) => {
   args = args.filter((a) => a !== undefined);
-
-  if (callback) {
-    const cb: MongoCallback<any> = (err, res) => {
-      if (err) return callback(new OdinError(err), res);
-
-      try {
-        listener(res);
-      } catch (error) {
-        console.warn(error);
-      }
-
-      callback(err, res);
-    };
-
-    return base[method](...args.concat([cb]));
-  }
 
   return base[method](...args)
     .then((res: any) => {

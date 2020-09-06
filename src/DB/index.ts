@@ -1,7 +1,7 @@
 import * as assert from "assert";
 import * as mongodb from "mongodb";
 import { connection as getConnection } from "../Connect";
-import OdinError, { safeExec } from "../Error";
+import { safeExec } from "../Error";
 import {
   array,
   function as func,
@@ -15,8 +15,6 @@ import {
 import EventEmitter, { Event } from "./EventEmitter";
 import Filter from "./Filter";
 import Join from "./Join";
-
-export type Callback<T = any> = (error: OdinError, result: T) => void;
 
 export type Operator = "<" | "<=" | "=" | "<>" | ">=" | ">";
 
@@ -267,59 +265,26 @@ export default class DB<T extends Record<string, unknown> = any> extends Filter<
 
   /********************************* Indexes *********************************/
 
-  public indexes(): Promise<any>;
-  public indexes(callback: Callback<any>): void;
-  public indexes(callback?: Callback<any>) {
-    return safeExec(this._query, "indexes", [], callback);
+  public indexes(): Promise<any> {
+    return safeExec(this._query, "indexes", []);
   }
 
   public index(
     fieldOrSpec: string | Record<string, unknown>,
     options?: mongodb.IndexOptions,
-  ): Promise<string>;
-  public index(
-    fieldOrSpec: string | Record<string, unknown>,
-    callback: Callback<string>,
-  ): void;
-  public index(
-    fieldOrSpec: string | Record<string, unknown>,
-    options: mongodb.IndexOptions,
-    callback: Callback<string>,
-  ): void;
-  public index(
-    fieldOrSpec: string | Record<string, unknown>,
-    options?: mongodb.IndexOptions | Callback<string>,
-    callback?: Callback<string>,
   ) {
-    return safeExec(
-      this._query,
-      "createIndex",
-      [fieldOrSpec, options],
-      callback,
-    );
+    return safeExec(this._query, "createIndex", [fieldOrSpec, options]);
   }
 
-  public reIndex(): Promise<any>;
-  public reIndex(callback: Callback<any>): void;
-  public reIndex(callback?: Callback<any>) {
-    return safeExec(this._query, "reIndex", [], callback);
+  public reIndex(): Promise<any> {
+    return safeExec(this._query, "reIndex", []);
   }
 
   public dropIndex(
     indexName: string,
     options?: mongodb.CommonOptions & { maxTimeMS?: number },
-  ): Promise<any>;
-  public dropIndex(
-    indexName: string,
-    options: mongodb.CommonOptions & { maxTimeMS?: number },
-    callback: Callback<any>,
-  ): void;
-  public dropIndex(
-    indexName: string,
-    options?: (mongodb.CommonOptions & { maxTimeMS?: number }) | Callback<any>,
-    callback?: Callback<any>,
-  ) {
-    return safeExec(this._query, "dropIndex", [indexName, options], callback);
+  ): Promise<any> {
+    return safeExec(this._query, "dropIndex", [indexName, options]);
   }
 
   /*********************************** Read **********************************/
@@ -347,28 +312,15 @@ export default class DB<T extends Record<string, unknown> = any> extends Filter<
     return filters;
   }
 
-  public count(): Promise<number>;
-  public count(callback: Callback<number>): void;
-  public async count(callback?: Callback<number>) {
+  public async count(): Promise<number> {
     this.aggregate({ $count: "count" });
-
-    if (callback)
-      return this.first((err, res) => {
-        if (err) return callback(err, res as any);
-
-        callback(err, res ? (res as any).count : 0);
-      });
 
     const result = (await this.first()) as any;
 
     return result ? result.count : 0;
   }
 
-  public exists(): Promise<boolean>;
-  public exists(callback: Callback<boolean>): void;
-  public async exists(callback?: Callback<boolean>) {
-    if (callback) return this.count((err, res) => callback(err, res !== 0));
-
+  public async exists(): Promise<boolean> {
     return (await this.count()) !== 0;
   }
 
@@ -404,59 +356,29 @@ export default class DB<T extends Record<string, unknown> = any> extends Filter<
     return iterator;
   }
 
-  public get<K extends keyof T>(fields?: Array<K | string>): Promise<T[]>;
-  public get<K extends keyof T>(
-    fields: Array<K | string>,
-    callback: Callback<T[]>,
-  ): void;
-  public get(callback: Callback<T[]>): void;
-  public get(
-    fields?: string[] | Callback<T[]>,
-    callback?: Callback<T[]>,
-  ): Promise<T[]> | void {
-    if (func.isFunction(fields)) {
-      callback = fields;
-      fields = undefined;
-    }
-
+  public get<K extends keyof T>(fields?: Array<K | string>): Promise<T[]> {
     if (fields)
       this.aggregate({
         $project: fields.reduce(
-          (prev, cur) => ((prev[prepareKey(cur)] = 1), prev),
+          (prev, cur) => ((prev[prepareKey(cur as string)] = 1), prev),
           { _id: 0 } as { [key: string]: any },
         ),
       });
 
-    return safeExec(this._aggregate(), "toArray", [], callback);
+    return safeExec(this._aggregate(), "toArray", []);
   }
 
-  public first<K extends keyof T>(fields?: Array<K | string>): Promise<T>;
-  public first<K extends keyof T>(
-    fields: Array<K | string>,
-    callback: Callback<T>,
-  ): void;
-  public first(callback: Callback<T>): void;
-  public async first(fields?: string[] | Callback<T>, callback?: Callback<T>) {
-    if (func.isFunction(fields)) {
-      callback = fields;
-      fields = undefined;
-    }
-
+  public async first<K extends keyof T>(
+    fields?: Array<K | string>,
+  ): Promise<T> {
     this._resetFilters().limit(1);
-
-    if (callback)
-      return this.get(fields as any, (err, res) =>
-        (callback as Callback<T>)(err, res && res[0]),
-      );
 
     return (await this.get(fields))[0];
   }
 
   public value<K extends keyof T>(field: K): Promise<T[K]>;
   public value(field: string): Promise<any>;
-  public value<K extends keyof T>(field: K, callback: Callback<T[K]>): void;
-  public value(field: string, callback: Callback<any>): void;
-  public value(field: string, callback?: Callback<any>) {
+  public value(field: string) {
     field = prepareKey(field);
 
     const keys = field.split(".");
@@ -472,31 +394,19 @@ export default class DB<T extends Record<string, unknown> = any> extends Filter<
         ._aggregate(),
       "toArray",
       [],
-      callback,
     );
   }
 
   public pluck<K extends keyof T>(field: K): Promise<T[K]>;
   public pluck(field: string): Promise<any>;
-  public pluck<K extends keyof T>(field: K, callback: Callback<T[K]>): void;
-  public pluck(field: string, callback: Callback<any>): void;
-  public pluck(field: string, callback?: Callback<any>) {
-    return this.value(field, callback as any) as any;
+  public pluck(field: string) {
+    return this.value(field) as any;
   }
 
   public max<K extends keyof T>(field: K): Promise<T[K]>;
   public max(field: string): Promise<any>;
-  public max<K extends keyof T>(field: K, callback: Callback<T[K]>): void;
-  public max(field: string, callback: Callback<any>): void;
-  public async max(field: string, callback?: Callback<any>) {
+  public async max(field: string) {
     this.aggregate({ $group: { _id: null, max: { $max: `$${field}` } } });
-
-    if (callback)
-      return this.first((err, res) => {
-        if (err) return callback(err, res as any);
-
-        callback(err, res && (res as any).max);
-      });
 
     const result = (await this.first()) as any;
 
@@ -505,17 +415,8 @@ export default class DB<T extends Record<string, unknown> = any> extends Filter<
 
   public min<K extends keyof T>(field: K): Promise<T[K]>;
   public min(field: string): Promise<any>;
-  public min<K extends keyof T>(field: K, callback: Callback<T[K]>): void;
-  public min(field: string, callback: Callback<any>): void;
-  public async min(field: string, callback?: Callback<any>) {
+  public async min(field: string) {
     this.aggregate({ $group: { _id: null, min: { $min: `$${field}` } } });
-
-    if (callback)
-      return this.first((err, res) => {
-        if (err) return callback(err, res as any);
-
-        callback(err, res && (res as any).min);
-      });
 
     const result = (await this.first()) as any;
 
@@ -524,17 +425,8 @@ export default class DB<T extends Record<string, unknown> = any> extends Filter<
 
   public avg<K extends keyof T>(field: K): Promise<T[K]>;
   public avg(field: string): Promise<any>;
-  public avg<K extends keyof T>(field: K, callback: Callback<T[K]>): void;
-  public avg(field: string, callback: Callback<any>): void;
-  public async avg(field: string, callback?: Callback<any>) {
+  public async avg(field: string) {
     this.aggregate({ $group: { _id: null, avg: { $avg: `$${field}` } } });
-
-    if (callback)
-      return this.first((err, res) => {
-        if (err) return callback(err, res as any);
-
-        callback(err, res && (res as any).avg);
-      });
 
     const result = (await this.first()) as any;
 
@@ -543,68 +435,35 @@ export default class DB<T extends Record<string, unknown> = any> extends Filter<
 
   /********************************** Inserts *********************************/
 
-  protected _insertMany(items: T[]): Promise<mongodb.InsertWriteOpResult>;
-  protected _insertMany(
-    items: T[],
-    callback: Callback<mongodb.InsertWriteOpResult>,
-  ): void;
-  protected _insertMany(
-    items: T[],
-    callback?: Callback<mongodb.InsertWriteOpResult>,
-  ) {
+  protected _insertMany(items: T[]): Promise<mongodb.InsertWriteOpResult> {
     items = prepareToStore(items);
 
-    return safeExec(this._query, "insertMany", [items], callback, (saved) => {
+    return safeExec(this._query, "insertMany", [items], (saved) => {
       if (!saved) return;
 
       saved.ops.forEach((op: any) => this._emit("create", op));
     });
   }
 
-  protected _insertOne(item: T): Promise<mongodb.InsertOneWriteOpResult>;
-  protected _insertOne(
-    item: T,
-    callback: Callback<mongodb.InsertOneWriteOpResult>,
-  ): void;
-  protected _insertOne(
-    item: T,
-    callback?: Callback<mongodb.InsertOneWriteOpResult>,
-  ) {
+  protected _insertOne(item: T): Promise<mongodb.InsertOneWriteOpResult> {
     item = prepareToStore(item);
 
-    return safeExec(this._query, "insertOne", [item], callback, (saved) => {
+    return safeExec(this._query, "insertOne", [item], (saved) => {
       if (!saved) return;
 
       saved.ops.forEach((op: any) => this._emit("create", op));
     });
   }
 
-  public insert(item: T | T[]): Promise<number>;
-  public insert(item: T | T[], callback: Callback<number>): void;
-  public async insert(item: T | T[], callback?: Callback<number>) {
+  public async insert(item: T | T[]): Promise<number> {
     if (Array.isArray(item)) {
-      if (callback)
-        return this._insertMany(item, (err, res) =>
-          callback(err, res && res.insertedCount),
-        );
-
       return (await this._insertMany(item)).insertedCount;
     }
-
-    if (callback)
-      return this._insertOne(item, (err, res) =>
-        callback(err, res.insertedCount),
-      );
 
     return (await this._insertOne(item)).insertedCount;
   }
 
-  public insertGetId(item: T): Promise<Id>;
-  public insertGetId(item: T, callback: Callback<Id>): void;
-  public async insertGetId(item: T, callback?: Callback<Id>) {
-    if (callback)
-      return this._insertOne(item, (err, res) => callback(err, res.insertedId));
-
+  public async insertGetId(item: T): Promise<Id> {
     return (await this._insertOne(item)).insertedId;
   }
 
@@ -612,7 +471,6 @@ export default class DB<T extends Record<string, unknown> = any> extends Filter<
 
   protected async _update(
     update: Record<string, unknown>,
-    callback?: Callback<mongodb.UpdateWriteOpResult>,
     soft?: {
       type: "delete" | "restore";
       field: string;
@@ -621,20 +479,13 @@ export default class DB<T extends Record<string, unknown> = any> extends Filter<
   ): Promise<mongodb.UpdateWriteOpResult> {
     const filters = this._filtersOnly();
 
-    return safeExec(this._query, "updateMany", [filters, update], callback);
+    return safeExec(this._query, "updateMany", [filters, update]);
   }
 
-  public update(update: Partial<T>): Promise<number>;
-  public update(update: Partial<T>, callback: Callback<number>): void;
-  public async update(update: Partial<T>, callback?: Callback<number>) {
+  public async update(update: Partial<T>): Promise<number> {
     const _update = {
       $set: prepareToStore(update),
     };
-
-    if (callback)
-      return this._update(_update, (err, res) =>
-        callback(err, res.modifiedCount),
-      );
 
     return (await this._update(_update)).modifiedCount;
   }
@@ -644,36 +495,12 @@ export default class DB<T extends Record<string, unknown> = any> extends Filter<
     field: K,
     count?: number,
   ): Promise<number>;
-  public increment(field: string, callback: Callback<number>): void;
-  public increment<K extends keyof T>(
-    field: K,
-    callback: Callback<number>,
-  ): void;
-  public increment(
-    field: string,
-    count: number,
-    callback: Callback<number>,
-  ): void;
-  public async increment(
-    field: string,
-    count: number | Callback<number> = 1,
-    callback?: Callback<number>,
-  ) {
-    if (func.isFunction(count)) {
-      callback = count;
-      count = 1;
-    }
-
+  public async increment(field: string, count = 1) {
     const update = {
       $inc: {
         [field]: count,
       },
     };
-
-    if (callback)
-      return this._update(update, (err, res) =>
-        (callback as any)(err, res.modifiedCount),
-      );
 
     return (await this._update(update)).modifiedCount;
   }
@@ -683,58 +510,22 @@ export default class DB<T extends Record<string, unknown> = any> extends Filter<
     field: K,
     count?: number,
   ): Promise<number>;
-  public decrement(field: string, callback: Callback<number>): void;
-  public decrement<K extends keyof T>(
-    field: K,
-    callback: Callback<number>,
-  ): void;
-  public decrement(
-    field: string,
-    count: number,
-    callback: Callback<number>,
-  ): void;
-  public decrement(
-    field: string,
-    count: number | Callback<number> = 1,
-    callback?: Callback<number>,
-  ) {
-    if (func.isFunction(count)) {
-      callback = count;
-      count = 1;
-    }
-
-    return this.increment(field, -count, callback as any) as any;
+  public decrement(field: string, count = 1) {
+    return this.increment(field, -count) as any;
   }
 
   public unset(fields: string[]): Promise<number>;
   public unset<K extends keyof T>(fields: K[]): Promise<number>;
-  public unset(fields: string[], callback: Callback<number>): void;
-  public unset<K extends keyof T>(
-    fields: K[],
-    callback: Callback<number>,
-  ): void;
-  public unset(fields: string[], callback?: Callback<number>) {
-    return this._update(
-      {
-        $unset: fields.reduce((prev, cur) => ({ ...prev, [cur]: 1 }), {}),
-      },
-      callback as any,
-    ) as any;
+  public unset(fields: string[]) {
+    return this._update({
+      $unset: fields.reduce((prev, cur) => ({ ...prev, [cur]: 1 }), {}),
+    }) as any;
   }
 
   /********************************** Deletes *********************************/
 
-  public delete(): Promise<number>;
-  public delete(callback: Callback<number>): void;
-  public async delete(callback?: Callback<number>) {
+  public async delete(): Promise<number> {
     const filters = this._filtersOnly();
-
-    if (callback)
-      return safeExec(this._query, "deleteMany", [filters], (err, res) => {
-        if (err) return callback(err, res);
-
-        callback(err, res.deletedCount);
-      });
 
     return (await safeExec(this._query, "deleteMany", [filters])).deletedCount;
   }

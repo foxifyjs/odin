@@ -1,5 +1,5 @@
 import * as Odin from "..";
-import DB, { Callback, Id } from "../DB";
+import DB, { Id } from "../DB";
 import Filter from "../DB/Filter";
 import Join from "../DB/Join";
 import { makeCollectionId } from "../utils";
@@ -136,30 +136,17 @@ class HasOne<T extends Odin = Odin> extends Relation<T, "HasOne"> {
   }
 
   public insert(items: T[]): Promise<undefined>;
-  public insert(items: T[], callback: Callback<undefined>): void;
-  public async insert(items: T[], callback?: Callback<undefined>) {
+  public async insert(items: T[]) {
     const error = new TypeError(
       "'hasOne' relation can't insert multiple items",
     );
-
-    if (callback) return callback(error as any, undefined);
 
     throw error;
   }
 
   public create(item: T["schema"]): Promise<T>;
-  public create(item: T["schema"], callback: Callback<T>): void;
-  public async create(item: T["schema"], callback?: Callback<T>) {
+  public async create(item: T["schema"]) {
     const error = new TypeError(`This item already has one ${this.as}`);
-
-    if (callback)
-      return this.exists((err, res) => {
-        if (err) return callback(err, undefined as any);
-
-        if (res) return callback(error as any, undefined as any);
-
-        super.create(item, callback);
-      });
 
     if (await this.exists()) throw error;
 
@@ -167,20 +154,9 @@ class HasOne<T extends Odin = Odin> extends Relation<T, "HasOne"> {
   }
 
   public save(model: T): Promise<T>;
-  public save(model: T, callback: Callback<T>): void;
-  public async save(item: T, callback?: Callback<T>) {
+  public async save(item: T) {
     const error = new TypeError(`This item already has one ${this.as}`);
     const id = item.getAttribute("id");
-
-    if (callback)
-      return this.first((err, res) => {
-        if (err) return callback(err, undefined as any);
-
-        if (res && !(res.id as Id).equals(id))
-          return callback(error as any, undefined as any);
-
-        super.save(item, callback);
-      });
 
     const first = await this.first();
 

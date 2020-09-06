@@ -66,7 +66,7 @@ const JOIN_ITEMS = [
   },
 ];
 
-beforeAll((done) => {
+beforeAll(async () => {
   Connect({
     default: {
       database: global.__MONGO_DB_NAME__,
@@ -74,46 +74,28 @@ beforeAll((done) => {
     },
   });
 
-  DB.collection(COLLECTION).insert(ITEMS, (err) => {
-    if (err) throw err;
+  await DB.collection(COLLECTION).insert(ITEMS);
 
-    DB.collection(COLLECTION).get((err, items) => {
-      if (err) throw err;
+  const items = await DB.collection(COLLECTION).get();
 
-      ITEMS.length = 0;
+  ITEMS.length = 0;
 
-      ITEMS.push(...items);
-
-      done();
-    });
-  });
+  ITEMS.push(...items);
 });
 
-afterEach((done) => {
-  DB.collection(COLLECTION).delete((err, deleted) => {
-    if (err) throw err;
+afterEach(async () => {
+  await DB.collection(COLLECTION).delete();
 
-    DB.collection(COLLECTION).insert(ITEMS, (err, inserted) => {
-      if (err) throw err;
-
-      done();
-    });
-  });
+  await DB.collection(COLLECTION).insert(ITEMS);
 });
 
-afterAll((done) => {
-  DB.collection(COLLECTION).delete((err) => {
-    if (err) throw err;
+afterAll(async () => {
+  await DB.collection(COLLECTION).delete();
 
-    DB.collection(JOIN_COLLECTION).delete((err) => {
-      if (err) throw err;
-
-      done();
-    });
-  });
+  await DB.collection(JOIN_COLLECTION).delete();
 });
 
-test("db.insert one (async/await style)", async () => {
+test("db.insert one", async () => {
   expect.assertions(1);
 
   const result = await DB.collection(COLLECTION).insert(
@@ -123,19 +105,7 @@ test("db.insert one (async/await style)", async () => {
   expect(result).toBe(1);
 });
 
-test("db.insert one (callback style)", (done) => {
-  DB.collection(COLLECTION).insert(
-    utils.object.omit(ITEMS[0], ["id"]),
-    (err, res) => {
-      expect(err).toBe(null);
-      expect(res).toBe(1);
-
-      done();
-    },
-  );
-});
-
-test("db.insert many (async/await style)", async () => {
+test("db.insert many", async () => {
   expect.assertions(1);
 
   const result = await DB.collection(COLLECTION).insert(
@@ -145,33 +115,12 @@ test("db.insert many (async/await style)", async () => {
   expect(result).toBe(ITEMS.length);
 });
 
-test("db.insert many (callback style)", (done) => {
-  DB.collection(COLLECTION).insert(
-    ITEMS.map((item: any) => utils.object.omit(item, ["id"])),
-    (err, res) => {
-      expect(err).toBe(null);
-      expect(res).toBe(ITEMS.length);
-
-      done();
-    },
-  );
-});
-
-test("db.value (async/await style)", async () => {
+test("db.value", async () => {
   expect.assertions(1);
 
   const result = await DB.collection(COLLECTION).value("name");
 
   expect(result).toEqual(ITEMS.map(({ name }) => name || undefined));
-});
-
-test("db.value (callback style)", (done) => {
-  DB.collection(COLLECTION).value("name", (err, res) => {
-    expect(err).toBe(null);
-    expect(res).toEqual(ITEMS.map(({ name }) => name || undefined));
-
-    done();
-  });
 });
 
 test("db.iterate", async () => {
@@ -188,7 +137,7 @@ test("db.iterate", async () => {
     expect(item).toEqual({ name: ITEMS[index++].name });
 });
 
-test("db.get (async/await style)", async () => {
+test("db.get", async () => {
   expect.assertions(1);
 
   const result = await DB.collection(COLLECTION).get();
@@ -196,16 +145,7 @@ test("db.get (async/await style)", async () => {
   expect(result).toEqual(ITEMS);
 });
 
-test("db.get (callback style)", (done) => {
-  DB.collection(COLLECTION).get((err, res) => {
-    expect(err).toBe(null);
-    expect(res).toEqual(ITEMS);
-
-    done();
-  });
-});
-
-test("db.first (async/await style)", async () => {
+test("db.first", async () => {
   expect.assertions(1);
 
   const result = await DB.collection(COLLECTION).first();
@@ -213,147 +153,97 @@ test("db.first (async/await style)", async () => {
   expect(result).toEqual(ITEMS[0]);
 });
 
-test("db.first (callback style)", (done) => {
-  DB.collection(COLLECTION).first((err, res) => {
-    expect(err).toBe(null);
-    expect(res).toEqual(ITEMS[0]);
-
-    done();
-  });
-});
-
-test("db.where [simple]", (done) => {
-  DB.collection<ItemSchema>(COLLECTION)
+test("db.where [simple]", async () => {
+  const res = await DB.collection<ItemSchema>(COLLECTION)
     .where("name", "foo")
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(ITEMS.filter(({ name }) => name === "foo"));
+    .get();
 
-      done();
-    });
+  expect(res).toEqual(ITEMS.filter(({ name }) => name === "foo"));
 });
 
-test("db.where [complex]", (done) => {
-  DB.collection<ItemSchema>(COLLECTION)
+test("db.where [complex]", async () => {
+  const res = await DB.collection<ItemSchema>(COLLECTION)
     .where((q) => q.where("name", "foo"))
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(ITEMS.filter(({ name }) => name === "foo"));
+    .get();
 
-      done();
-    });
+  expect(res).toEqual(ITEMS.filter(({ name }) => name === "foo"));
 });
 
-test("db.orWhere [simple]", (done) => {
-  DB.collection(COLLECTION)
+test("db.orWhere [simple]", async () => {
+  const res = await DB.collection(COLLECTION)
     .where("name", "foo")
     .orWhere("style", "async")
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(
-        ITEMS.filter(({ name, style }) => name === "foo" || style === "async"),
-      );
+    .get();
 
-      done();
-    });
+  expect(res).toEqual(
+    ITEMS.filter(({ name, style }) => name === "foo" || style === "async"),
+  );
 });
 
-test("db.orWhere [complex]", (done) => {
-  DB.collection(COLLECTION)
+test("db.orWhere [complex]", async () => {
+  const res = await DB.collection(COLLECTION)
     .where((q) => q.where("name", "foo"))
     .orWhere((q) => q.where("style", "async"))
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(
-        ITEMS.filter(({ name, style }) => name === "foo" || style === "async"),
-      );
+    .get();
 
-      done();
-    });
+  expect(res).toEqual(
+    ITEMS.filter(({ name, style }) => name === "foo" || style === "async"),
+  );
 });
 
-test("db.whereLike", (done) => {
-  DB.collection(COLLECTION)
-    .whereLike("name", "foo")
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(ITEMS.filter(({ name }) => /foo/.test(name as any)));
+test("db.whereLike", async () => {
+  const res = await DB.collection(COLLECTION).whereLike("name", "foo").get();
 
-      done();
-    });
+  expect(res).toEqual(ITEMS.filter(({ name }) => /foo/.test(name as any)));
 });
 
-test("db.whereIn", (done) => {
-  DB.collection(COLLECTION)
+test("db.whereIn", async () => {
+  const res = await DB.collection(COLLECTION)
     .whereIn("name", ["foo", "bar"])
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(
-        ITEMS.filter(({ name }) => /^(foo|bar)$/.test(name as any)),
-      );
+    .get();
 
-      done();
-    });
+  expect(res).toEqual(
+    ITEMS.filter(({ name }) => /^(foo|bar)$/.test(name as any)),
+  );
 });
 
-test("db.whereNotIn", (done) => {
-  DB.collection(COLLECTION)
+test("db.whereNotIn", async () => {
+  const res = await DB.collection(COLLECTION)
     .whereNotIn("name", ["foo", "bar"])
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(
-        ITEMS.filter(({ name }) => !/^(foo|bar)$/.test(name as any)),
-      );
+    .get();
 
-      done();
-    });
+  expect(res).toEqual(
+    ITEMS.filter(({ name }) => !/^(foo|bar)$/.test(name as any)),
+  );
 });
 
-test("db.whereBetween", (done) => {
-  DB.collection(COLLECTION)
-    .whereBetween("num", 10, 15)
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(ITEMS.filter(({ num }) => num >= 10 && num <= 15));
+test("db.whereBetween", async () => {
+  const res = await DB.collection(COLLECTION).whereBetween("num", 10, 15).get();
 
-      done();
-    });
+  expect(res).toEqual(ITEMS.filter(({ num }) => num >= 10 && num <= 15));
 });
 
-test("db.whereNotBetween", (done) => {
-  DB.collection(COLLECTION)
+test("db.whereNotBetween", async () => {
+  const res = await DB.collection(COLLECTION)
     .whereNotBetween("num", 10, 15)
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(ITEMS.filter(({ num }) => num < 10 || num > 15));
+    .get();
 
-      done();
-    });
+  expect(res).toEqual(ITEMS.filter(({ num }) => num < 10 || num > 15));
 });
 
-test("db.whereNull", (done) => {
-  DB.collection(COLLECTION)
-    .whereNull("name")
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(ITEMS.filter(({ name }) => !name));
+test("db.whereNull", async () => {
+  const res = await DB.collection(COLLECTION).whereNull("name").get();
 
-      done();
-    });
+  expect(res).toEqual(ITEMS.filter(({ name }) => !name));
 });
 
-test("db.whereNotNull", (done) => {
-  DB.collection(COLLECTION)
-    .whereNotNull("name")
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(ITEMS.filter(({ name }) => !!name));
+test("db.whereNotNull", async () => {
+  const res = await DB.collection(COLLECTION).whereNotNull("name").get();
 
-      done();
-    });
+  expect(res).toEqual(ITEMS.filter(({ name }) => !!name));
 });
 
-test("db.count (async/await style)", async () => {
+test("db.count", async () => {
   expect.assertions(1);
 
   const result = await DB.collection(COLLECTION).where("name", "foo").count();
@@ -361,18 +251,7 @@ test("db.count (async/await style)", async () => {
   expect(result).toEqual(ITEMS.filter(({ name }) => name === "foo").length);
 });
 
-test("db.count (callback style)", (done) => {
-  DB.collection(COLLECTION)
-    .where("name", "foo")
-    .count((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(ITEMS.filter(({ name }) => name === "foo").length);
-
-      done();
-    });
-});
-
-test("db.exists (async/await style)", async () => {
+test("db.exists", async () => {
   expect.assertions(1);
 
   const result = await DB.collection(COLLECTION).where("name", "foo").exists();
@@ -380,18 +259,7 @@ test("db.exists (async/await style)", async () => {
   expect(result).toEqual(!!ITEMS.filter(({ name }) => name === "foo").length);
 });
 
-test("db.exists (callback style)", (done) => {
-  DB.collection(COLLECTION)
-    .where("name", "foo")
-    .exists((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(!!ITEMS.filter(({ name }) => name === "foo").length);
-
-      done();
-    });
-});
-
-test("db.max (async/await style)", async () => {
+test("db.max", async () => {
   expect.assertions(1);
 
   const result = await DB.collection(COLLECTION).max("num");
@@ -401,18 +269,7 @@ test("db.max (async/await style)", async () => {
   );
 });
 
-test("db.max (callback style)", (done) => {
-  DB.collection(COLLECTION).max("num", (err, res) => {
-    expect(err).toBe(null);
-    expect(res).toEqual(
-      utils.array.clone(ITEMS).sort((a, b) => b.num - a.num)[0].num,
-    );
-
-    done();
-  });
-});
-
-test("db.min (async/await style)", async () => {
+test("db.min", async () => {
   expect.assertions(1);
 
   const result = await DB.collection(COLLECTION).min("num");
@@ -422,18 +279,7 @@ test("db.min (async/await style)", async () => {
   );
 });
 
-test("db.min (callback style)", (done) => {
-  DB.collection(COLLECTION).min("num", (err, res) => {
-    expect(err).toBe(null);
-    expect(res).toEqual(
-      utils.array.clone(ITEMS).sort((a, b) => a.num - b.num)[0].num,
-    );
-
-    done();
-  });
-});
-
-test("db.avg (async/await style)", async () => {
+test("db.avg", async () => {
   expect.assertions(1);
 
   const result = await DB.collection(COLLECTION).avg("num");
@@ -441,17 +287,6 @@ test("db.avg (async/await style)", async () => {
   expect(result).toEqual(
     ITEMS.reduce((prev, cur) => prev + cur.num, 0) / ITEMS.length,
   );
-});
-
-test("db.avg (callback style)", (done) => {
-  DB.collection(COLLECTION).avg("num", (err, res) => {
-    expect(err).toBe(null);
-    expect(res).toEqual(
-      ITEMS.reduce((prev, cur) => prev + cur.num, 0) / ITEMS.length,
-    );
-
-    done();
-  });
 });
 
 // __tests__("db.groupBy", (done) => {
@@ -468,52 +303,30 @@ test("db.avg (callback style)", (done) => {
 //   });
 // });
 
-test("db.orderBy", (done) => {
-  DB.collection(COLLECTION)
-    .orderBy("num", "desc")
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(
-        utils.array.clone(ITEMS).sort((a, b) => b.num - a.num),
-      );
+test("db.orderBy", async () => {
+  const res = await DB.collection(COLLECTION).orderBy("num", "desc").get();
 
-      done();
-    });
+  expect(res).toEqual(utils.array.clone(ITEMS).sort((a, b) => b.num - a.num));
 });
 
-test("db.map", (done) => {
-  DB.collection(COLLECTION)
+test("db.map", async () => {
+  const res = await DB.collection(COLLECTION)
     .map(({ name }) => ({ name: name || "was null" }))
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(
-        ITEMS.map(({ name }) => ({ name: name || "was null" })),
-      );
+    .get();
 
-      done();
-    });
+  expect(res).toEqual(ITEMS.map(({ name }) => ({ name: name || "was null" })));
 });
 
-test("db.skip", (done) => {
-  DB.collection(COLLECTION)
-    .skip(4)
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(utils.array.clone(ITEMS).slice(4));
+test("db.skip", async () => {
+  const res = await DB.collection(COLLECTION).skip(4).get();
 
-      done();
-    });
+  expect(res).toEqual(utils.array.clone(ITEMS).slice(4));
 });
 
-test("db.limit", (done) => {
-  DB.collection(COLLECTION)
-    .limit(4)
-    .get((err, res) => {
-      expect(err).toBe(null);
-      expect(res).toEqual(utils.array.clone(ITEMS).slice(0, 4));
+test("db.limit", async () => {
+  const res = await DB.collection(COLLECTION).limit(4).get();
 
-      done();
-    });
+  expect(res).toEqual(utils.array.clone(ITEMS).slice(0, 4));
 });
 
 test("db.join", async () => {
@@ -545,7 +358,7 @@ test("db.join", async () => {
   );
 });
 
-test("db.update (async/await style)", async () => {
+test("db.update", async () => {
   expect.assertions(2);
 
   const updated = await DB.collection(COLLECTION)
@@ -564,28 +377,7 @@ test("db.update (async/await style)", async () => {
   );
 });
 
-test("db.update (callback style)", (done) => {
-  DB.collection(COLLECTION)
-    .where("name", "foo")
-    .update({ num: 1000 }, (err, res) => {
-      expect(err).toBe(null);
-      expect(res).toBe(ITEMS.filter(({ name }) => name === "foo").length);
-
-      DB.collection(COLLECTION).get((err, res) => {
-        expect(err).toBe(null);
-        expect(res).toEqual(
-          ITEMS.map((item) => ({
-            ...item,
-            num: item.name === "foo" ? 1000 : item.num,
-          })),
-        );
-
-        done();
-      });
-    });
-});
-
-test("db.increment (async/await style)", async () => {
+test("db.increment", async () => {
   expect.assertions(1);
 
   const result = await DB.collection(COLLECTION)
@@ -595,30 +387,10 @@ test("db.increment (async/await style)", async () => {
   expect(result).toBe(ITEMS.filter(({ name }) => name === "bar").length);
 });
 
-test("db.increment (callback style)", (done) => {
-  DB.collection(COLLECTION)
-    .where("name", "bar")
-    .increment("num", (err, res) => {
-      expect(err).toBe(null);
-      expect(res).toBe(ITEMS.filter(({ name }) => name === "bar").length);
-
-      done();
-    });
-});
-
-test("db.delete (async/await style)", async () => {
+test("db.delete", async () => {
   expect.assertions(1);
 
   const result = await DB.collection(COLLECTION).delete();
 
   expect(result).toBe(ITEMS.length);
-});
-
-test("db.delete (callback style)", (done) => {
-  DB.collection(COLLECTION).delete((err, res) => {
-    expect(err).toBe(null);
-    expect(res).toBe(ITEMS.length);
-
-    done();
-  });
 });
