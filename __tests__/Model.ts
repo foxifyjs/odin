@@ -37,40 +37,24 @@ Odin.Connect({
   },
 });
 
-beforeAll((done) => {
-  Odin.DB.collection(COLLECTION).insert(ITEMS, (err) => {
-    if (err) throw err;
+beforeAll(async () => {
+  await Odin.DB.collection(COLLECTION).insert(ITEMS);
 
-    Odin.DB.collection(COLLECTION).get((err, items) => {
-      if (err) throw err;
+  const items = await Odin.DB.collection(COLLECTION).get();
 
-      ITEMS.length = 0;
+  ITEMS.length = 0;
 
-      ITEMS.push(...items);
-
-      done();
-    });
-  });
+  ITEMS.push(...items);
 });
 
-afterEach((done) => {
-  Odin.DB.collection(COLLECTION).delete((err) => {
-    if (err) throw err;
+afterEach(async () => {
+  await Odin.DB.collection(COLLECTION).delete();
 
-    Odin.DB.collection(COLLECTION).insert(ITEMS, (err) => {
-      if (err) throw err;
-
-      done();
-    });
-  });
+  await Odin.DB.collection(COLLECTION).insert(ITEMS);
 });
 
-afterAll((done) => {
-  Odin.DB.collection(COLLECTION).delete((err) => {
-    if (err) throw err;
-
-    done();
-  });
+afterAll(async () => {
+  await Odin.DB.collection(COLLECTION).delete();
 });
 
 interface Schema extends Record<string, any> {
@@ -107,7 +91,7 @@ test("model.iterate", async () => {
   }
 });
 
-test("model.save (async/await style)", async () => {
+test("model.save", async () => {
   expect.assertions(2);
 
   const item = utils.object.omit(ITEMS[0], ["id"]);
@@ -122,23 +106,7 @@ test("model.save (async/await style)", async () => {
   );
 });
 
-test("model.save (callback style)", (done) => {
-  expect.assertions(3);
-
-  const item = utils.object.omit(ITEMS[0], ["id"]);
-
-  const user = new User(item);
-
-  user.save((err, res) => {
-    expect(err).toBe(null);
-    expect(res).toBeInstanceOf(User);
-    expect(utils.object.omit(res.toJSON(), ["id", "created_at"])).toEqual(item);
-
-    done();
-  });
-});
-
-test("Model.insert (async/await style)", async () => {
+test("Model.insert", async () => {
   expect.assertions(1);
 
   const result = await User.insert(
@@ -148,21 +116,7 @@ test("Model.insert (async/await style)", async () => {
   expect(result).toBe(ITEMS.length);
 });
 
-test("Model.insert (callback style)", (done) => {
-  expect.assertions(2);
-
-  User.insert(
-    ITEMS.map((item) => utils.object.omit(item, ["id"])),
-    (err, res) => {
-      expect(err).toBe(null);
-      expect(res).toBe(ITEMS.length);
-
-      done();
-    },
-  );
-});
-
-test("Model.create (async/await style)", async () => {
+test("Model.create", async () => {
   expect.assertions(2);
 
   const item = utils.object.omit(ITEMS[0], ["id"]) as Record<string, unknown>;
@@ -176,19 +130,7 @@ test("Model.create (async/await style)", async () => {
   );
 });
 
-test("Model.create (callback style)", (done) => {
-  const item = utils.object.omit(ITEMS[0], ["id"]) as Record<string, unknown>;
-
-  User.create(item, (err, res) => {
-    expect(err).toBe(null);
-    expect(res).toBeInstanceOf(Odin);
-    expect(utils.object.omit(res.toJSON(), ["id", "created_at"])).toEqual(item);
-
-    done();
-  });
-});
-
-test("Model.insert (async/await style)", async () => {
+test("Model.insert", async () => {
   expect.assertions(1);
 
   const items = ITEMS.map((item: any) => utils.object.omit(item, ["id"]));
@@ -196,17 +138,6 @@ test("Model.insert (async/await style)", async () => {
   const result = await User.insert(items);
 
   expect(result).toBe(items.length);
-});
-
-test("Model.insert (callback style)", (done) => {
-  const items = ITEMS.map((item: any) => utils.object.omit(item, ["id"]));
-
-  User.insert(items, (err, res) => {
-    expect(err).toBe(null);
-    expect(res).toBe(items.length);
-
-    done();
-  });
 });
 
 test("Model.on('create')", async () => {

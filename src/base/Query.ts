@@ -2,7 +2,7 @@ import * as assert from "assert";
 import * as async from "async";
 import * as mongodb from "mongodb";
 import * as Odin from "..";
-import DB, { Operator, JoinQuery, Callback, Iterator, Id } from "../DB";
+import DB, { Operator, JoinQuery, Iterator, Id } from "../DB";
 import EventEmitter from "../DB/EventEmitter";
 import Filter from "../DB/Filter";
 import Relation from "../Relation/Base";
@@ -214,20 +214,16 @@ class Query<T extends Record<string, unknown> = any> extends DB<T> {
 
   /*********************************** Read ***********************************/
 
-  public exists(): Promise<boolean>;
-  public exists(callback: Callback<boolean>): void;
-  public exists(callback?: Callback<boolean>) {
+  public exists(): Promise<boolean> {
     this._apply_options(true).lean();
 
-    return super.exists(callback as any) as any;
+    return super.exists();
   }
 
-  public count(): Promise<number>;
-  public count(callback: Callback<number>): void;
-  public count(callback?: Callback<number>) {
+  public count(): Promise<number> {
     this._apply_options(true).lean();
 
-    return super.count(callback as any) as any;
+    return super.count();
   }
 
   public iterate(): Iterator<T> {
@@ -244,19 +240,11 @@ class Query<T extends Record<string, unknown> = any> extends DB<T> {
   }
 
   public get(): Promise<T[]>;
-  public get(callback: Callback<T[]>): void;
-  public async get(callback?: Callback<T[]>) {
+  public async get(): Promise<T[]> {
     const iterator = (item: any, cb: any) =>
       cb(undefined, initialize(this._model, item));
 
     this._apply_options(true);
-
-    if (callback)
-      return super.get((err, res) => {
-        if (err || this._lean) return callback(err, res as any);
-
-        async.map(res, iterator, callback as any);
-      });
 
     if (this._lean) return await super.get();
 
@@ -271,64 +259,45 @@ class Query<T extends Record<string, unknown> = any> extends DB<T> {
     return items;
   }
 
-  public first(): Promise<T>;
-  public first(callback: Callback<T>): void;
-  public async first(callback?: Callback<T>) {
+  public async first(): Promise<T> {
     this.limit(1);
-
-    if (callback)
-      return this.get((err, res) =>
-        (callback as Callback<T>)(err, res && res[0]),
-      );
 
     return (await this.get())[0];
   }
 
-  public value(field: string): Promise<any>;
-  public value(field: string, callback: Callback<any>): void;
-  public value(field: string, callback?: Callback<any>) {
+  public value(field: string): Promise<any> {
     this._apply_options(true);
 
-    return super.value(field, callback as any) as any;
+    return super.value(field);
   }
 
-  public pluck(field: string): Promise<any>;
-  public pluck(field: string, callback: Callback<any>): void;
-  public pluck(field: string, callback?: Callback<any>) {
+  public pluck(field: string): Promise<any> {
     this._apply_options(true);
 
-    return super.pluck(field, callback as any) as any;
+    return super.pluck(field);
   }
 
-  public max(field: string): Promise<any>;
-  public max(field: string, callback: Callback<any>): void;
-  public max(field: string, callback?: Callback<any>) {
+  public max(field: string): Promise<any> {
     this._apply_options(true).lean();
 
-    return super.max(field, callback as any) as any;
+    return super.max(field);
   }
 
-  public min(field: string): Promise<any>;
-  public min(field: string, callback: Callback<any>): void;
-  public min(field: string, callback?: Callback<any>) {
+  public min(field: string): Promise<any> {
     this._apply_options(true).lean();
 
-    return super.min(field, callback as any) as any;
+    return super.min(field);
   }
 
-  public avg(field: string): Promise<any>;
-  public avg(field: string, callback: Callback<any>): void;
-  public avg(field: string, callback?: Callback<any>) {
+  public avg(field: string): Promise<any> {
     this._apply_options(true).lean();
 
-    return super.avg(field, callback as any) as any;
+    return super.avg(field);
   }
 
   /********************************** Inserts *********************************/
 
-  public insert(items: T[]): Promise<number>;
-  public insert(items: T[], callback: Callback<number>): void;
-  public insert(items: T[], callback?: Callback<number>) {
+  public insert(items: T[]): Promise<number> {
     const model = this._model;
 
     assert(
@@ -344,13 +313,6 @@ class Query<T extends Record<string, unknown> = any> extends DB<T> {
       }
     };
 
-    if (callback)
-      return (async as any).map(items, iterator, (err: any, res: T[]) => {
-        if (err) return callback(err, undefined as any);
-
-        super.insert(res, callback);
-      });
-
     (async as any).map(items, iterator, (err: any, res: T[]) => {
       if (err) throw err;
 
@@ -360,25 +322,16 @@ class Query<T extends Record<string, unknown> = any> extends DB<T> {
     return super.insert(items);
   }
 
-  public insertGetId(item: T): Promise<Id>;
-  public insertGetId(item: T, callback: Callback<Id>): void;
-  public async insertGetId(item: T, callback?: Callback<Id>) {
-    try {
-      item = this._model.validate<T>(item) as any;
-    } catch (err) {
-      if (callback) return callback(err, undefined as any);
+  public async insertGetId(item: T): Promise<Id> {
+    item = this._model.validate<T>(item);
 
-      throw err;
-    }
-
-    return (await super.insertGetId(item, callback as any)) as any;
+    return await super.insertGetId(item);
   }
 
   /********************************** Updates *********************************/
 
   protected _update(
     update: { [key: string]: any },
-    callback?: Callback<mongodb.UpdateWriteOpResult>,
     soft?: {
       type: "delete" | "restore";
       field: string;
@@ -395,78 +348,39 @@ class Query<T extends Record<string, unknown> = any> extends DB<T> {
       update.$set[this._model.UPDATED_AT] = value;
     }
 
-    return super._update(update, callback, soft as any);
+    return super._update(update, soft as any);
   }
 
-  public update(update: Partial<T>): Promise<number>;
-  public update(update: Partial<T>, callback: Callback<number>): void;
-  public update(update: Partial<T>, callback?: Callback<number>) {
-    try {
-      update = this._model.validate(update, true) as any;
-    } catch (err) {
-      if (callback) return callback(err, undefined as any);
-
-      throw err;
-    }
+  public async update(update: Partial<T>): Promise<number> {
+    update = this._model.validate(update, true);
 
     this._apply_options();
 
-    return super.update.call(this, update, callback as any) as any;
+    return super.update(update);
   }
 
-  public increment(field: string, count?: number): Promise<number>;
-  public increment(field: string, callback: Callback<number>): void;
-  public increment(
-    field: string,
-    count: number,
-    callback: Callback<number>,
-  ): void;
-  public increment() {
+  public increment(field: string, count?: number): Promise<number> {
     this._apply_options();
 
-    // eslint-disable-next-line prefer-rest-params
-    return super.increment.apply(this, arguments as any) as any;
+    return super.increment(field, count);
   }
 
-  public decrement(field: string, count?: number): Promise<number>;
-  public decrement(field: string, callback: Callback<number>): void;
-  public decrement(
-    field: string,
-    count: number,
-    callback: Callback<number>,
-  ): void;
-  public decrement() {
+  public decrement(field: string, count?: number): Promise<number> {
     this._apply_options();
 
-    // eslint-disable-next-line prefer-rest-params
-    return super.decrement.apply(this, arguments as any) as any;
+    return super.decrement(field, count);
   }
 
-  public unset(fields: string[]): Promise<number>;
-  public unset(fields: string[], callback: Callback<number>): void;
-  public unset(fields: string[], callback?: Callback<number>) {
-    return super.unset(fields, callback as any) as any;
+  public unset(fields: string[]): Promise<number> {
+    return super.unset(fields);
   }
 
   /********************************** Deletes *********************************/
 
-  public delete(force?: boolean): Promise<number>;
-  public delete(callback: Callback<number>): void;
-  public delete(force: boolean, callback: Callback<number>): void;
-  public async delete(
-    force: boolean | Callback<number> = false,
-    callback?: Callback<number>,
-  ) {
-    if (isFunction(force)) {
-      callback = force;
-      force = false;
-    }
-
+  public async delete(force = false): Promise<number> {
     // this._apply_options();
 
     if (!this._model.softDelete || force) {
-      if (callback) return super.delete(callback);
-
       return await super.delete();
     }
 
@@ -483,21 +397,12 @@ class Query<T extends Record<string, unknown> = any> extends DB<T> {
       type: "delete" as const,
     };
 
-    if (callback)
-      return this._update(
-        _update,
-        (err, res) => (callback as any)(err, res.modifiedCount),
-        soft,
-      );
-
-    return (await this._update(_update, undefined, soft)).modifiedCount;
+    return (await this._update(_update, soft)).modifiedCount;
   }
 
   /********************************* Restoring ********************************/
 
-  public restore(): Promise<number>;
-  public restore(callback: Callback<number>): void;
-  public async restore(callback?: Callback<number>) {
+  public async restore(): Promise<number> {
     const _update = { $unset: { [this._model.DELETED_AT]: "" } };
 
     const soft = {
@@ -505,18 +410,7 @@ class Query<T extends Record<string, unknown> = any> extends DB<T> {
       field: this._model.UPDATED_AT,
     };
 
-    if (callback)
-      return this._update(
-        _update,
-        (err, res) => {
-          if (err) return callback(err, res as any);
-
-          callback(err, res.modifiedCount);
-        },
-        soft,
-      );
-
-    return (await this._update(_update, undefined, soft)).modifiedCount;
+    return (await this._update(_update, soft)).modifiedCount;
   }
 }
 

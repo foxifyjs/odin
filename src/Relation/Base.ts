@@ -2,7 +2,7 @@
 import * as async from "async";
 import * as Odin from "..";
 import Query from "../base/Query";
-import DB, { Operator, JoinQuery, Order, Callback, Iterator } from "../DB";
+import DB, { Operator, JoinQuery, Order, Iterator } from "../DB";
 import Filter from "../DB/Filter";
 import Join from "../DB/Join";
 import { getCallerFunctionName, string } from "../utils";
@@ -178,20 +178,12 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
 
   /*********************************** Read ***********************************/
 
-  public exists(): Promise<boolean>;
-  public exists(callback: Callback<boolean>): void;
-  public exists() {
-    const query = this._query();
-
-    return query.exists.apply(query, arguments as any) as any;
+  public exists(): Promise<boolean> {
+    return this._query().exists();
   }
 
-  public count(): Promise<number>;
-  public count(callback: Callback<number>): void;
-  public count() {
-    const query = this._query();
-
-    return query.count.apply(query, arguments as any) as any;
+  public count(): Promise<number> {
+    return this._query().count();
   }
 
   public iterate<T extends Record<string, unknown>>(): Iterator<T>;
@@ -199,38 +191,23 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
     return this._query().iterate();
   }
 
-  public get(): Promise<T[]>;
-  public get(callback: Callback<T[]>): void;
-  public get() {
-    const query = this._query();
-
-    return query.get.apply(query, arguments as any) as any;
+  public get(): Promise<T[]> {
+    return this._query().get();
   }
 
-  public first(): Promise<T>;
-  public first(callback: Callback<T>): void;
-  public first() {
-    const query = this._query();
-
-    return query.first.apply(query, arguments as any) as any;
+  public first(): Promise<T> {
+    return this._query().first();
   }
 
-  public value(field: string): Promise<any>;
-  public value(field: string, callback: Callback<any>): void;
-  public value() {
-    const query = this._query();
-
-    return query.value.apply(query, arguments as any) as any;
+  public value(field: string): Promise<any> {
+    return this._query().value(field);
   }
 
-  public pluck(field: string): Promise<any>;
-  public pluck(field: string, callback: Callback<any>): void;
-  public pluck() {
-    return this.value.apply(this, arguments as any) as any;
+  public pluck(field: string): Promise<any> {
+    return this.value(field);
   }
 
   public max(field: string): Promise<any>;
-  public max(field: string, callback: Callback<any>): void;
   public max() {
     const query = this._query();
 
@@ -238,7 +215,6 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public min(field: string): Promise<any>;
-  public min(field: string, callback: Callback<any>): void;
   public min() {
     const query = this._query();
 
@@ -248,30 +224,9 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   /********************************** Inserts *********************************/
 
   public insert(items: T[]): Promise<A extends undefined ? number : any>;
-  public insert(
-    items: T[],
-    callback: Callback<A extends undefined ? number : any>,
-  ): void;
-  public async insert(
-    items: T[],
-    callback?: Callback<A extends undefined ? number : any>,
-  ) {
+  public async insert(items: T[]) {
     const foreignKey = this.foreignKey;
     const localAttribute = this.model.getAttribute(this.localKey);
-
-    if (callback)
-      return async.map(
-        items,
-        (item, cb1: (...args: any[]) => any) => ({
-          ...(item as any),
-          [foreignKey]: localAttribute,
-        }),
-        (err, newItems) => {
-          if (err) callback(err, undefined as any);
-
-          this._query().insert(newItems as T[], callback as any);
-        },
-      );
 
     async.map(
       items,
@@ -290,19 +245,11 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public create(item: T): Promise<T>;
-  public create(item: T, callback: Callback<T>): void;
-  public async create(item: T, callback?: Callback<T>) {
+  public async create(item: T) {
     item = {
       ...(item as any),
       [this.foreignKey]: this.model.getAttribute(this.localKey),
     };
-
-    if (callback)
-      return this._query().insertGetId(item, (err, res) => {
-        if (err) return callback(err, res as any);
-
-        this.where("id", res).first(callback);
-      });
 
     return await this.where(
       "id",
@@ -311,17 +258,15 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public save(model: T): Promise<T>;
-  public save(model: T, callback: Callback<T>): void;
-  public save(model: T, callback?: Callback<T>) {
+  public save(model: T) {
     model.setAttribute(this.foreignKey, this.model.getAttribute(this.localKey));
 
-    return model.save(callback as any) as Promise<T> | void;
+    return model.save() as Promise<T>;
   }
 
   /********************************** Updates *********************************/
 
   public update(update: T): Promise<number>;
-  public update(update: T, callback: Callback<number>): void;
   public update() {
     const query = this._query();
 
@@ -329,12 +274,6 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public increment(field: string, count?: number): Promise<number>;
-  public increment(field: string, callback: Callback<number>): void;
-  public increment(
-    field: string,
-    count: number,
-    callback: Callback<number>,
-  ): void;
   public increment() {
     const query = this._query();
 
@@ -342,12 +281,6 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
   }
 
   public decrement(field: string, count?: number): Promise<number>;
-  public decrement(field: string, callback: Callback<number>): void;
-  public decrement(
-    field: string,
-    count: number,
-    callback: Callback<number>,
-  ): void;
   public decrement() {
     const query = this._query();
 
@@ -356,12 +289,8 @@ abstract class Relation<T extends Odin = Odin, A = undefined> {
 
   /********************************** Deletes *********************************/
 
-  public delete(): Promise<number>;
-  public delete(callback: Callback<number>): void;
-  public delete() {
-    const query = this._query();
-
-    return query.delete.apply(query, arguments as any) as any;
+  public delete(): Promise<number> {
+    return this._query().delete();
   }
 }
 
