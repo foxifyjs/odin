@@ -1,186 +1,115 @@
-import { JoinQuery, Order } from ".";
-import {
-  array,
-  makeCollectionId,
-  object,
-  OPERATORS,
-  prepareKey,
-  string,
-} from "../utils";
 import Filter from "./Filter";
+import {
+  ORDER,
+  MONGO_ROOT,
+  Obj,
+  JoinQuery,
+  MongoJoin,
+  MongoPipeline,
+  MongoPipelineStageSort,
+  Order,
+} from "../constants";
 
-class Join<T extends Record<string, unknown> = any> extends Filter<T> {
-  protected _pipeline: Record<string, unknown>[] = [];
+export default class Join<T extends Obj>
+  extends Filter<T>
+  implements MongoJoin<T> {
+  protected _pipeline: MongoPipeline<T> = [];
 
-  protected _let: { [key: string]: any } = {};
+  public get pipeline(): MongoPipeline<T> {
+    if (Object.keys(this._filters).length > 0) {
+      this._pipeline = this._pipeline.concat({ $match: this._filters });
 
-  public get pipeline() {
-    this._resetFilters();
+      this._filters = {};
+    }
 
-    return {
-      $lookup: {
-        let: this._let,
-        from: this._collection,
-        pipeline: this._pipeline,
-        as: this._as,
-      },
-    };
+    return this._pipeline;
   }
 
-  constructor(
-    protected _ancestor: string,
-    protected _collection: string,
-    protected _as: string = _collection,
-  ) {
+  public constructor(public table: string) {
     super();
   }
 
-  /********************************** Helpers *********************************/
+  /* ------------------------- JOIN ------------------------- */
 
-  protected _resetFilters() {
-    const FILTER = this._filters;
-
-    if (object.size(FILTER) > 0) this._pipeline.push({ $match: FILTER });
-    // if (object.size(FILTER) > 0) this.aggregate({ $match: FILTER });
-
-    this._filter = {
-      $and: [],
-    };
-
-    return this;
-  }
-
-  protected _shouldPushExpr(value: any) {
-    if (!string.isString(value)) return false;
-
-    return new RegExp(`^\\$?${this._ancestor}\\..+`).test(value);
-  }
-
-  protected _where(field: string, operator: string, value: any) {
-    if (this._shouldPushExpr(value)) {
-      const keys = array.tail(value.replace(/^\$/, "").split("."));
-
-      keys.push(prepareKey(keys.pop() as string));
-
-      const pivotKey = `pivot_${keys.join("_ODIN_")}`;
-
-      this._let[pivotKey] = `$${keys.join(".")}`;
-
-      return this._push_filter("and", {
-        $expr: {
-          [`$${operator}`]: [`$${prepareKey(field)}`, `$$${pivotKey}`],
-        },
-      });
-    }
-
-    return super._where(field, operator, value);
-  }
-
-  protected _or_where(field: string, operator: string, value: any) {
-    if (this._shouldPushExpr(value)) {
-      const keys = array.tail(value.split("."));
-
-      keys.push(prepareKey(keys.pop() as string));
-
-      const pivotKey = `pivot_${keys.join("_ODIN_")}`;
-
-      this._let[pivotKey] = `$${keys.join(".")}`;
-
-      return this._push_filter("or", {
-        $expr: {
-          [`$${operator}`]: [`$${prepareKey(field)}`, `$$${pivotKey}`],
-        },
-      });
-    }
-
-    return super._or_where(field, operator, value);
-  }
-
-  /********************************** Extra **********************************/
-
-  public aggregate(
-    ...objects: Record<string, unknown>[] | Record<string, unknown>[][]
-  ) {
-    this._resetFilters();
-
-    this._pipeline.push(...array.deepFlatten(objects));
-
-    return this;
-  }
-
-  /*********************************** Joins **********************************/
-
+  // TODO: right filters
   public join(
-    collection: string,
-    query: JoinQuery<T> = (q) =>
-      q.where(makeCollectionId(collection), `${collection}.id`),
-    as: string = collection,
-  ) {
-    const join: Join = query(new Join(this._collection, collection, as)) as any;
+    table: string,
+    query: JoinQuery<T, Join<T>> = (q) =>
+      q.where(`${table}_id`, `$${table}._id`),
+    as = table,
+  ): this {
+    const join = new Join<T>(table);
 
-    this.aggregate(join.pipeline);
+    query(join);
 
-    return this;
+    return this.pipe({
+      $lookup: {
+        let: { [this.table]: MONGO_ROOT },
+        from: table,
+        pipeline: join.pipeline,
+        as,
+      },
+    });
   }
 
-  /********* Mapping, Ordering, Grouping, Limit, Offset & Pagination *********/
+  /* ------------------------- ORDER ------------------------- */
 
-  public orderBy<K extends keyof T>(field: K, order?: Order): this;
-  public orderBy(field: string, order?: Order): this;
-  public orderBy(fields: { [field: string]: "asc" | "desc" }): this;
+  public orderBy<K extends keyof T>(field: K | string, order?: Order): this;
+  public orderBy<K extends keyof T>(
+    fields: { [key in K | string]: Order },
+  ): this;
   public orderBy(
-    fields: string | { [field: string]: "asc" | "desc" },
-    order?: Order,
-  ) {
-    const $sort: { [field: string]: 1 | -1 } = {};
+    fields: string | { [key: string]: Order },
+    order: Order = ORDER.ASC,
+  ): this {
+    const $sort: MongoPipelineStageSort["$sort"] = {};
 
-    if (string.isString(fields)) $sort[fields] = order === "desc" ? -1 : 1;
-    else
-      object.forEach(
-        fields,
-        (value, field) => ($sort[field] = value === "desc" ? -1 : 1),
-      );
+    if (typeof fields === "string")
+      $sort[fields] = order === ORDER.ASC ? 1 : -1;
+    else {
+      for (const field in fields as { [key in keyof T | string]?: Order }) {
+        if (!Object.prototype.hasOwnProperty.call(fields, field)) continue;
 
-    return this.aggregate({ $sort });
+        $sort[field] = fields[field] === ORDER.ASC ? 1 : -1;
+      }
+    }
+
+    return this.pipe({ $sort });
   }
 
-  public skip(offset: number) {
-    return this.aggregate({ $skip: offset });
+  /* ------------------------- OFFSET ------------------------- */
+
+  public offset(offset: number): this;
+  public offset($skip: number): this {
+    return this.pipe({ $skip });
   }
 
-  public offset(offset: number) {
-    return this.skip(offset);
+  public skip(offset: number): this {
+    return this.offset(offset);
   }
 
-  public limit(limit: number) {
-    return this.aggregate({ $limit: limit });
+  /* ------------------------- LIMIT ------------------------- */
+
+  public limit(limit: number): this;
+  public limit($limit: number): this {
+    return this.pipe({ $limit });
   }
 
-  public take(limit: number) {
+  public take(limit: number): this {
     return this.limit(limit);
   }
 
-  public paginate(page = 0, limit = 10) {
-    return this.skip(page * limit).limit(limit);
+  /* ------------------------- PAGINATION ------------------------- */
+
+  public paginate(page: number, limit = 10): this {
+    return this.offset(page * limit).limit(limit);
   }
 
-  /******************************* Where Clauses ******************************/
+  /* ------------------------- PIPELINE ------------------------- */
 
-  public whereIn(field: string, embeddedField: string): this;
-  public whereIn<K extends keyof T>(field: K, embeddedField: string): this;
-  public whereIn(field: string, values: any[]): this;
-  public whereIn<K extends keyof T>(field: K, values: Array<T[K]>): this;
-  public whereIn(field: string, values: any) {
-    return super.whereIn(field, values);
-  }
+  public pipe(...pipeline: MongoPipeline<T>): this {
+    if (pipeline.length > 0) this._pipeline = this.pipeline.concat(pipeline);
 
-  public whereNotIn(field: string, embeddedField: string): this;
-  public whereNotIn<K extends keyof T>(field: K, embeddedField: string): this;
-  public whereNotIn(field: string, values: any[]): this;
-  public whereNotIn<K extends keyof T>(field: K, values: Array<T[K]>): this;
-  public whereNotIn(field: string, values: any) {
-    return super.whereNotIn(field, values);
+    return this;
   }
 }
-
-export default Join;

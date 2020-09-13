@@ -31,10 +31,8 @@ const ITEMS = [
 ];
 
 Odin.Connect({
-  default: {
-    database: global.__MONGO_DB_NAME__,
-    connection: global.__MONGO_CONNECTION__,
-  },
+  database: global.__MONGO_DB_NAME__,
+  connection: global.__MONGO_CONNECTION__,
 });
 
 beforeAll(async () => {

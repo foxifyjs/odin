@@ -57,6 +57,8 @@ typings/
 # dotenv environment variables file
 .env
 
+*.tsbuildinfo
+
 .idea
 .vscode
 

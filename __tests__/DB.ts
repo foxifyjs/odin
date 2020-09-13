@@ -68,10 +68,8 @@ const JOIN_ITEMS = [
 
 beforeAll(async () => {
   Connect({
-    default: {
-      database: global.__MONGO_DB_NAME__,
-      connection: global.__MONGO_CONNECTION__,
-    },
+    database: global.__MONGO_DB_NAME__,
+    connection: global.__MONGO_CONNECTION__,
   });
 
   await DB.collection(COLLECTION).insert(ITEMS);

@@ -1,196 +1,202 @@
-import * as mongodb from "mongodb";
-import { FilterQuery, Operator } from ".";
-import { function as func, OPERATORS, prepareKey, string } from "../utils";
+import * as mongo from "mongodb";
+import {
+  Obj,
+  MongoFilter,
+  FilterQuery,
+  Operator,
+  OPERATOR,
+  MONGO_OPERATOR_MAP,
+} from "../constants";
 
-export interface Filters<T = any> {
-  $and?: Array<mongodb.FilterQuery<T>>;
-  $or?: Array<mongodb.FilterQuery<T>>;
-
-  [operator: string]: any;
+export const enum FILTER_OPERATOR {
+  AND = "$and",
+  OR = "$or",
 }
 
-export default class Filter<T extends Record<string, unknown> = any> {
-  protected _filter: Filters = {
-    $and: [],
-  };
+export type Filters<T extends Obj> = {
+  [operator in FILTER_OPERATOR]?: Array<mongo.FilterQuery<T> | Filters<T>>;
+};
 
-  protected get _filters() {
-    const FILTERS = {
-      ...this._filter,
-    };
+export default class Filter<T extends Obj> implements MongoFilter<T> {
+  protected _filters: Filters<T> = {};
 
-    if (FILTERS.$and && FILTERS.$and.length === 0) delete FILTERS.$and;
-    else if (FILTERS.$or && FILTERS.$or.length === 0) delete FILTERS.$or;
+  /* ------------------------- WHERE ------------------------- */
 
-    return FILTERS;
-  }
-
-  /********************************** Helpers *********************************/
-
-  protected _push_filter(operator: "and" | "or", value: any) {
-    const _filters = { ...this._filter };
-
-    if (operator === "and" && _filters.$or) {
-      _filters.$and = [this._filter];
-      delete _filters.$or;
-    } else if (operator === "or" && _filters.$and) {
-      _filters.$or = [this._filter];
-      delete _filters.$and;
-    }
-
-    _filters[`$${operator}`].push(value);
-
-    this._filter = _filters;
-
-    return this;
-  }
-
-  protected _where(field: string, operator: string, value: any) {
-    field = prepareKey(field);
-
-    return this._push_filter("and", {
-      [field]: {
-        [`$${operator}`]: value,
-      },
-    });
-  }
-
-  protected _or_where(field: string, operator: string, value: any) {
-    field = prepareKey(field);
-
-    return this._push_filter("or", {
-      [field]: {
-        [`$${operator}`]: value,
-      },
-    });
-  }
-
-  /******************************* Where Clauses ******************************/
-
-  public where(query: FilterQuery): this;
+  public where(query: FilterQuery<T, Filter<T>>): this;
   public where<K extends keyof T>(field: K, value: T[K]): this;
-  public where(field: string, value: any): this;
+  public where(field: string, value: unknown): this;
   public where<K extends keyof T>(
     field: K,
     operator: Operator,
     value: T[K],
   ): this;
-  public where(field: string, operator: Operator, value: any): this;
+  public where(field: string, operator: Operator, value: unknown): this;
   public where(
-    field: string | FilterQuery,
-    operator?: Operator | any,
-    value?: any,
-  ) {
-    if (func.isFunction(field)) {
-      const filter: Filter = field(new Filter()) as any;
+    field: string | FilterQuery<T, Filter<T>>,
+    operator?: unknown,
+    value?: unknown,
+  ): this {
+    if (typeof field === "function") {
+      const filter = new Filter<T>();
 
-      return this._push_filter("and", filter._filters);
+      field(filter);
+
+      return this._filter(FILTER_OPERATOR.AND, filter._filters);
     }
 
-    if (value === undefined) {
+    if (arguments.length === 2) {
       value = operator;
-      operator = "=";
+      operator = OPERATOR.EQ;
     }
 
-    return this._where(field, OPERATORS[operator], value);
+    return this._where(field, MONGO_OPERATOR_MAP[operator as Operator], value);
   }
 
-  public orWhere(query: FilterQuery): this;
+  /* ------------------------- OR WHERE ------------------------- */
+
+  public orWhere(query: FilterQuery<T, Filter<T>>): this;
   public orWhere<K extends keyof T>(field: K, value: T[K]): this;
-  public orWhere(field: string, value: any): this;
+  public orWhere(field: string, value: unknown): this;
   public orWhere<K extends keyof T>(
     field: K,
     operator: Operator,
     value: T[K],
   ): this;
-  public orWhere(field: string, operator: Operator, value: any): this;
+  public orWhere(field: string, operator: Operator, value: unknown): this;
   public orWhere(
-    field: string | FilterQuery,
-    operator?: Operator | any,
-    value?: any,
-  ) {
-    if (func.isFunction(field)) {
-      const filter: Filter = field(new Filter()) as any;
+    field: string | FilterQuery<T, Filter<T>>,
+    operator?: unknown,
+    value?: unknown,
+  ): this {
+    if (typeof field === "function") {
+      const filter = new Filter<T>();
 
-      return this._push_filter("or", filter._filters);
+      field(filter);
+
+      return this._filter(FILTER_OPERATOR.OR, filter._filters);
     }
 
-    if (value === undefined) {
+    if (arguments.length === 2) {
       value = operator;
-      operator = "=";
+      operator = OPERATOR.EQ;
     }
 
-    return this._or_where(field, OPERATORS[operator], value);
+    return this._orWhere(
+      field,
+      MONGO_OPERATOR_MAP[operator as Operator],
+      value,
+    );
   }
 
-  public whereLike<K extends keyof T>(field: K, value: string | RegExp): this;
-  public whereLike(field: string, value: string | RegExp): this;
-  public whereLike(field: string, value: string | RegExp) {
-    if (!(value instanceof RegExp)) value = new RegExp(value, "i");
+  /* ------------------------- WHERE NULL ------------------------- */
 
-    return this._where(field, "regex", value);
+  whereNull(field: keyof T | string): this;
+  whereNull(field: string): this {
+    return this._where(field, "$eq", null);
   }
 
-  public whereNotLike<K extends keyof T>(
-    field: K,
-    value: string | RegExp,
-  ): this;
-  public whereNotLike(field: string, value: string | RegExp): this;
-  public whereNotLike(field: string, value: string | RegExp) {
-    if (!(value instanceof RegExp)) value = new RegExp(value, "i");
+  /* ------------------------- WHERE NOT NULL ------------------------- */
 
-    return this._where(field, "not", value);
+  whereNotNull(field: keyof T | string): this;
+  whereNotNull(field: string): this {
+    return this._where(field, "$ne", null);
   }
 
-  public whereIn(field: string, embeddedField: string): this;
-  public whereIn<K extends keyof T>(field: K, embeddedField: string): this;
-  public whereIn(field: string, values: any[]): this;
-  public whereIn<K extends keyof T>(field: K, values: Array<T[K]>): this;
-  public whereIn(field: string, values: any) {
-    if (string.isString(values)) values = `$${values}`;
+  /* ------------------------- WHERE LIKE ------------------------- */
 
-    return this._where(field, "in", values);
+  whereLike(field: keyof T | string, value: string | RegExp): this;
+  whereLike(field: string, value: string | RegExp): this {
+    if (!(value instanceof RegExp)) value = new RegExp(value);
+
+    return this._where(field, "$regex", value);
   }
 
-  public whereNotIn(field: string, embeddedField: string): this;
-  public whereNotIn<K extends keyof T>(field: K, embeddedField: string): this;
-  public whereNotIn(field: string, values: any[]): this;
-  public whereNotIn<K extends keyof T>(field: K, values: Array<T[K]>): this;
-  public whereNotIn(field: string, values: any) {
-    if (string.isString(values)) values = `$${values}`;
+  /* ------------------------- WHERE NOT LIKE ------------------------- */
 
-    return this._where(field, "nin", values);
+  whereNotLike(field: keyof T | string, value: string | RegExp): this;
+  whereNotLike(field: string, value: string | RegExp): this {
+    if (!(value instanceof RegExp)) value = new RegExp(value);
+
+    return this._where(field, "$not", value);
   }
 
-  public whereBetween<K extends keyof T>(
-    field: K,
-    start: T[K],
-    end: T[K],
-  ): this;
-  public whereBetween(field: string, start: any, end: any): this;
-  public whereBetween(field: string, start: any, end: any) {
-    return this._where(field, "gte", start)._where(field, "lte", end);
+  /* ------------------------- WHERE IN ------------------------- */
+
+  whereIn<K extends keyof T>(field: K, values: T[K][]): this;
+  whereIn(field: string, values: unknown[]): this;
+  whereIn(field: string, values: unknown[]): this {
+    return this._where(field, "$in", values);
   }
 
-  public whereNotBetween<K extends keyof T>(
-    field: K,
-    start: T[K],
-    end: T[K],
-  ): this;
-  public whereNotBetween(field: string, start: any, end: any): this;
-  public whereNotBetween(field: string, start: any, end: any) {
-    return this._where(field, "lt", start)._or_where(field, "gt", end);
+  /* ------------------------- WHERE NOT IN ------------------------- */
+
+  whereNotIn<K extends keyof T>(field: K, values: T[K][]): this;
+  whereNotIn(field: string, values: unknown[]): this;
+  whereNotIn(field: string, values: unknown[]): this {
+    return this._where(field, "$nin", values);
   }
 
-  public whereNull<K extends keyof T>(field: K): this;
-  public whereNull(field: string): this;
-  public whereNull(field: string) {
-    return this._where(field, "eq", null);
+  /* ------------------------- WHERE BETWEEN ------------------------- */
+
+  whereBetween<K extends keyof T>(field: K, start: T[K], end: T[K]): this;
+  whereBetween(field: string, start: unknown, end: unknown): this;
+  whereBetween(field: string, start: unknown, end: unknown): this {
+    return this.where(field, OPERATOR.GTE, start).where(
+      field,
+      OPERATOR.LTE,
+      end,
+    );
   }
 
-  public whereNotNull<K extends keyof T>(field: K): this;
-  public whereNotNull(field: string): this;
-  public whereNotNull(field: string) {
-    return this._where(field, "ne", null);
+  /* ------------------------- WHERE NOT BETWEEN ------------------------- */
+
+  whereNotBetween<K extends keyof T>(field: K, start: T[K], end: T[K]): this;
+  whereNotBetween(field: string, start: unknown, end: unknown): this;
+  whereNotBetween(field: string, start: unknown, end: unknown): this {
+    return this.where((query) =>
+      query.where(field, OPERATOR.LT, start).orWhere(field, OPERATOR.GT, end),
+    );
+  }
+
+  /* ------------------------- HELPERS ------------------------- */
+
+  protected _filter(operator: FILTER_OPERATOR, filter: unknown): this {
+    const filters = { ...this._filters };
+
+    if (operator === FILTER_OPERATOR.AND && filters.$or) {
+      filters.$and = [this._filters];
+      delete filters.$or;
+    } else if (operator === FILTER_OPERATOR.OR && filters.$and) {
+      filters.$or = [this._filters];
+      delete filters.$and;
+    }
+
+    let filtersArray = filters[operator];
+
+    if (filtersArray == null) filtersArray = [];
+
+    filtersArray.push(filter as mongo.FilterQuery<T>);
+
+    filters[operator] = filtersArray;
+
+    this._filters = filters;
+
+    return this;
+  }
+
+  protected _where(field: string, operator: string, value: unknown): this {
+    return this._filter(FILTER_OPERATOR.AND, {
+      [field]: {
+        [operator]: value,
+      },
+    });
+  }
+
+  protected _orWhere(field: string, operator: string, value: unknown): this {
+    return this._filter(FILTER_OPERATOR.OR, {
+      [field]: {
+        [operator]: value,
+      },
+    });
   }
 }
