@@ -48,24 +48,24 @@
   "dependencies": {
     "@types/graphql": "^0.13.4",
     "@types/graphql-iso-date": "^3.3.1",
-    "@types/mongodb": "^3.1.19",
-    "@types/node": "^11.9.3",
+    "@types/mongodb": "^3.5.27",
+    "@types/node": "^14.6.4",
     "async": "^2.6.2",
     "caller-id": "^0.1.0",
-    "deasync": "^0.1.14",
+    "deasync": "^0.1.20",
     "graphql": "^0.13.2",
     "graphql-iso-date": "^3.6.1",
     "mongodb": "^3.6.1",
-    "prototyped.js": "^1.0.0",
+    "prototyped.js": "^1.0.1",
     "verifications": "^0.3.0"
   },
   "peerDependencies": {
-    "@foxify/schema": "^1.0.1"
+    "@foxify/schema": "^2.0.0"
   },
   "devDependencies": {
-    "@foxify/schema": "^1.0.1",
-    "@types/async": "^2.4.1",
-    "@types/deasync": "^0.1.0",
+    "@foxify/schema": "^2.0.0",
+    "@types/async": "^2.4.2",
+    "@types/deasync": "^0.1.1",
     "@types/jest": "^26.0.13",
     "@typescript-eslint/eslint-plugin": "^4.0.1",
     "@typescript-eslint/parser": "^4.0.1",

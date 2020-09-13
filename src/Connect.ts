@@ -1,8 +1,7 @@
-import * as deasync from "deasync";
+import deasync from "deasync";
 import * as mongodb from "mongodb";
-import { object } from "./utils";
 
-const CONNECTIONS: { [name: string]: () => mongodb.Db } = {};
+let CONNECTION: () => mongodb.Db;
 
 export interface Connection {
   database: string;
@@ -16,48 +15,42 @@ export interface Connection {
   port?: string;
 }
 
-export interface Connections {
-  [name: string]: Connection;
-}
+export const connection = (): mongodb.Db => CONNECTION();
 
-export const connection = (name: string) => CONNECTIONS[name]();
+export default function connect(connection: Connection): void {
+  if (CONNECTION != null) return;
 
-export default function connect(connections: Connections) {
-  object.forEach(connections, (connection: Connection, name) => {
-    if (CONNECTIONS[name]) return;
+  const client = connection.connection;
 
-    if (connection.connection) {
-      CONNECTIONS[name] = () =>
-        (connection.connection as mongodb.MongoClient).db(connection.database);
+  if (client != null) {
+    CONNECTION = () => client.db(connection.database);
 
-      return;
-    }
+    return;
+  }
 
-    const OPTIONS: mongodb.MongoClientOptions = {
-      useNewUrlParser: true,
+  const OPTIONS: mongodb.MongoClientOptions = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  };
+
+  let database = connection.database;
+
+  if (connection.auth && connection.auth.user && connection.auth.password) {
+    OPTIONS.auth = {
+      user: connection.auth.user,
+      password: connection.auth.password,
     };
 
-    let database = connection.database;
+    if (connection.auth.database) database = connection.auth.database;
+  }
 
-    if (connection.auth && connection.auth.user && connection.auth.password) {
-      OPTIONS.auth = {
-        user: connection.auth.user,
-        password: connection.auth.password,
-      };
+  const uri = `mongodb://${connection.host || "127.0.0.1"}:${
+    connection.port || "27017"
+  }/${database}`;
 
-      if (connection.auth.database) database = connection.auth.database;
-    }
+  const server = <mongodb.MongoClient>(
+    deasync(mongodb.MongoClient.connect)(uri, OPTIONS)
+  );
 
-    const uri = `mongodb://${connection.host || "127.0.0.1"}:${
-      connection.port || "27017"
-    }/${database}`;
-
-    const server = <mongodb.MongoClient>(
-      deasync(mongodb.MongoClient.connect)(uri, OPTIONS)
-    );
-
-    const db = server.db(connection.database);
-
-    CONNECTIONS[name] = () => db;
-  });
+  CONNECTION = () => server.db(connection.database);
 }

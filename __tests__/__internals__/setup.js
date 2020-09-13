@@ -39,9 +39,11 @@ module.exports = async () => {
   await MONGOD.start();
 
   global.__CONNECTION__ = await mongodb.connect(
-    await MONGOD.getConnectionString(), {
-      useNewUrlParser: true
-    }
+    await MONGOD.getConnectionString(),
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    },
   );
 
   global.__MONGOD__ = MONGOD;
@@ -52,7 +54,7 @@ module.exports = async () => {
 
   // await sleep(2000);
 
-  // global.__REPLICA_CONN__ = await mongodb.connect(
+  // global.__REPLICA_CONN__ = await mongo.connect(
   //   await REPLICA.getConnectionString(), {
   //     useNewUrlParser: true,
   //     readConcern: {
@@ -64,4 +66,4 @@ module.exports = async () => {
   // );
 
   // global.__REPLICA__ = REPLICA;
-}
+};

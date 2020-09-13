@@ -115,7 +115,7 @@ export const OPERATORS: { [operator: string]: string } = {
   "<": "lt",
   "<=": "lte",
   "=": "eq",
-  "<>": "ne",
+  "!=": "ne",
   ">=": "gte",
   ">": "gt",
 };
