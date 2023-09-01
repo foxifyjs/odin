@@ -55,7 +55,7 @@
     "deasync": "^0.1.14",
     "graphql": "^0.13.2",
     "graphql-iso-date": "^3.6.1",
-    "mongodb": "^3.6.1",
+    "mongodb": "^3.6.10",
     "prototyped.js": "^1.0.0",
     "verifications": "^0.3.0"
   },
